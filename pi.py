@@ -1,22 +1,37 @@
 import sys
 import paramiko
 
-HOST = "172.26.188.115"
-USER = "nczydx"
-PASS = "123456789"
+HOST = "172.26.188.116"
+USER = "nanzhida"
+PASS = "nanzhida"
 
 
 def main():
-    args = sys.argv[1:]
+    args = list(sys.argv[1:])
     sudo = False
-    if args and args[0] == "--sudo":
-        sudo = True
-        args = args[1:]
-    if args and args[0] == "--host":
-        globals()["HOST"] = args[1]
-        args = args[2:]
-    if args and args[0] == "--file":
-        local = args[1]
+    local = None
+    def take_value(flag):
+        if not args:
+            sys.stderr.write("missing value for %s\n" % flag)
+            sys.exit(2)
+        return args.pop(0)
+
+    while args and args[0].startswith("--"):
+        flag = args.pop(0)
+        if flag == "--sudo":
+            sudo = True
+        elif flag == "--host":
+            globals()["HOST"] = take_value(flag)
+        elif flag == "--user":
+            globals()["USER"] = take_value(flag)
+        elif flag == "--pass":
+            globals()["PASS"] = take_value(flag)
+        elif flag == "--file":
+            local = take_value(flag)
+        else:
+            sys.stderr.write("unknown option: %s\n" % flag)
+            sys.exit(2)
+    if local is not None:
         with open(local, "rb") as fh:
             payload = fh.read()
         cli = paramiko.SSHClient()

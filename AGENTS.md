@@ -2,44 +2,62 @@
 
 本仓库目前只有一个脚本 `pi.py`（无构建/测试/lint 工具链，不要去找）。
 
-## 目标设备（树莓派）
+## 目标设备（两台树莓派，都走同一条直连网线）
+
+### 当前在用：新 Pi
+
+| 项 | 值 |
+| --- | --- |
+| 主机名 | `zhangsk` |
+| 硬件/系统 | Raspberry Pi 5 (aarch64, `2712`)，Debian 13 (trixie)，kernel `6.18.50+rpt-rpi-2712` |
+| IPv4 | `172.26.188.116`（eth0 静态 /24，无网关、`never-default yes`） |
+| IPv6 备用 | `fe80::2ecf:67ff:fece:9bce%<本机以太网 ifIndex>`（仅经网线可达） |
+| 账号 | `nanzhida` / `nanzhida`（在 `sudo` 组，无 NOPASSWD，必须用 `--sudo`） |
+| 网口 MAC | `2c:cf:67:ce:9b:ce`（eth0） |
+| 无线 | wlan0 `192.168.31.29/24`（与本机 WLAN 同网段，可当带外通道） |
+
+### 旧 Pi（保留）
 
 | 项 | 值 |
 | --- | --- |
 | 主机名 | `NCZYDX` |
-| 硬件/系统 | Raspberry Pi 5 (aarch64, `2712`)，Debian 13 (trixie)，kernel `6.18.34+rpt-rpi-2712` |
-| IPv4 | `172.26.188.115`（eth0 静态，/24） |
-| IPv6 备用 | `fe80::2ecf:67ff:fece:a998%23`（`%23` = 本机以太网 ifIndex，仅经网线可达） |
-| 账号 | `nczydx` / `123456789` |
-| sudo | 同一密码，`(ALL : ALL) ALL`（无 NOPASSWD，必须用 `--sudo`） |
+| IPv4 | `172.26.188.115`（eth0 静态 /24） |
+| IPv6 备用 | `fe80::2ecf:67ff:fece:a998%<本机以太网 ifIndex>` |
+| 账号 | `nczydx` / `123456789`（sudo 同密码） |
 | 网口 MAC | `2c:cf:67:ce:a9:98`（eth0） |
 
-本机侧：Realtek 2.5GbE（ifIndex `23`）静态 `172.26.188.100/24`、DHCP 已关闭、无网关。改动需管理员权限（`Start-Process -Verb RunAs`，会弹 UAC）。
+`pi.py` 默认指向**新 Pi**；连旧 Pi 用 `--host 172.26.188.115 --user nczydx --pass 123456789`。
+
+本机侧：Realtek 2.5GbE 静态 `172.26.188.100/24`（另有 `192.168.199.100/24`）、DHCP 已关闭、无网关。该网卡 ifIndex 会变（本机曾经是 23，现在 20），用 `Get-NetAdapter` 查。改动需管理员权限（`Start-Process -Verb RunAs`，会弹 UAC）。
 
 ## 执行命令的方式
 
 ```
-python pi.py [--sudo] [--host <IP>] [--file <本地脚本>] '<命令>'
+python pi.py [--sudo] [--host <IP>] [--user <u>] [--pass <p>] [--file <本地脚本>] '<命令>'
 ```
 
+- 选项可任意顺序、可省略；`fe80::...%20` 这种带 scope 的链路本地地址可直接作为 `--host` 传入（Windows `getaddrinfo` 认识 `%<ifIndex>`，paramiko 可用）。
 - 底层用 paramiko（`python -m pip install paramiko` 安装到用户级 Python 3.14）；Windows 自带 OpenSSH 没有 sshpass，所以**不要**直接调 `ssh`，密码无法非交互传入。
 - 复杂命令、含引号/括号/管道的命令一律写成 **纯 ASCII** 的 `.sh`，用 `--file` 上传到 `/tmp/kilo-run.sh` 执行。PowerShell → paramiko → bash 三层引号极易被破坏（会报 `unexpected token` / `bash: - : invalid option`）。
-- PowerShell 5.1：不支持 `&&`；`.ps1` 若含中文且为 UTF-8 无 BOM 会被按 ANSI 读取而乱码，改用 `Get-NetAdapter | Where-Object { $_.ifIndex -eq 23 }` 管道传对象，不要用网卡中文名。
-- `Restart-NetAdapter` / `Disable-NetAdapter` / `Enable-NetAdapter` 都不接受 `-InterfaceIndex`，必须走上面的管道；`Get-NetAdapterStatistics` 同理（只有 `-Name`）。
+- PowerShell 5.1：不支持 `&&`；`.ps1` 若含中文且为 UTF-8 无 BOM 会被按 ANSI 读取而乱码，改用 `Get-NetAdapter | Where-Object { $_.ifIndex -eq 20 }` 管道传对象，不要用网卡中文名。
+- `Restart-NetAdapter` / `Disable-NetAdapter` / `Enable-NetAdapter` 都不接受 `-InterfaceIndex`，必须走上面的管道；`Get-NetAdapterStatistics` / `Get-NetAdapterAdvancedProperty` 同理（只接受 `-Name`，或用管道）。
 - 临时脚本放 `C:\Users\z\AppData\Local\Temp\kilo\`。
 
 ## Pi 网络配置现状
 
-- NetworkManager 配置 `netplan-eth0`：`ipv4.method manual` / `172.26.188.115/24` / 无网关 / `never-default yes` / `ipv6.method auto`（保留 IPv6 后备通道）。
+- 新 Pi `netplan-eth0`：`ipv4.method manual` / `172.26.188.116/24` / 无网关 / `never-default yes` / `ipv6.method auto`。
+- 旧 Pi `netplan-eth0`：`172.26.188.115/24`，其余同上。
+- 改 eth0 会掐断走网线的 SSH（含 IPv6 会话）：优先走 Wi-Fi（新 Pi wlan0 `192.168.31.29`）操作；或把 `nmcli con up` 后台延迟执行（`nohup bash -c 'sleep 3; nmcli con up netplan-eth0' &`）再轮询验证。
 - 改回 DHCP：`python pi.py --sudo "nmcli con mod netplan-eth0 ipv4.method auto ipv4.addresses '' && nmcli con up netplan-eth0"`。
-- 重新激活 eth0 会掐断当前 SSH（含 IPv6 会话）：把 `nmcli con up` 放到后台延迟执行（`nohup bash -c 'sleep 3; nmcli con up netplan-eth0' &`）再轮询验证。
 
 ## 已踩过的坑
 
-- **`172.26.188.114` 不是固定地址**，那是 wlan0 从手机热点 `Redmi K70`（网关 `172.26.188.48`）DHCP 拿到的租约，热点一断即失效。不要再把 `.114` 当成 Pi 的地址用；wlan0 的 profile 仍是 `ipv4.method auto`，热点可达时它会与 `172.26.188.0/24` 重叠。
-- **IPv4 与 IPv6 同时不通**时，通常是 Pi 的 NM 因 eth0 反复 DHCP 失败而失活该设备，连链路本地地址一起被清掉（表现为二层完全静默：本机网卡 20 秒零入站报文但链路仍是 1 Gbps Up）。解决办法是本机网卡 disable/enable 制造一次链路抖动，或重插网线/重启 Pi，Pi 会自行恢复。
-- 这条网线是**直连**（笔记本 ↔ Pi），线上没有 DHCP 服务器，因此两端任何一侧指望 DHCP 都不会成功。
+- **直连网线链路不稳定**：本机网卡多次出现 `MediaConnectionState=Disconnected` / `LinkSpeed 0 bps`、收发字节长期为 0，此时强制 1G/100M/10M、关 Realtek 节能特性、复位网卡都无效；换网线/重插后恢复。`0 bps` 属于物理层无信号，不必再从软件侧找。
+- **新 Pi 的 eth0 出厂是 DHCP**：直连线上没有 DHCP 服务器，会一直卡在 `connecting (getting IP configuration)`，此时只有 IPv6 链路本地可用（`ping -6 ff02::1%<ifIndex>` 或邻居表可发现）。已改为静态 IPv4。
+- **`172.26.188.114` 不是固定地址**，那是旧 Pi wlan0 从手机热点 `Redmi K70`（网关 `172.26.188.48`）DHCP 拿到的租约，热点一断即失效。不要再把 `.114` 当成 Pi 的地址用。
+- **IPv4 与 IPv6 同时不通**时，通常是 Pi 的 NM 因 eth0 反复 DHCP 失败而失活该设备，连链路本地地址一起被清掉（表现为二层完全静默：链路仍 1 Gbps Up 但零入站报文）。解决办法是本机网卡 disable/enable 制造一次链路抖动，或重插网线/重启 Pi。
+- 这条网线是**直连**（笔记本 ↔ Pi），两端任何一侧指望 DHCP 都不会成功。
 
 ## 仓库状态
 
-- git 仓库分支 `main`，**尚无任何提交**；`.kilo/worktrees/` 是 Kilo Agent Manager 的状态目录，不要手改。
+- git 仓库分支 `main`，跟踪 `origin/main`；`.kilo/worktrees/` 是 Kilo Agent Manager 的状态目录，不要手改。
