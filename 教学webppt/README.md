@@ -48,3 +48,4 @@ npm run build    # 产物 dist/index.html
 - `摄像头远程显示/` —— 采集 / 传输 / 显示解耦（教学 demo 讲解）
 - `摄像头参数与选型/` —— UVC 协议、硬件参数与型号建议
 - `树莓派连接与部署/` —— 直连网线、tools/pi.py 用法与排障
+- `ROS2与micro-ROS选型/` —— 选型结论与树莓派 Docker 安装 ROS 2 Jazzy

@@ -1,6 +1,6 @@
 # 树莓派竞赛工作区 · 协作备忘
 
-仓库是树莓派（Pi 5）视觉/工程竞赛工作区，目录划分见 `README.md`：`docs/`、`培训/`、`教学webppt/`、`教学demo/`、`算法/`、`模型/`、`训练/`、`数据/`、`tools/`。无构建/测试/lint 工具链，不要去找。
+仓库是树莓派（Pi 5）视觉/工程竞赛工作区，目录划分见 `README.md`：`docs/`、`培训/`、`教学webppt/`、`教学demo/`、`算法/`、`模型/`、`训练/`、`数据/`、`tools/`。Python 侧无构建/测试/lint 工具链，不要去找；只有 `教学webppt/` 用 npm/Vite 构建。
 
 ## 工作流约定（用户要求）
 
@@ -12,8 +12,17 @@
 ## 目录与入口
 
 - 摄像头远程显示：`教学demo/摄像头远程显示/{cam_server.py,cam_view.py}`（原理见 `docs/设计原理流程图.md`，硬件见 `docs/摄像头参数.md`、`docs/摄像头选型.md`）。
+  Pi 端运行前需 `sudo apt-get install -y python3-opencv`，脚本放 `/home/nanzhida/cam_server.py`，后台启动 `nohup python3 cam_server.py > /tmp/cam_server.log 2>&1 &`；本机 `python "教学demo/摄像头远程显示/cam_view.py"`（默认 `172.26.188.116:5000`）。
 - 树莓派连接工具：`tools/pi.py`。
-- 不入库：`__pycache__` / `*.pyc`、`数据/*/` 内容（只保留 `.gitkeep`）。
+- 不入库：`__pycache__` / `*.pyc`、`数据/*/` 内容（只保留 `.gitkeep`）、`node_modules/` 与 `**/presentation/dist/`、`.vscode/`（Live Server 写的端口）。
+
+## 教学 webppt（教学webppt/）
+
+- 一个主题一个独立 Vite 工程：`教学webppt/<主题>/presentation/`；交付成品是 `教学webppt/<主题>/index.html`（单文件，可离线双击）。
+- 构建：`cd 教学webppt/<主题>/presentation` → `npm install` → `npm run build`，再把 `presentation/dist/index.html` 复制为上一级 `index.html`。
+- `presentation/index.html` 是**源码壳不是成品**（引用 `/src/main.jsx`，需 Vite）：它内置守卫，在 Live Server / 双击时会自动跳转到 `../index.html`；改源码用 `npm run dev`（默认 5173）。
+- 目录首页：`教学webppt/index.html`。新增 deck 用 `web-slide-deck` 技能（复制技能里的 `assets/deck-template/`，只改 `src/slides.jsx` 与标题/品牌）。
+- 验证要求：桌面 1366×860 与手机 390×844 逐页断言 `overflowX === 0` 且首行可见；幻灯片外层用 `min-h-full` 而非 `h-full`（否则高页内容顶部会被顶掉）。
 
 ## 目标设备（两台树莓派，都走同一条直连网线）
 
@@ -63,8 +72,17 @@ python tools/pi.py [--sudo] [--host <IP>] [--user <u>] [--pass <p>] [--file <本
 - 改 eth0 会掐断走网线的 SSH（含 IPv6 会话）：优先走 Wi-Fi（新 Pi wlan0 `192.168.31.29`）操作；或把 `nmcli con up` 后台延迟执行（`nohup bash -c 'sleep 3; nmcli con up netplan-eth0' &`）再轮询验证。
 - 改回 DHCP：`python tools/pi.py --sudo "nmcli con mod netplan-eth0 ipv4.method auto ipv4.addresses '' && nmcli con up netplan-eth0"`。
 
+## ROS 2 / Docker（新 Pi）
+
+- 树莓派上装 **ROS 2**（不装 micro-ROS），方案为 Docker + `ros:jazzy-ros-base`；选型与安装记录见 `docs/ROS2与micro-ROS选型.md`。
+- 已就绪：Docker 26.1.5（Debian 源 `docker.io`，已设开机自启，`nanzhida` 在 `docker` 组）；镜像 `ros:jazzy-ros-base`（896 MB）、`ros:jazzy-ros-core`（511 MB）。
+- 进入 ROS 2：Pi 上运行 `~/ros2.sh`，可追加参数如 `~/ros2.sh --device /dev/video0`（摄像头）、`--device /dev/i2c-1 --device /dev/gpiomem`。
+- **拉取镜像走本机 Clash 代理**（Docker Hub 直连不可达）：本机 Clash Verge 需 `allow-lan: true` + `mixed-port 7897`；Pi 侧 dockerd 代理在 `/etc/systemd/system/docker.service.d/http-proxy.conf`，指向 `http://192.168.31.57:7897`（WLAN）或 `http://172.26.188.100:7897`（直连）。**拉镜像前确认本机 Clash 在运行。**
+  `allow-lan: true` 等于对全网卡开放无鉴权代理，共享 WLAN 下建议把 Clash `bind-address` 限定到 `172.26.188.100`，或用完即关。
+
 ## 已踩过的坑
 
+- **Docker 拉大镜像卡在 layer**：直连 `registry-1.docker.io` 超时；`docker.m.daocloud.io` / `docker.1ms.run` / `docker.1panel.live` 等镜像站能拉小镜像（如 `alpine`），但拉 `ros:jazzy-ros-base` 时大 layer 反复卡死（`Download complete` 后长时间不推进，重试可续但极慢）。最终用**本机 Clash 代理**拉取成功，速度快且稳定。`/etc/docker/daemon.json` 现为 `{}`（已不再配 `registry-mirrors`）。
 - **直连网线链路不稳定**：本机网卡多次出现 `MediaConnectionState=Disconnected` / `LinkSpeed 0 bps`、收发字节长期为 0，此时强制 1G/100M/10M、关 Realtek 节能特性、复位网卡都无效；换网线/重插后恢复。`0 bps` 属于物理层无信号，不必再从软件侧找。
 - **新 Pi 的 eth0 出厂是 DHCP**：直连线上没有 DHCP 服务器，会一直卡在 `connecting (getting IP configuration)`，此时只有 IPv6 链路本地可用（`ping -6 ff02::1%<ifIndex>` 或邻居表可发现）。已改为静态 IPv4。
 - **`172.26.188.114` 不是固定地址**，那是旧 Pi wlan0 从手机热点 `Redmi K70`（网关 `172.26.188.48`）DHCP 拿到的租约，热点一断即失效。不要再把 `.114` 当成 Pi 的地址用。

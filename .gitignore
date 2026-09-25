@@ -14,3 +14,6 @@ __pycache__/
 # Node / 前端构建产物
 node_modules/
 **/presentation/dist/
+
+# 编辑器本地配置（Live Server 写的端口等）
+.vscode/

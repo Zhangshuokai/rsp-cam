@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#eef3f9" />
+    <title>ROS 2 与 micro-ROS 选型 · 树莓派安装 ROS 2 Jazzy</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+    <script>
+      // 用 Live Server / 双击打开时，Vite 源码无法直接运行：自动跳到同级成品 ../index.html。
+      // Vite 开发服务器会提供 /@vite/client，因此 npm run dev 下保持不跳转。
+      (function () {
+        if (!document.querySelector('script[src="/src/main.jsx"]')) return;
+        fetch("/@vite/client", { cache: "no-store" })
+          .then(function (r) { if (!r.ok) location.replace("../index.html"); })
+          .catch(function () { location.replace("../index.html"); });
+      })();
+    </script>
+  </body>
+</html>
