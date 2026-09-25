@@ -57,7 +57,7 @@ def main():
     ap.add_argument("--fps", type=int, default=30)
     ap.add_argument("--quality", type=int, default=70)
     ap.add_argument("--port", type=int, default=5000)
-    ap.add_argument("--bind", default="172.26.188.115", help="address to listen on")
+    ap.add_argument("--bind", default="172.26.188.116", help="address to listen on")
     args = ap.parse_args()
 
     cap = open_camera(args)

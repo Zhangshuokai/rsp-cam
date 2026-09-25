@@ -98,7 +98,7 @@ def check(sock, args):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--host", default="172.26.188.115")
+    ap.add_argument("--host", default="172.26.188.116")
     ap.add_argument("--port", type=int, default=5000)
     ap.add_argument("--frames", type=int, default=0, help="stop after N frames, 0 = forever")
     ap.add_argument("--check", action="store_true", help="no window, just verify the stream")
