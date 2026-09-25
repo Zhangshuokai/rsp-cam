@@ -55,7 +55,7 @@ def main():
     ap.add_argument("--width", type=int, default=640)
     ap.add_argument("--height", type=int, default=480)
     ap.add_argument("--fps", type=int, default=30)
-    ap.add_argument("--quality", type=int, default=70)
+    ap.add_argument("--quality", type=int, default=100)
     ap.add_argument("--port", type=int, default=5000)
     ap.add_argument("--bind", default="172.26.188.116", help="address to listen on")
     args = ap.parse_args()
