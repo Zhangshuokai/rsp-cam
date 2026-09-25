@@ -1,0 +1,111 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+  html {
+    font-size: clamp(15px, 0.78vw + 11px, 18px);
+    -webkit-text-size-adjust: 100%;
+    height: 100%;
+    overscroll-behavior: none;
+  }
+  body {
+    @apply bg-canvas text-ink font-sans antialiased;
+    font-feature-settings: "kern" 1, "liga" 1;
+    text-rendering: optimizeLegibility;
+    height: 100%;
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  main {
+    overscroll-behavior: contain;
+  }
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.01em;
+  }
+  .tnum {
+    font-variant-numeric: tabular-nums;
+    font-family: theme("fontFamily.num");
+  }
+  ::selection {
+    background: #bfe1fd;
+    color: #0d1b2a;
+  }
+  :focus-visible {
+    outline: 2px solid #1f72d6;
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+}
+
+@layer components {
+  .surface {
+    @apply bg-paper border border-line rounded-2xl shadow-soft;
+  }
+  .hairline {
+    @apply border-line;
+  }
+  .kicker {
+    @apply flex items-center gap-2 text-[0.82rem] font-bold tracking-[0.18em] text-brand-700 uppercase;
+  }
+  .kicker::before {
+    content: "";
+    @apply block h-[3px] w-8 rounded-full bg-gradient-to-r from-brand-600 to-teal2;
+  }
+}
+
+/* Slide entrance -------------------------------------------------- */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.995);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-slide-in {
+  animation: slideIn 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Scrollbars ------------------------------------------------------ */
+.thin-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.thin-scroll::-webkit-scrollbar-thumb {
+  background: #c8d5e3;
+  border-radius: 999px;
+}
+.thin-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-slide-in {
+    animation: none;
+  }
+  * {
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Print: one slide per page -------------------------------------- */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
+  .print-page {
+    break-after: page;
+    page-break-after: always;
+  }
+}

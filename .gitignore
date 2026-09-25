@@ -10,3 +10,7 @@ __pycache__/
 !数据/processed/.gitkeep
 数据/external/**
 !数据/external/.gitkeep
+
+# Node / 前端构建产物
+node_modules/
+**/presentation/dist/
