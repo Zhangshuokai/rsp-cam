@@ -1,6 +1,6 @@
 # 树莓派连接与操作备忘
 
-本仓库目前只有一个脚本 `pi.py`（无构建/测试/lint 工具链，不要去找）。
+本仓库为树莓派竞赛工作区，目录划分见 `README.md`：`docs/`（文档）、`培训/`、`教学demo/`、`算法/`、`模型/`、`训练/`、`数据/`、`tools/`。无构建/测试/lint 工具链，不要去找。
 
 ## 目标设备（两台树莓派，都走同一条直连网线）
 
@@ -26,14 +26,14 @@
 | 账号 | `nczydx` / `123456789`（sudo 同密码） |
 | 网口 MAC | `2c:cf:67:ce:a9:98`（eth0） |
 
-`pi.py` 默认指向**新 Pi**；连旧 Pi 用 `--host 172.26.188.115 --user nczydx --pass 123456789`。
+`tools/pi.py` 默认指向**新 Pi**；连旧 Pi 用 `--host 172.26.188.115 --user nczydx --pass 123456789`。
 
 本机侧：Realtek 2.5GbE 静态 `172.26.188.100/24`（另有 `192.168.199.100/24`）、DHCP 已关闭、无网关。该网卡 ifIndex 会变（本机曾经是 23，现在 20），用 `Get-NetAdapter` 查。改动需管理员权限（`Start-Process -Verb RunAs`，会弹 UAC）。
 
 ## 执行命令的方式
 
 ```
-python pi.py [--sudo] [--host <IP>] [--user <u>] [--pass <p>] [--file <本地脚本>] '<命令>'
+python tools/pi.py [--sudo] [--host <IP>] [--user <u>] [--pass <p>] [--file <本地脚本>] '<命令>'
 ```
 
 - 选项可任意顺序、可省略；`fe80::...%20` 这种带 scope 的链路本地地址可直接作为 `--host` 传入（Windows `getaddrinfo` 认识 `%<ifIndex>`，paramiko 可用）。
@@ -48,7 +48,7 @@ python pi.py [--sudo] [--host <IP>] [--user <u>] [--pass <p>] [--file <本地脚
 - 新 Pi `netplan-eth0`：`ipv4.method manual` / `172.26.188.116/24` / 无网关 / `never-default yes` / `ipv6.method auto`。
 - 旧 Pi `netplan-eth0`：`172.26.188.115/24`，其余同上。
 - 改 eth0 会掐断走网线的 SSH（含 IPv6 会话）：优先走 Wi-Fi（新 Pi wlan0 `192.168.31.29`）操作；或把 `nmcli con up` 后台延迟执行（`nohup bash -c 'sleep 3; nmcli con up netplan-eth0' &`）再轮询验证。
-- 改回 DHCP：`python pi.py --sudo "nmcli con mod netplan-eth0 ipv4.method auto ipv4.addresses '' && nmcli con up netplan-eth0"`。
+- 改回 DHCP：`python tools/pi.py --sudo "nmcli con mod netplan-eth0 ipv4.method auto ipv4.addresses '' && nmcli con up netplan-eth0"`。
 
 ## 已踩过的坑
 

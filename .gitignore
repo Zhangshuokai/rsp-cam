@@ -1,2 +1,12 @@
 __pycache__/
 *.pyc
+
+# 数据集内容不入库，仅保留占位
+数据/raw/**
+!数据/raw/.gitkeep
+数据/interim/**
+!数据/interim/.gitkeep
+数据/processed/**
+!数据/processed/.gitkeep
+数据/external/**
+!数据/external/.gitkeep
