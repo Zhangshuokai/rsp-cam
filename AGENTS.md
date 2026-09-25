@@ -81,10 +81,14 @@ python tools/pi.py [--sudo] [--host <IP>] [--user <u>] [--pass <p>] [--file <本
 - 进入 ROS 2：Pi 上运行 `~/ros2.sh`，可追加参数如 `~/ros2.sh --device /dev/video0`（摄像头）、`--device /dev/i2c-1 --device /dev/gpiomem`。
 - **拉取镜像走本机 Clash 代理**（Docker Hub 直连不可达）：本机 Clash Verge 需 `allow-lan: true` + `mixed-port 7897`；Pi 侧 dockerd 代理在 `/etc/systemd/system/docker.service.d/http-proxy.conf`，指向 `http://192.168.31.57:7897`（WLAN）或 `http://172.26.188.100:7897`（直连）。**拉镜像前确认本机 Clash 在运行。**
   `allow-lan: true` 等于对全网卡开放无鉴权代理，共享 WLAN 下建议把 Clash `bind-address` 限定到 `172.26.188.100`，或用完即关。
+- **WSL2 侧 ROS 2**：Ubuntu 24.04 已装 `ros-jazzy-ros-base`（apt，走清华 TUNA 镜像 `http://mirrors.tuna.tsinghua.edu.cn/ros2/ubuntu`）；`.wslconfig` 为 `networkingMode=Mirrored` + `hostAddressLoopback`，WSL 直接持有宿主 IP（`172.26.188.100`、`192.168.31.57`），与 Pi 同网段互通；`~/.bashrc` 已 source `setup.bash`。
+- **跨机 ROS 2（WSL2 ↔ Pi）**：两端用同一 `ROS_DOMAIN_ID`（示例 42）+ `ROS_STATIC_PEERS` 指定对端直连 IP，绕开多网卡/组播发现。注意**本机入站 UDP 默认被拦**（WSL Hyper-V 防火墙 `DefaultInboundAction=Block` + Windows 防火墙，两个网卡都是 Public），否则跨机 DDS 发现失败；已加定向规则只放行 `172.26.188.116` 的 UDP 入站（WSL Hyper-V + Windows 两层），改动需管理员（`Start-Process -Verb RunAs`，会弹 UAC）。
+- 验证 demo：`教学demo/ROS2消息通路验证/`（ping/pong，实测 5/5、RTT 1–2 ms）。
 
 ## 已踩过的坑
 
 - **Docker 拉大镜像卡在 layer**：直连 `registry-1.docker.io` 超时；`docker.m.daocloud.io` / `docker.1ms.run` / `docker.1panel.live` 等镜像站能拉小镜像（如 `alpine`），但拉 `ros:jazzy-ros-base` 时大 layer 反复卡死（`Download complete` 后长时间不推进，重试可续但极慢）。最终用**本机 Clash 代理**拉取成功，速度快且稳定。`/etc/docker/daemon.json` 现为 `{}`（已不再配 `registry-mirrors`）。
+- **WSL2 跨机 DDS 发现失败**：根因是本机入站 UDP 被拦——从 Pi `ping 172.26.188.100` 若 100% 丢包即入站被拦（WSL Hyper-V 防火墙默认入站 Block、Windows 防火墙两网卡均 Public）。加定向放行规则（见上节）后 Pi→WSL 的 UDP 才通。
 - **直连网线链路不稳定**：本机网卡多次出现 `MediaConnectionState=Disconnected` / `LinkSpeed 0 bps`、收发字节长期为 0，此时强制 1G/100M/10M、关 Realtek 节能特性、复位网卡都无效；换网线/重插后恢复。`0 bps` 属于物理层无信号，不必再从软件侧找。
 - **新 Pi 的 eth0 出厂是 DHCP**：直连线上没有 DHCP 服务器，会一直卡在 `connecting (getting IP configuration)`，此时只有 IPv6 链路本地可用（`ping -6 ff02::1%<ifIndex>` 或邻居表可发现）。已改为静态 IPv4。
 - **`172.26.188.114` 不是固定地址**，那是旧 Pi wlan0 从手机热点 `Redmi K70`（网关 `172.26.188.48`）DHCP 拿到的租约，热点一断即失效。不要再把 `.114` 当成 Pi 的地址用。

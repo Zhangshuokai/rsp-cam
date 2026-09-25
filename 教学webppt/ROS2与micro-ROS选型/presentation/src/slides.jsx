@@ -325,6 +325,82 @@ const Checklist = () => (
   </Frame>
 );
 
+const Wsl2Ros = () => (
+  <Frame kicker="跨机验证" floor="12" title="WSL2 里再装一份 ROS 2" wide>
+    <Grid cols={2}>
+      <Card title="Ubuntu 24.04 + Jazzy" icon={Server}>
+        WSL2 里 apt 装 ros-jazzy-ros-base，与树莓派同版本，作为独立的第二节点。
+      </Card>
+      <Card title="apt 走 TUNA 镜像" icon={Download}>
+        http://mirrors.tuna.tsinghua.edu.cn/ros2/ubuntu，比官方源快很多。
+      </Card>
+      <Card title="镜像网络模式" icon={Network}>
+        .wslconfig 设 networkingMode=Mirrored，WSL 直接持有宿主 IP 172.26.188.100。
+      </Card>
+      <Card title="配置即用" icon={CheckCircle2} tone="good">
+        ~/.bashrc 已 source setup.bash；ros2 直接可用，与 Pi 直连同网段。
+      </Card>
+    </Grid>
+  </Frame>
+);
+
+const CrossDds = () => (
+  <Frame kicker="跨机验证" floor="13" title="跨机 DDS 的两个前提" wide>
+    <div className="space-y-5">
+      <Grid cols={2}>
+        <Card title="同一 ROS_DOMAIN_ID" icon={Layers}>
+          两端都设 42，与默认域隔离，避免和别的节点串在一起。
+        </Card>
+        <Card title="ROS_STATIC_PEERS 指对端" icon={Cable}>
+          WSL → 172.26.188.116，Pi → 172.26.188.100，绕开多网卡 / 组播发现的坑。
+        </Card>
+        <Card title="入站 UDP 默认被拦" icon={AlertTriangle} tone="warn">
+          WSL Hyper-V 防火墙入站 Block + Windows 防火墙网卡 Public；Pi→WSL 连 ping 都 100% 丢。
+        </Card>
+        <Card title="定向放行（需管理员）" icon={ShieldCheck} tone="good">
+          只放行 172.26.188.116 的 UDP 入站：Hyper-V 规则 + Windows 规则各一条。
+        </Card>
+      </Grid>
+      <Quote>判据：从 Pi ping 172.26.188.100 若 100% 丢包，就是本机入站被拦。</Quote>
+    </div>
+  </Frame>
+);
+
+const PingPong = () => (
+  <Frame kicker="跨机验证" floor="14" title="ping-pong 实测" wide>
+    <Grid cols={2}>
+      <div className="space-y-4">
+        <Card title="分工" icon={Terminal}>
+          ping.py 跑 WSL2；pong.py 跑树莓派容器（--network host --hostname pi-zhangsk）。
+        </Card>
+        <Card title="话题" icon={Network}>
+          /kilo_ping（WSL→Pi）与 /kilo_pong（Pi→WSL），std_msgs/String。
+        </Card>
+        <Card title="结果 5/5" icon={CheckCircle2} tone="good">
+          RTT 1–2 ms，avg 1.3 ms；回包带 @pi-zhangsk，证明经过树莓派 ROS 2 图。
+        </Card>
+        <Card title="复现" icon={BookOpen}>
+          脚本与防火墙规则见 教学demo/ROS2消息通路验证/。
+        </Card>
+      </div>
+      <Code>
+        ROS_DOMAIN_ID=42 ROS_STATIC_PEERS=172.26.188.116 \
+        <br />
+        &nbsp;&nbsp;python3 ping.py 5 3
+        <br />
+        <br />
+        peer found, starting ping-pong
+        <br />
+        5/5 rounds answered
+        <br />
+        min=1.0 ms&nbsp;&nbsp;max=2.0 ms&nbsp;&nbsp;avg=1.3 ms
+        <br />
+        pong='...|pong#1@pi-zhangsk'
+      </Code>
+    </Grid>
+  </Frame>
+);
+
 export const slides = [
   { nav: "封面", group: "概览", el: <Cover /> },
   { nav: "一句话区分", group: "概览", el: <Difference /> },
@@ -338,4 +414,7 @@ export const slides = [
   { nav: "验证", group: "验证", el: <Verify /> },
   { nav: "日常使用", group: "使用", el: <Daily /> },
   { nav: "快速清单", group: "收尾", el: <Checklist /> },
+  { nav: "WSL2 侧 ROS 2", group: "跨机验证", el: <Wsl2Ros /> },
+  { nav: "跨机 DDS 前置", group: "跨机验证", el: <CrossDds /> },
+  { nav: "ping-pong 实测", group: "跨机验证", el: <PingPong /> },
 ];

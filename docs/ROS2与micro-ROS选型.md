@@ -194,7 +194,19 @@ flowchart LR
 
 对应官方支持硬件：ESP32、Arduino Portenta H7、树莓派 Pico（RP2040）、Teensy 4.x、STM32 系列、Renesas RA6M5 等。
 
-## 七、来源
+## 七、跨机验证：WSL2 ↔ 树莓派 ping-pong
+
+本机在 WSL2 里装了第二份 ROS 2（Ubuntu 24.04 + `ros-jazzy-ros-base`，apt 走清华 TUNA 镜像），
+与树莓派容器内的 ROS 2 做 ping-pong 往返，用来验证树莓派 ROS 2 可用、跨主机消息通路双向可达。
+
+- WSL2：`.wslconfig` 用 `networkingMode=Mirrored`，直接持有宿主 IP（`172.26.188.100`），与 Pi 直连同网段。
+- 两端同一 `ROS_DOMAIN_ID`（示例 42），并用 `ROS_STATIC_PEERS` 指定对端直连 IP，绕开多网卡/组播发现。
+- 关键前置：**本机入站 UDP 默认被拦**（WSL Hyper-V 防火墙 `DefaultInboundAction=Block` + Windows 防火墙两网卡均 Public）；已加**定向**规则只放行 `172.26.188.116` 的 UDP 入站（需管理员/UAC）。
+- 结果：**5/5** 轮往返，RTT **1–2 ms**，回包带 `@pi-zhangsk`。
+
+脚本、防火墙规则与复现命令见 `教学demo/ROS2消息通路验证/`。
+
+## 八、来源
 
 - micro-ROS 官站与功能架构：<https://micro.vulcanexus.org/>、<https://micro.vulcanexus.org/docs/overview/features/>
 - micro-ROS 支持硬件列表（含 Pi Pico，注明为 MCU）：<https://micro.vulcanexus.org/docs/overview/hardware/>
