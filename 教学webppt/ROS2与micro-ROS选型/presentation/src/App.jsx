@@ -243,7 +243,7 @@ export default function App() {
             </div>
             <button
               onClick={() => setSidebar(false)}
-              title="收起目录 ["
+              title="收起大纲 ["
               className="ml-auto grid h-8 w-8 place-items-center rounded-lg text-muted hover:bg-canvas hover:text-ink"
             >
               <PanelLeftClose size={17} />
@@ -298,9 +298,17 @@ export default function App() {
         {/* top bar */}
         {!immersive && (
         <header className="no-print flex items-center gap-2 px-4 pb-2 pt-3 md:gap-3 md:px-8 md:pt-4">
+          <a
+            href="../index.html"
+            title="返回教学 webppt 目录"
+            className="flex h-9 flex-none items-center gap-1.5 rounded-lg border border-line bg-paper px-2.5 text-[0.8rem] font-semibold text-muted transition hover:border-brand-400 hover:text-brand-700"
+          >
+            <ChevronLeft size={17} />
+            <span className="hidden sm:inline">目录</span>
+          </a>
           <button
             onClick={() => setSidebar(true)}
-            title="目录"
+            title="大纲"
             className="grid h-9 w-9 flex-none place-items-center rounded-lg border border-line bg-paper text-muted hover:text-ink md:hidden"
           >
             <Menu size={17} />
@@ -308,7 +316,7 @@ export default function App() {
           {!sidebar && (
             <button
               onClick={() => setSidebar(true)}
-              title="展开目录 ["
+              title="展开大纲 ["
               className="hidden h-9 w-9 place-items-center rounded-lg border border-line bg-paper text-muted hover:text-ink md:grid"
             >
               <PanelLeftOpen size={17} />

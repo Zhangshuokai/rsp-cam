@@ -18,6 +18,8 @@
 - 一个主题一个子目录：`教学webppt/<主题>/`，主题与对应提交 / 目录同名。
 - 交付物是 `index.html`（单文件，CSS/JS 全部内联），可直接双击或拷给别人。
 - `node_modules/` 与 `presentation/dist/` 已在根 `.gitignore` 忽略，仓库只保留源码与单文件 HTML。
+- 统一导航：每个主题成品顶栏都有固定的「← 目录」链接（`presentation/src/App.jsx` 顶栏的 `<a href="../index.html">`），回到本目录首页。
+- 改了 `App.jsx` / 组件后必须 `npm run build` 并覆盖成品 `index.html`，否则成品与源码不一致。
 
 ## 构建
 
