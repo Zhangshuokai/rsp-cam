@@ -6,6 +6,7 @@
 
 ```
 教学webppt/
+├── index.html           # 目录首页（链到各主题成品）
 ├── <主题>/
 │   ├── index.html       # 交付：单文件幻灯片（双击即可打开）
 │   └── presentation/    # 源码（Vite + React + Tailwind）
@@ -29,8 +30,21 @@ npm run build    # 产物 dist/index.html
 
 构建后把 `presentation/dist/index.html` 复制为同主题目录下的 `index.html`。
 
+## 如何打开（重要）
+
+- **看成品**：直接打开 `教学webppt/<主题>/index.html`（单文件、离线可播；`←` `→` 翻页、`O` 总览、`F` 全屏）。
+  该文件与 `教学webppt/index.html`（目录首页）都是自包含 HTML，无任何外部依赖。
+- **不要**把 `presentation/index.html` 当成品打开——那是 Vite 开发壳（引用 `/src/main.jsx`），只在 `npm run dev` 下有效。
+- **VS Code Live Server**：右键**成品** `教学webppt/<主题>/index.html` → Open with Live Server，可用。
+  源码壳 `presentation/index.html` 已内置跳转：在 Live Server / 双击打开时会自动跳到成品 `../index.html`（不再白屏）；
+  `npm run dev` 下不跳转，正常开发。要在源码上迭代：`cd presentation && npm run dev`。
+- **不要**对**文件夹**路径用「在浏览器打开」：相对路径会被当成网址（会出现 `http://xn--webppt-.../` 这类 punycode 报错）。要打开具体的 `.html` 文件。
+- 若插件只认 URL，可在本目录起静态服务后走 ASCII 主机名：
+  `python -m http.server 8080` → 打开 `http://127.0.0.1:8080/index.html`。
+
 ## 已有主题
 
 - `项目结构整理/` —— 分类目录、工程规范与协作约定
 - `摄像头远程显示/` —— 采集 / 传输 / 显示解耦（教学 demo 讲解）
 - `摄像头参数与选型/` —— UVC 协议、硬件参数与型号建议
+- `树莓派连接与部署/` —— 直连网线、tools/pi.py 用法与排障

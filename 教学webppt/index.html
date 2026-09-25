@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#eef3f9" />
+    <title>线下教学 webppt · 目录</title>
+    <style>
+      :root {
+        --ink: #0f172a;
+        --muted: #64748b;
+        --line: #e2e8f0;
+        --brand: #0d9488;
+        --paper: #f6f9fc;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: #eef3f9;
+        color: var(--ink);
+        font-family: "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB",
+          "Source Han Sans SC", "Noto Sans CJK SC", "Segoe UI", system-ui, sans-serif;
+        font-size: clamp(15px, 0.78vw + 11px, 18px);
+        line-height: 1.6;
+      }
+      main { max-width: 62rem; margin: 0 auto; padding: 3rem 1.25rem 4rem; }
+      .badge {
+        display: inline-block;
+        border: 1px solid #99f6e4;
+        background: #f0fdfa;
+        color: #0f766e;
+        border-radius: 999px;
+        padding: 0.25rem 0.85rem;
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+      }
+      h1 { font-size: clamp(1.6rem, 1.2vw + 1.2rem, 2.6rem); margin: 1rem 0 0.5rem; }
+      .lead { color: var(--muted); margin: 0 0 2rem; }
+      .grid { display: grid; gap: 1rem; grid-template-columns: 1fr; }
+      @media (min-width: 720px) { .grid { grid-template-columns: 1fr 1fr; } }
+      a.card {
+        display: block;
+        text-decoration: none;
+        color: inherit;
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 1rem;
+        padding: 1.25rem 1.35rem;
+        transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+      }
+      a.card:hover { border-color: #5eead4; transform: translateY(-2px); box-shadow: 0 10px 24px -12px rgba(15, 23, 42, 0.28); }
+      a.card h2 { margin: 0 0 0.35rem; font-size: 1.15rem; }
+      a.card p { margin: 0; color: var(--muted); font-size: 0.92rem; }
+      a.card code { background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 0.05rem 0.35rem; font-size: 0.82em; }
+      .tips {
+        margin-top: 2rem;
+        border-left: 4px solid var(--brand);
+        padding: 0.25rem 0 0.25rem 1rem;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+      .tips b { color: var(--ink); }
+    </style>
+  </head>
+  <body>
+    <main>
+      <span class="badge">线下教学 · WEB 幻灯片</span>
+      <h1>教学 webppt 目录</h1>
+      <p class="lead">点击卡片打开对应教程。每个主题都是单文件 HTML，可离线播放。</p>
+
+      <div class="grid">
+        <a class="card" href="./项目结构整理/index.html">
+          <h2>项目结构整理</h2>
+          <p>分类目录、工程规范与协作约定</p>
+        </a>
+        <a class="card" href="./摄像头远程显示/index.html">
+          <h2>摄像头远程显示</h2>
+          <p>采集 / 传输 / 显示解耦（教学 demo 讲解）</p>
+        </a>
+        <a class="card" href="./摄像头参数与选型/index.html">
+          <h2>摄像头参数与选型</h2>
+          <p>UVC 协议、硬件参数与型号建议</p>
+        </a>
+        <a class="card" href="./树莓派连接与部署/index.html">
+          <h2>树莓派连接与部署</h2>
+          <p>直连网线、tools/pi.py 用法与排障</p>
+        </a>
+      </div>
+
+      <p class="tips">
+        <b>提示：</b>打开的是各主题目录下的 <code>index.html</code>（成品单文件），
+        不是 <code>presentation/index.html</code>（那是 Vite 开发壳，需要 <code>npm run dev</code>）。
+        播放时用 <code>←</code> <code>→</code> 翻页、<code>O</code> 总览、<code>F</code> 全屏。
+      </p>
+    </main>
+  </body>
+</html>
