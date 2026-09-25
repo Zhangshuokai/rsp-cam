@@ -5,6 +5,7 @@ Reconnects automatically when the stream drops. Press q or Esc to quit.
 import argparse
 import socket
 import struct
+import sys
 import time
 
 import cv2
@@ -13,6 +14,21 @@ import numpy as np
 WINDOW = "Raspberry Pi camera"
 MAX_FRAME = 8 << 20
 IDLE_TIMEOUT = 10
+
+
+def enable_dpi_awareness():
+    """Keep the window pixel-exact on HiDPI screens (Windows bitmap-scales unaware apps)."""
+    if sys.platform != "win32":
+        return
+    try:
+        import ctypes
+
+        ctypes.windll.shcore.SetProcessDpiAwareness(1)
+    except Exception:
+        try:
+            ctypes.windll.user32.SetProcessDPIAware()
+        except Exception:
+            pass
 
 
 def recv_exact(sock, size):
@@ -44,6 +60,7 @@ def recv_frame(sock):
 def display(sock, args):
     frames = 0
     started = time.time()
+    window_ready = False
     while True:
         result = recv_frame(sock)
         if result is None:
@@ -51,16 +68,20 @@ def display(sock, args):
         frame = result[0]
         if frame is None:
             continue
+        if args.scale != 1.0:
+            frame = cv2.resize(
+                frame, None, fx=args.scale, fy=args.scale, interpolation=cv2.INTER_CUBIC
+            )
+        if not window_ready:
+            cv2.namedWindow(WINDOW, cv2.WINDOW_AUTOSIZE)
+            window_ready = True
         frames += 1
-        cv2.putText(
-            frame,
-            "%.1f fps" % (frames / (time.time() - started)),
-            (10, 30),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.8,
-            (0, 255, 0),
-            2,
-        )
+        label = "%.1f fps" % (frames / (time.time() - started))
+        scale = max(0.6, frame.shape[1] / 1600.0)
+        thickness = max(1, int(round(scale * 2)))
+        org = (10, int(round(30 * scale)))
+        cv2.putText(frame, label, org, cv2.FONT_HERSHEY_SIMPLEX, scale, (0, 0, 0), thickness + 2)
+        cv2.putText(frame, label, org, cv2.FONT_HERSHEY_SIMPLEX, scale, (0, 255, 0), thickness)
         cv2.imshow(WINDOW, frame)
         if cv2.waitKey(1) & 0xFF in (27, ord("q")):
             return False
@@ -97,10 +118,12 @@ def check(sock, args):
 
 
 def main():
+    enable_dpi_awareness()
     ap = argparse.ArgumentParser()
-    ap.add_argument("--host", default="172.26.188.115")
+    ap.add_argument("--host", default="172.26.188.116")
     ap.add_argument("--port", type=int, default=5000)
     ap.add_argument("--frames", type=int, default=0, help="stop after N frames, 0 = forever")
+    ap.add_argument("--scale", type=float, default=1.0, help="display zoom factor, 1.0 = pixel-exact")
     ap.add_argument("--check", action="store_true", help="no window, just verify the stream")
     args = ap.parse_args()
 
