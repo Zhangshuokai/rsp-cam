@@ -1,6 +1,6 @@
 # 树莓派竞赛工作区 · 协作备忘
 
-仓库是树莓派（Pi 5）视觉/工程竞赛工作区，目录划分见 `README.md`：`docs/`、`培训/`、`教学webppt/`、`教学demo/`、`算法/`、`模型/`、`训练/`、`数据/`、`tools/`。Python 侧无构建/测试/lint 工具链，不要去找；只有 `教学webppt/` 用 npm/Vite 构建。
+仓库是树莓派（Pi 5）视觉/工程竞赛工作区，目录划分见 `README.md`：`docs/`、`培训/`、`教学webppt/`、`教学demo/`、`算法/`、`模型/`、`训练/`、`数据/`、`tools/`。Python 侧无构建/测试/lint 工具链，不要去找；只有 `教学webppt/` 用 npm/Vite 构建。每个分类目录都有 `README.md` 说明用途与命名，新增内容先看对应 README（如 `数据/README.md`、`模型/README.md`）。
 
 ## 工作流约定（用户要求）
 
@@ -23,6 +23,7 @@
 - 构建：`cd 教学webppt/<主题>/presentation` → `npm install` → `npm run build`，再把 `presentation/dist/index.html` 复制为上一级 `index.html`。
 - `presentation/index.html` 是**源码壳不是成品**（引用 `/src/main.jsx`，需 Vite）：它内置守卫，在 Live Server / 双击时会自动跳转到 `../index.html`；改源码用 `npm run dev`（默认 5173）。
 - 目录首页：`教学webppt/index.html`。新增 deck 用 `web-slide-deck` 技能（复制技能里的 `assets/deck-template/`，只改 `src/slides.jsx` 与标题/品牌）。
+- **编写守则**：组织 / 语言 / 顺序按 `教学webppt/编写守则.md`（依据多媒体学习认知理论与教学 PPT 规范）。全局主题顺序「工程与协作 → 环境与设备 → 感知 → 通信 → 执行」；单 deck 页序「封面 → 结论先行 → …… → 收尾」，收尾恒在最后。新增主题插到规定位置并同步 `index.html` 与 `README.md`；改顺序后必须重建成品。
 - **统一导航**：每个 deck 成品顶栏都有固定的「← 目录」链接（源码 `presentation/src/App.jsx` 顶栏的 `<a href="../index.html">`），回到 `教学webppt/index.html`；deck 内的分页侧栏称「大纲」，别和「目录」混称。
 - 各 deck 的 `components.jsx` 完全一致，`App.jsx` 仅品牌文案不同；改导航/交互要**所有 deck** 同步改并全部重建（`npm run build` 后把 `dist/index.html` 覆盖成品），否则成品与源码漂移。构建后不要留下「源码已改、成品未刷新」的状态。
 - 验证要求：桌面 1366×860 与手机 390×844 逐页断言 `overflowX === 0` 且首行可见；幻灯片外层用 `min-h-full` 而非 `h-full`（否则高页内容顶部会被顶掉）。
@@ -62,7 +63,7 @@ python tools/pi.py [--sudo] [--host <IP>] [--user <u>] [--pass <p>] [--file <本
 ```
 
 - 选项可任意顺序、可省略；`fe80::...%20` 这种带 scope 的链路本地地址可直接作为 `--host` 传入（Windows `getaddrinfo` 认识 `%<ifIndex>`，paramiko 可用）。
-- 底层用 paramiko（`python -m pip install paramiko` 安装到用户级 Python 3.14）；Windows 自带 OpenSSH 没有 sshpass，所以**不要**直接调 `ssh`，密码无法非交互传入。
+- 底层用 paramiko（已装在用户级 Python 3.14：`C:\Users\z\AppData\Roaming\Python\Python314\site-packages`）：务必用 PATH 上同一个 `python`（3.14.6）运行 `tools/pi.py`，换解释器会 `ModuleNotFoundError: paramiko`。Windows 自带 OpenSSH 没有 sshpass，所以**不要**直接调 `ssh`，密码无法非交互传入。
 - 复杂命令、含引号/括号/管道的命令一律写成 **纯 ASCII** 的 `.sh`，用 `--file` 上传到 `/tmp/kilo-run.sh` 执行。PowerShell → paramiko → bash 三层引号极易被破坏（会报 `unexpected token` / `bash: - : invalid option`）。
 - PowerShell 5.1：不支持 `&&`；`.ps1` 若含中文且为 UTF-8 无 BOM 会被按 ANSI 读取而乱码，改用 `Get-NetAdapter | Where-Object { $_.ifIndex -eq 20 }` 管道传对象，不要用网卡中文名。
 - `Restart-NetAdapter` / `Disable-NetAdapter` / `Enable-NetAdapter` 都不接受 `-InterfaceIndex`，必须走上面的管道；`Get-NetAdapterStatistics` / `Get-NetAdapterAdvancedProperty` 同理（只接受 `-Name`，或用管道）。

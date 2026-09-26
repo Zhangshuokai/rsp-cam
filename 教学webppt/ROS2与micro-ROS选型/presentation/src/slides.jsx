@@ -413,8 +413,8 @@ export const slides = [
   { nav: "安装与拉取", group: "部署", el: <Install /> },
   { nav: "验证", group: "验证", el: <Verify /> },
   { nav: "日常使用", group: "使用", el: <Daily /> },
-  { nav: "快速清单", group: "收尾", el: <Checklist /> },
   { nav: "WSL2 侧 ROS 2", group: "跨机验证", el: <Wsl2Ros /> },
   { nav: "跨机 DDS 前置", group: "跨机验证", el: <CrossDds /> },
   { nav: "ping-pong 实测", group: "跨机验证", el: <PingPong /> },
+  { nav: "快速清单", group: "收尾", el: <Checklist /> },
 ];
