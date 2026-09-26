@@ -51,3 +51,4 @@ npm run build    # 产物 dist/index.html
 - `摄像头参数与选型/` —— UVC 协议、硬件参数与型号建议
 - `树莓派连接与部署/` —— 直连网线、tools/pi.py 用法与排障
 - `ROS2与micro-ROS选型/` —— 选型结论、树莓派 Docker 安装 ROS 2 Jazzy、WSL2 跨机 ping-pong 验证
+- `ESP32-S3电机驱动板/` —— 奇果派 S3 机器人控制板：硬件与接线、Arduino/Mixly 开发、遥控与物联网、micro-ROS 对接
