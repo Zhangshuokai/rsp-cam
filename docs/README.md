@@ -8,6 +8,7 @@
 - `摄像头参数.md` —— 新 Pi `zhangsk` 所用 USB 摄像头的硬件能力、可调控件与实测性能。
 - `摄像头选型.md` —— UVC/CSI 协议对比与摄像头选型建议（含型号参考）。
 - `ROS2与micro-ROS选型.md` —— 树莓派上 ROS 2 与 micro-ROS 的选型结论，以及在 `zhangsk` 上用 Docker 安装 ROS 2 Jazzy 的完整记录（含代理加速）。
+- `ESP32-S3电机驱动板资料.md` —— 奇果派 S3 机器人控制板（ESP32-S3 电机驱动板）的硬件规格、接线、Arduino/Mixly/PlatformIO 开发、遥控器、物联网与 micro-ROS 对接资料汇总（来源 7gp.cn 专题）。
 
 ## 约定
 

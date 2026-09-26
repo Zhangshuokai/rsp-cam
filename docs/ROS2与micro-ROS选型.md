@@ -194,6 +194,8 @@ flowchart LR
 
 对应官方支持硬件：ESP32、Arduino Portenta H7、树莓派 Pico（RP2040）、Teensy 4.x、STM32 系列、Renesas RA6M5 等。
 
+> 手头这块 **奇果派 S3 机器人控制板（ESP32-S3 电机驱动板）** 的硬件、编程（Arduino / Mixly / PlatformIO）、遥控器与官方 micro-ROS 双向通讯示例，已整理到 `ESP32-S3电机驱动板资料.md`；要在本项目的 Docker 版 ROS 2 上复用，见该文第六节的对接要点。
+
 ## 七、跨机验证：WSL2 ↔ 树莓派 ping-pong
 
 本机在 WSL2 里装了第二份 ROS 2（Ubuntu 24.04 + `ros-jazzy-ros-base`，apt 走清华 TUNA 镜像），
