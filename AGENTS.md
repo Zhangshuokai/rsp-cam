@@ -28,7 +28,7 @@
 - **统一导航**：每个 deck 成品顶栏都有固定的「← 目录」链接（源码 `presentation/src/App.jsx` 顶栏的 `<a href="../index.html">`），回到 `教学webppt/index.html`；deck 内的分页侧栏称「大纲」，别和「目录」混称。
 - 各 deck 的 `components.jsx` 完全一致，`App.jsx` 仅品牌文案不同；改导航/交互要**所有 deck** 同步改并全部重建（`npm run build` 后把 `dist/index.html` 覆盖成品），否则成品与源码漂移。构建后不要留下「源码已改、成品未刷新」的状态。
 - **详情默认折叠**：完整步骤 / 全量命令放共用组件 `Steps`（`<details>`，摘要写「展开：…」，默认收起）＋ `Pre`（保留换行缩进的代码块）；正文只留要点。二者定义在 `components.jsx`，不要在 `slides.jsx` 里另写一套；规则见 `教学webppt/编写守则.md`。
-- **附件本地化**：deck 的可下载文件（PDF / zip）放 `<主题>/files/`，deck 里用相对链接 `./files/…` 引用，随目录一起分发，**不内联**进单文件；对应 `docs/` 里的下载链接同步改成本地路径。
+- **附件本地化**：deck 的可下载文件（PDF / zip）放 `<主题>/files/`，deck 里用相对链接 `./files/…` 引用，随目录一起分发，**不内联**进单文件；对应 `docs/` 里的下载链接同步改成本地路径。图片放 `presentation/src/assets/` 并用 `import` 引用，构建会内联进单文件（`assetsInlineLimit` 已调大）。相对链接只在**成品目录**下有效，`npm run dev` 下指不到 `files/`。
 - 验证要求：桌面 1366×860 与手机 390×844 逐页断言 `overflowX === 0` 且首行可见；幻灯片外层用 `min-h-full` 而非 `h-full`（否则高页内容顶部会被顶掉）。
 
 ## 图表约定（全仓库）
@@ -75,7 +75,7 @@ python tools/pi.py [--sudo] [--host <IP>] [--user <u>] [--pass <p>] [--file <本
 - 选项可任意顺序、可省略；`fe80::...%20` 这种带 scope 的链路本地地址可直接作为 `--host` 传入（Windows `getaddrinfo` 认识 `%<ifIndex>`，paramiko 可用）。
 - 底层用 paramiko（已装在用户级 Python 3.14：`C:\Users\z\AppData\Roaming\Python\Python314\site-packages`）：务必用 PATH 上同一个 `python`（3.14.6）运行 `tools/pi.py`，换解释器会 `ModuleNotFoundError: paramiko`。Windows 自带 OpenSSH 没有 sshpass，所以**不要**直接调 `ssh`，密码无法非交互传入。
 - 复杂命令、含引号/括号/管道的命令一律写成 **纯 ASCII** 的 `.sh`，用 `--file` 上传到 `/tmp/kilo-run.sh` 执行。PowerShell → paramiko → bash 三层引号极易被破坏（会报 `unexpected token` / `bash: - : invalid option`）。
-- PowerShell 5.1：不支持 `&&`；`.ps1` 若含中文且为 UTF-8 无 BOM 会被按 ANSI 读取而乱码，改用 `Get-NetAdapter | Where-Object { $_.ifIndex -eq 20 }` 管道传对象，不要用网卡中文名。
+- PowerShell 5.1：不支持 `&&`；**不要把中文路径写进 `.ps1` 文件**——UTF-8 无 BOM 的脚本会被按 ANSI 读取，生成乱码目录、文件落错位置（本仓库踩过：`教学webppt` 变 `鏁欏webppt`）。中文路径改用 **bash 内联命令**（工具按 UTF-8 传入），或写成带 BOM 的脚本。网卡操作用 `Get-NetAdapter | Where-Object { $_.ifIndex -eq 20 }` 管道传对象，不要用中文网卡名。
 - `Restart-NetAdapter` / `Disable-NetAdapter` / `Enable-NetAdapter` 都不接受 `-InterfaceIndex`，必须走上面的管道；`Get-NetAdapterStatistics` / `Get-NetAdapterAdvancedProperty` 同理（只接受 `-Name`，或用管道）。
 - 临时脚本放 `C:\Users\z\AppData\Local\Temp\kilo\`。
 
@@ -106,6 +106,7 @@ python tools/pi.py [--sudo] [--host <IP>] [--user <u>] [--pass <p>] [--file <本
 - **`172.26.188.114` 不是固定地址**，那是旧 Pi wlan0 从手机热点 `Redmi K70`（网关 `172.26.188.48`）DHCP 拿到的租约，热点一断即失效。不要再把 `.114` 当成 Pi 的地址用。
 - **IPv4 与 IPv6 同时不通**时，通常是 Pi 的 NM 因 eth0 反复 DHCP 失败而失活该设备，连链路本地地址一起被清掉（表现为二层完全静默：链路仍 1 Gbps Up 但零入站报文）。解决办法是本机网卡 disable/enable 制造一次链路抖动，或重插网线/重启 Pi。
 - 这条网线是**直连**（笔记本 ↔ Pi），两端任何一侧指望 DHCP 都不会成功。
+- **资料站可直连、Docker Hub 不行**：抓取奇果派（`www.7gp.cn` / `doc.7gp.cn`）的图片与文件可直接 `Invoke-WebRequest`，无需 Clash 代理；只有 Docker Hub 才需要走代理（见上）。个别直链会 404（如 `doc.7gp.cn/download/FlashingTool.zip`），先按官网文章页核链接再判失败。
 
 ## 仓库状态
 
