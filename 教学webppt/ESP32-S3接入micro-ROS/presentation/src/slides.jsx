@@ -511,7 +511,8 @@ const Params = () => (
   <Frame kicker="编程" floor="09" title="连接参数要填对">
     <Grid cols={2}>
       <Card title="Wi-Fi SSID / 密码" icon={Wifi} tone="warn">
-        ESP32-S3 只支持 2.4 GHz；5 GHz 的 SSID 连不上。
+        ESP32-S3 只支持 2.4 GHz。同名双频（2.4G/5G 一个名字）没问题——板子会自己连{" "}
+        2.4 GHz 那条 BSS。
       </Card>
       <Card title="Agent IP" icon={Network}>
         填 Pi 在同一网段的地址（如 Wi-Fi 的 192.168.31.29），不是 127.0.0.1。
@@ -523,7 +524,12 @@ const Params = () => (
         Pi 侧 Agent 与 teleop / 监听节点用同一个域（如 42）。
       </Card>
     </Grid>
-    <div className="mt-6">
+    <div className="mt-6 space-y-3">
+      <p className="text-[0.88rem] leading-relaxed text-muted md:text-[0.95rem]">
+        密码这类私密值别写进仓库：放到 <code>include/secrets.h</code>（已在{" "}
+        <code>.gitignore</code> 里，模板 <code>secrets.example.h</code>），主固件里用{" "}
+        <code>#ifndef</code> 兜底占位值。
+      </p>
       <Quote>这些参数错一个，Agent 日志里就看不到 S3 连上来。</Quote>
     </div>
   </Frame>
