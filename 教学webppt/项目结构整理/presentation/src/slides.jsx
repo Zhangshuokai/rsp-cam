@@ -86,19 +86,20 @@ const Tree = () => (
       ]}
     />
     <div className="mt-4">
-      <Steps title="展开：完整目录树（含二级）">
-        <Pre>{`rsp/
-├── AGENTS.md          # 协作 / 环境备忘（树莓派连接与操作）
-├── README.md          # 项目总览与目录约定
-├── docs/              # 技术文档：设计原理、硬件参数、选型
-├── 培训/              # 培训资料与赛项规则解读
-├── 教学demo/          # 可直接运行的教学演示（每个 demo 一子目录）
-├── 教学webppt/        # 线下教学 web 幻灯片（每个主题一子目录）
-├── 算法/              # 视觉 / 控制算法实现
-├── 模型/              # 模型权重与产物
-├── 训练/              # 模型训练脚本、配置与数据说明
-├── 数据/              # 数据集（raw / interim / processed / external）
-└── tools/             # 工程工具（树莓派连接脚本）`}</Pre>
+      <Steps title="展开：完整目录结构（含二级）">
+        <ul className="space-y-1.5 font-mono text-[0.8rem] leading-relaxed">
+          <li><span className="font-bold text-ink">AGENTS.md</span><span className="text-muted"> — 协作 / 环境备忘（树莓派连接与操作）</span></li>
+          <li><span className="font-bold text-ink">README.md</span><span className="text-muted"> — 项目总览与目录约定</span></li>
+          <li><span className="font-bold text-ink">docs/</span><span className="text-muted"> — 技术文档：设计原理、硬件参数、选型</span></li>
+          <li><span className="font-bold text-ink">培训/</span><span className="text-muted"> — 培训资料与赛项规则解读</span></li>
+          <li><span className="font-bold text-ink">教学demo/</span><span className="text-muted"> — 可直接运行的教学演示（每个 demo 一子目录）</span></li>
+          <li><span className="font-bold text-ink">教学webppt/</span><span className="text-muted"> — 线下教学 web 幻灯片（每个主题一子目录）</span></li>
+          <li><span className="font-bold text-ink">算法/</span><span className="text-muted"> — 视觉 / 控制算法实现</span></li>
+          <li><span className="font-bold text-ink">模型/</span><span className="text-muted"> — 模型权重与产物</span></li>
+          <li><span className="font-bold text-ink">训练/</span><span className="text-muted"> — 模型训练脚本、配置与数据说明</span></li>
+          <li><span className="font-bold text-ink">数据/</span><span className="text-muted"> — 数据集（raw / interim / processed / external）</span></li>
+          <li><span className="font-bold text-ink">tools/</span><span className="text-muted"> — 工程工具（树莓派连接脚本）</span></li>
+        </ul>
       </Steps>
     </div>
   </Frame>

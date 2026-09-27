@@ -6,15 +6,12 @@
 
 ## 目录
 
-```
-教学webppt/
-├── index.html           # 目录首页（链到各主题成品）
-├── 编写守则.md           # 组织 / 语言 / 顺序规范
-├── <主题>/
-│   ├── index.html       # 交付：单文件幻灯片（双击即可打开）
-│   └── presentation/    # 源码（Vite + React + Tailwind）
-└── README.md
-```
+- `index.html` — 目录首页（固定导航入口，链到各主题成品）
+- `编写守则.md` — 组织 / 语言 / 顺序规范
+- `README.md` — 本文件：使用与构建说明
+- `<主题>/`
+  - `index.html` — 交付成品：单文件幻灯片（双击即可打开）
+  - `presentation/` — 源码（Vite + React + Tailwind）
 
 ## 约定
 

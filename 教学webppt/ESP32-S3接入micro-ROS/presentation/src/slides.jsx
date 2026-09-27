@@ -30,6 +30,42 @@ const Code = ({ children }) => (
   </div>
 );
 
+/* 架构示意图：内联 SVG（离线单文件，不用 ASCII / 线框图） */
+const ArchFlow = () => (
+  <div className="surface p-4">
+    <svg
+      viewBox="0 0 460 330"
+      role="img"
+      aria-label="ESP32-S3 经 micro-ROS Agent 接入 ROS 2 的数据流"
+      className="h-auto w-full"
+    >
+      <defs>
+        <marker id="arch-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="#0d9488" />
+        </marker>
+      </defs>
+
+      <rect x="80" y="14" width="300" height="60" rx="12" fill="#f0fdfa" stroke="#5eead4" />
+      <text x="230" y="40" textAnchor="middle" fill="#0f172a" fontSize="15" fontWeight="700">ESP32-S3</text>
+      <text x="230" y="60" textAnchor="middle" fill="#475569" fontSize="12">micro-ROS 客户端（rcl + rclc）</text>
+
+      <line x1="230" y1="74" x2="230" y2="118" stroke="#0d9488" strokeWidth="2" markerEnd="url(#arch-arrow)" />
+      <text x="242" y="100" fill="#0f766e" fontSize="12">UDP4 :8888</text>
+
+      <rect x="80" y="120" width="300" height="60" rx="12" fill="#f0fdfa" stroke="#5eead4" />
+      <text x="230" y="146" textAnchor="middle" fill="#0f172a" fontSize="15" fontWeight="700">树莓派 micro-ROS Agent</text>
+      <text x="230" y="166" textAnchor="middle" fill="#475569" fontSize="12">ROS 2 容器 · --network host</text>
+
+      <line x1="230" y1="180" x2="230" y2="224" stroke="#0d9488" strokeWidth="2" markerEnd="url(#arch-arrow)" />
+
+      <rect x="80" y="226" width="300" height="92" rx="12" fill="#f8fafc" stroke="#e2e8f0" />
+      <text x="230" y="252" textAnchor="middle" fill="#0f172a" fontSize="15" fontWeight="700">ROS 2 图</text>
+      <text x="230" y="276" textAnchor="middle" fill="#475569" fontSize="12">/cmd_vel ← teleop 发布</text>
+      <text x="230" y="298" textAnchor="middle" fill="#475569" fontSize="12">/esp32/heartbeat → 监听节点订阅</text>
+    </svg>
+  </div>
+);
+
 const Cover = () => (
   <div className="mx-auto flex w-full max-w-[80rem] flex-1 flex-col justify-center">
     <span className="mb-4 inline-flex w-fit items-center rounded-full border border-brand-300 bg-paper px-3 py-1 text-[0.72rem] font-semibold tracking-[0.12em] text-brand-700 md:mb-6 md:px-4 md:py-1.5 md:text-[0.82rem]">
@@ -86,16 +122,7 @@ const Architecture = () => (
         "传输：Wi-Fi 下用 UDP4；有线场景可用串口。",
         "Agent 依附在完整 ROS 2 上——micro-ROS 不能替代 ROS 2。",
       ]}
-      aside={
-        <Code>{`ESP32-S3  micro-ROS client
-   │  UDP4 :8888
-   ▼
-树莓派  micro-ROS Agent
-   │
-ROS 2 图
-   /cmd_vel        ← teleop 发布
-   /esp32/heartbeat → 监听节点订阅`}</Code>
-      }
+      aside={<ArchFlow />}
     />
   </Frame>
 );
@@ -181,7 +208,7 @@ cd /microros_ws && colcon build
 source install/setup.bash
 ros2 run micro_ros_agent micro_ros_agent udp4 --port 8888`}</Code>
       <Steps title="展开：Pi 上完整部署步骤（含拉源码）">
-        <Code>{`# ── 宿主机（Pi）上执行 ──
+        <Code>{`# --- 宿主机（Pi）上执行 ---
 mkdir -p ~/microros_ws/src
 
 docker run -it --rm --network host \\
@@ -189,7 +216,7 @@ docker run -it --rm --network host \\
   --name microros \\
   ros:jazzy-ros-base bash
 
-# ── 以下都在容器内执行 ──
+# --- 以下都在容器内执行 ---
 source /opt/ros/jazzy/setup.bash
 cd /microros_ws
 
@@ -523,15 +550,15 @@ ROS_DOMAIN_ID=42 ros2 run \\
 docker exec -it microros bash
 source /opt/ros/jazzy/setup.bash
 
-# ── 终端 A：Agent（必须最先起）──
+# --- 终端 A：Agent（必须最先起）---
 source /microros_ws/install/setup.bash
 ros2 run micro_ros_agent micro_ros_agent udp4 --port 8888
 
-# ── 终端 B：看心跳 ──
+# --- 终端 B：看心跳 ---
 export ROS_DOMAIN_ID=42
 ros2 topic echo /esp32/heartbeat
 
-# ── 终端 C：键盘控车 ──
+# --- 终端 C：键盘控车 ---
 export ROS_DOMAIN_ID=42
 # ros-base 不含 teleop，首次安装：
 apt-get update && apt-get install -y ros-jazzy-teleop-twist-keyboard
