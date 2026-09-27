@@ -93,7 +93,7 @@ const Goal = () => (
   <Frame kicker="概览" floor="01" title="本课目标：一收一发都跑通">
     <Grid cols={2}>
       <Card title="ESP32-S3 侧" icon={Cpu}>
-        用 PlatformIO 写 micro-ROS 固件：连 Wi-Fi、连 Agent、发心跳、订阅 /cmd_vel。
+        用 PlatformIO 写 micro-ROS 固件：连 Wi-Fi、连 Agent、发心跳、订阅 /cmd_vel 驱动麦轮底盘。
       </Card>
       <Card title="树莓派侧" icon={Server}>
         在 ROS 2 容器里跑 micro-ROS Agent（UDP4:8888），把 S3 接进 ROS 2 图。
@@ -102,7 +102,7 @@ const Goal = () => (
         Pi → S3：<code>/cmd_vel</code>（geometry_msgs/Twist）；S3 → Pi：<code>/esp32/heartbeat</code>。
       </Card>
       <Card title="验收标准" icon={CheckCircle2} tone="good">
-        <code>ros2 topic echo</code> 能看到心跳；按键控车时 S3 能收到 Twist。
+        <code>ros2 topic echo</code> 能看到心跳；按键控车时车轮跟着动、松手 1 s 后停。
       </Card>
     </Grid>
     <div className="mt-6">
@@ -444,45 +444,53 @@ rclc_executor_add_subscription(
 void cmd_cb(const void *msgin) {
   const geometry_msgs__msg__Twist *m =
       (const geometry_msgs__msg__Twist *)msgin;
-  // m->linear.x  前后
-  // m->linear.y  横移
-  // m->angular.z 转向
-  // TODO：换成 EMO_DCMotor 的真实控制
+  chassis->updateVelocity(m->linear.x,   // 前后 m/s
+                          m->linear.y,   // 横移 m/s
+                          m->angular.z); // 转向 rad/s
+  last_cmd_ms = millis();                // 用于断连停车
 }`}</Code>
       <DataTable
-        head={["字段", "含义", "接到板上"]}
+        head={["字段", "含义", "接到板上（QGP_EVMotor 麦轮底盘）"]}
         rows={[
-          ["linear.x", "前后", "两侧电机同向速度"],
-          ["linear.y", "横移", "麦轮平移"],
-          ["angular.z", "转向", "左右轮差速"],
+          ["linear.x", "前后 m/s", "updateVelocity 第 1 参"],
+          ["linear.y", "横移 m/s", "updateVelocity 第 2 参"],
+          ["angular.z", "转向 rad/s", "updateVelocity 第 3 参"],
         ]}
       />
-      <Steps title="展开：加上订阅与回调（完整固件）">
-        <Code>{`rcl_subscription_t sub;
-geometry_msgs__msg__Twist cmd;
-
-void cmd_cb(const void *msgin) {
-  const geometry_msgs__msg__Twist *m =
-      (const geometry_msgs__msg__Twist *)msgin;
-  float vx = m->linear.x;    // 前后
-  float vy = m->linear.y;    // 横移
-  float wz = m->angular.z;   // 转向
-  (void)vx; (void)vy; (void)wz;
-  // TODO：换成 EMO_DCMotor 的 run() / setSpeed()
-}
+      <Steps title="展开：接官方电机库（lib/QGP_EVMotor + 链接参数）">
+        <p className="text-[0.84rem] text-muted">
+          官方 Arduino 库 <code>QGP_EVMotor</code>（奇果派提供）里的 <code>BaseChassis</code> 速度定义与
+          Twist 完全一致（米/秒、米/秒、弧度/秒），所以回调里直接转发即可。工程内置的是它的
+          <b>精简子集</b>（只留 <code>EMotionPI.h</code> + <code>ESP32Encoder.h</code> +{" "}
+          <code>esp32s3/libqgpmotor.a</code>，0.86 MB；蓝牙手柄/PS2/MQTT/NimBLE 约 4.5 MB 已裁掉）。
+        </p>
+        <Code>{`# platformio.ini：预编译库的归档名是 libqgpmotor.a，与库名 QGP_EVMotor 不一致，
+# PIO 只加 LIBPATH，不会自动 -l，必须补这一行，否则链接报 undefined reference
+build_flags =
+  -Llib/QGP_EVMotor/src/esp32s3
+  -lqgpmotor`}</Code>
+        <Code>{`// src/main.cpp：上电先初始化底盘，再连 Agent
+EMotionPI emo;
+BaseChassis *chassis = nullptr;
 
 void setup() {
-  /* …骨架 + 发布者 + 定时器… */
+  emo.begin();
+  chassis = emo.createBaseChassis(BaseChassis::MECANUM);  // 麦轮；差速车用 SKID_STEER
+  /* …再接 Wi-Fi / rclc… */
+}
 
-  // 订阅 /cmd_vel
-  rclc_subscription_init_default(&sub, &node,
-    ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist),
-    "cmd_vel");
-  rclc_executor_add_subscription(
-    &executor, &sub, &cmd, cmd_cb, ON_NEW_DATA);
-
-  // 注意：executor 句柄数要覆盖 timer + subscription（如 2）
+void loop() {
+  rclc_executor_spin_some(&executor, RCL_MS_TO_NS(100));
+  // 断连保护：1 s 没收到 /cmd_vel 就停车
+  if (moving && (millis() - last_cmd_ms) > 1000) {
+    chassis->stop();
+    moving = false;
+  }
 }`}</Code>
+        <p className="text-[0.84rem] text-muted">
+          完整包（含手柄/示例）见 <code>教学webppt/ESP32-S3电机驱动板/files/QGP_EVMotor.zip</code>；
+          要精确速度还需按轮径/轮距/减速比用带参构造。轮子先离地试。
+        </p>
       </Steps>
     </div>
   </Frame>
@@ -605,7 +613,7 @@ const Verify = () => (
           ["节点接入", "ros2 node list", "出现 esp32_node"],
           ["话题存在", "ros2 topic list | grep esp32", "/esp32/heartbeat"],
           ["心跳频率", "ros2 topic hz /esp32/heartbeat", "约 1 Hz"],
-          ["指令下发", "ros2 topic echo /cmd_vel", "按键后出现 Twist"],
+          ["指令下发", "ros2 topic echo /cmd_vel", "按键后出现 Twist，车随之动/停"],
           ["Agent 日志", "session created", "S3 已连上"],
         ]}
       />
@@ -667,6 +675,9 @@ const Pitfalls = () => (
         <Card title="Windows 编库失败" icon={AlertTriangle} tone="warn">
           <code>'.' is not recognized</code>：Windows 编不了 libmicroros，先在 WSL 编一次（见「ESP32 侧环境」页）。
         </Card>
+        <Card title="链接报 EMotionPI 未定义" icon={Wrench} tone="warn">
+          缺 <code>-lqgpmotor</code>：PIO 只加 LIBPATH、不加 <code>-l</code>（见「收 /cmd_vel」页）。
+        </Card>
       </Grid>
       <Steps title="展开：连不上时的排查命令">
         <Code>{`# 1) Agent 是否在监听 8888（容器/宿主机内）
@@ -699,18 +710,19 @@ const Wrap = () => (
         <Card title="顺序不可反" icon={Play}>
           先起 Agent，再给 S3 上电；断线要重启固件重连。
         </Card>
-        <Card title="下一步：真控车" icon={Rocket}>
-          把 cmd_cb 里的 Twist 换成 EMO_DCMotor 的 run/setSpeed。
+        <Card title="已接上真控车" icon={Rocket}>
+          cmd_cb 里 Twist 已直连 QGP_EVMotor 的 <code>BaseChassis::updateVelocity()</code>，
+          1 s 无指令自动停车。
         </Card>
-        <Card title="再下一步：闭环" icon={BookOpen}>
-          读编码器 / IMU，往 ROS 2 发 /odom 等反馈话题。
+        <Card title="下一步：闭环" icon={BookOpen}>
+          读编码器 / IMU，用 <code>getOdometry()</code> 往 ROS 2 发 /odom 等反馈话题。
         </Card>
         <Card title="固件工程与脚本" icon={Download}>
           仓库 <code>教学demo/ESP32-S3-microROS/</code>；随 deck 下载{" "}
           <a className="underline" href="./files/ESP32-S3-microROS.zip">
             files/ESP32-S3-microROS.zip
           </a>
-          （含 platformio.ini、src/main.cpp、README）。
+          （platformio.ini、src/main.cpp、README、lib/QGP_EVMotor 精简子集）。
         </Card>
       </Grid>
       <p className="text-[0.88rem] leading-relaxed text-muted md:text-[0.95rem]">
