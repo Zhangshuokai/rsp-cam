@@ -17,8 +17,9 @@
 - 树莓派连接工具：`tools/pi.py`。
 - ESP32-S3 电机驱动板（奇果派 S3 机器人控制板）资料汇总：`docs/ESP32-S3电机驱动板资料.md`（硬件/接线/Arduino/Mixly/物联网/micro-ROS）。
 - ESP32-S3 接入 micro-ROS 的完整步骤 deck：`教学webppt/ESP32-S3接入micro-ROS/`；背景见 `docs/ESP32-S3电机驱动板资料.md` 第六节与 `docs/ROS2与micro-ROS选型.md` 第六节。
+- ESP32-S3 micro-ROS 固件工程（PlatformIO）：`教学demo/ESP32-S3-microROS/`（头文件是 `micro_ros_platformio.h`，`board_microros_distro = jazzy` + `board_microros_transport = wifi`）。**Windows 编不了 micro_ros_platformio 的 libmicroros**（上游首次构建用 POSIX shell + colcon，报 `'.' is not recognized`）：先在 WSL 跑 `tools/microros_lib_wsl.sh` 编库并拷回工程 `.pio`，之后 Windows 上 `pio run` / `-t upload` 正常。下载：`教学webppt/ESP32-S3接入micro-ROS/files/ESP32-S3-microROS.zip`。
 - 串口波形监控 GUI：`tools/serial_monitor/serial_monitor.py`（tkinter + pyserial；示波器风格、10 通道泳道、悬停游标、点击徽标隐藏通道）。用法 `python tools/serial_monitor/serial_monitor.py --port <COM> --baud 115200 --autostart`（先用 `--list` 确认端口）；无硬件用 `--demo` 看界面、`--names` 改通道名。依赖 `python -m pip install pyserial`（tkinter 随 Python 自带）；通道定义（遥控器 `c0…c9` → `ch1…ch4 / swa-5…swd-8 / vra / vrb`）见其 `README.md`。下载：`教学webppt/ESP32-S3电机驱动板/files/serial_monitor.zip`（随 deck 分发）。
-- 不入库：`__pycache__` / `*.pyc`、`数据/*/` 内容（只保留 `.gitkeep`）、`node_modules/` 与 `**/presentation/dist/`、`.vscode/`（Live Server 写的端口）。
+- 不入库：`__pycache__` / `*.pyc`、`数据/*/` 内容（只保留 `.gitkeep`）、`node_modules/` 与 `**/presentation/dist/`、`.vscode/`（Live Server 写的端口）、`.pio/`（PlatformIO 构建产物与预编译 `libmicroros`，约 60 MB）。
 
 ## ESP32-S3 板（奇果派 S3）串口与供电
 
@@ -121,6 +122,8 @@ python tools/pi.py [--sudo] [--host <IP>] [--user <u>] [--pass <p>] [--file <本
 - **资料站可直连、Docker Hub 不行**：抓取奇果派（`www.7gp.cn` / `doc.7gp.cn`）的图片与文件可直接 `Invoke-WebRequest`，无需 Clash 代理；GitHub 同样可直连（`raw.githubusercontent.com` 上已推送的文件返回 200）。只有 Docker Hub 才需要走代理（见上）。个别直链会 404（如 `doc.7gp.cn/download/FlashingTool.zip`），先按官网文章页核链接再判失败。
 - **本机只有一份「学而思编程助手」内嵌的 esptool `3.0-dev`**（`C:\Users\z\AppData\Local\Programs\学而思编程助手\`）。它能打开串口但**不支持 ESP32-S3 的 USB-JTAG**：表现为 `Connecting....` 后 `serial.serialutil.SerialTimeoutException: Write timeout`。要 `chip_id` / `flash_id` 得另装 esptool ≥ 4.x（`python -m pip install esptool`）。
 - **截 GUI 窗口不要用 `CopyFromScreen`**：窗口被别的程序（游戏等）遮挡时会拍到遮挡窗口的画面。按窗口句柄用 `PrintWindow(hwnd, hdc, 2)` 抓最稳；句柄用 `Get-Process <exe> | Where-Object { $_.MainWindowHandle -ne 0 }` 取——`background_process` 返回的 pid 常是外层 powershell，它的 `MainWindowHandle` 为 0。
+- **PlatformIO 下载慢到不可用**：`pio run` 装 `espressif32` 平台/工具链时，registry 会 302 到境外对象存储（实测 `usc1.contabostorage.com`），**单连接约 50 KB/s**（Windows 直接和走 Clash 都慢、不是代理问题）；但该存储支持 HTTP Range，多连接线性叠加（24 连接 ~1 MB/s）。用 `tools/pio_mirror_seed.py` 按 PlatformIO 的缓存命名（`sha1(镜像 Location + X-PIO-Content-SHA256)`）预取到 `~/.platformio/.cache/downloads/` 后，`pio run` 直接命中缓存。另一个坑：PIO 的**平台/工具包可能装不全就中断**（下载 tmp 长期 0 字节），杀掉重跑即可。
+- **`micro_ros_platformio` 在原生 Windows 编不过**（不是配置问题）：首次构建要 POSIX shell + `colcon` 交叉编译 `libmicroros`（`. <venv>/activate`、`` `which python` ``、`install/setup.sh`），Windows `cmd` 报 `'.' is not recognized`。且它**总是从源码编库**，官方没有预编译包（`micro_ros_arduino` 的 `src/` 里也只有 `esp32`、没有 `esp32s3`，且只支持 serial 传输）。做法：WSL 里编一次 `tools/microros_lib_wsl.sh`，产物 `libmicroros/`（`libmicroros.a` + `include/`，约 60 MB）放回工程 `.pio` 库目录即可跨平台复用（同一 xtensa 工具链版本，Windows 链接正常）。
 
 ## 仓库状态
 

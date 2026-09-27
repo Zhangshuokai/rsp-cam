@@ -6,6 +6,7 @@
 
 - `摄像头远程显示/` —— 树莓派 USB 摄像头经裸 TCP 推流，本机 OpenCV 窗口实时显示。
 - `ROS2消息通路验证/` —— WSL2 与树莓派 ROS 2 之间做 ping-pong 往返，验证跨机消息通路。
+- `ESP32-S3-microROS/` —— ESP32-S3（奇果派 S3 控制板）的 PlatformIO 固件工程：经 micro-ROS Agent 接入 ROS 2，发 `/esp32/heartbeat`、收 `/cmd_vel`。见该目录 `README.md`。
 
 ## 约定
 
