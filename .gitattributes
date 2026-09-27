@@ -1,0 +1,2 @@
+# 跨平台：shell 脚本始终用 LF（CRLF 在 WSL / git-bash 里会报 $'\r': command not found）
+*.sh text eol=lf
