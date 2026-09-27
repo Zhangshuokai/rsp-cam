@@ -781,7 +781,10 @@ const Wrap = () => (
       <p className="text-[0.88rem] leading-relaxed text-muted md:text-[0.95rem]">
         背景与选型见 <code>ROS2与micro-ROS选型</code> deck；硬件、开发与遥控见{" "}
         <code>ESP32-S3电机驱动板</code> deck；官方示例细节见{" "}
-        <code>docs/ESP32-S3电机驱动板资料.md</code> 第六节。
+        <code>docs/ESP32-S3电机驱动板资料.md</code> 第六节。文字版另见{" "}
+        <code>docs/ROS2与micro-ROS选型.md</code> 第六节、<code>docs/工具链与踩坑.md</code>
+        （PlatformIO 镜像加速、WSL 编 <code>libmicroros</code>、QGP_EVMotor 链接参数）与{" "}
+        <code>docs/树莓派连接与部署.md</code>（Pi 侧操作与排障）。
       </p>
     </div>
   </Frame>

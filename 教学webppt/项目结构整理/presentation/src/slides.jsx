@@ -102,6 +102,20 @@ const Tree = () => (
         </ul>
       </Steps>
     </div>
+    <div className="mt-4">
+      <Steps title="展开：不入库清单与 .gitattributes">
+        <Pre>{`__pycache__/  *.pyc             Python 构建产物
+数据/*/ 内容（只留 .gitkeep）   数据集体积大
+node_modules/  **/presentation/dist/   前端依赖与构建中间产物
+.vscode/                       Live Server 写入的本机状态
+.pio/                          PlatformIO 产物与预编译 libmicroros（约 60 MB）
+教学demo/ESP32-S3-microROS/include/secrets.h   含 Wi-Fi 明文密码
+.kilo/worktrees/               Kilo Agent Manager 状态目录，不要手改
+
+# .gitattributes：*.sh text eol=lf
+# 否则 clone 到 Windows 会变 CRLF，报 $'\\r': command not found`}</Pre>
+      </Steps>
+    </div>
   </Frame>
 );
 
@@ -216,8 +230,9 @@ const AfterCommit = () => (
     </Grid>
     <div className="mt-4">
       <Steps title="展开：新增主题 deck 的完整流程">
-        <Pre>{`# 1) 复制技能模板（或已有 deck）到新主题目录
+        <Pre>{`# 1) 复制一个已有 deck 的 presentation/ 到新主题目录
 #    教学webppt/<主题>/presentation/
+#    不要用技能模板 assets/deck-template/（components.jsx 已落后，缺共用 Steps/Pre）
 
 # 2) 只改 src/slides.jsx（内容）与标题 / 品牌
 #    components.jsx 各 deck 保持完全一致
@@ -230,8 +245,14 @@ cp dist/index.html "../index.html"
 
 # 4) 同步目录首页与 README
 #    教学webppt/index.html 加卡片；README.md「已有主题」加条目
+#    新增主题按全局顺序插位（工程与协作 → 环境与设备 → 感知 → 通信 → 执行）
 
-# 5) 校验：1366×860 与 390×844 逐页 overflowX === 0 且首行可见`}</Pre>
+# 5) 内容规范：完整步骤/命令放共用 Steps（<details> 默认收起）+ Pre；
+#    图表禁止 ASCII 字符画，deck 用内联 <svg> 或结构化卡片；
+#    可下载文件放 <主题>/files/，用相对链接 ./files/…
+
+# 6) 校验：1366×860 与 390×844 逐页 overflowX === 0 且首行可见
+#    折叠块默认全部收起（open = 0）`}</Pre>
       </Steps>
     </div>
   </Frame>
@@ -270,6 +291,9 @@ const Closing = () => (
           目录约定写进 AGENTS.md，新会话可直接遵循。
         </Card>
       </Grid>
+      <p className="text-[0.86rem] text-muted">
+        文字版：<code>docs/工作区结构与协作约定.md</code>（完整归档表、不入库清单、webppt 构建与附件/下载约定）；讲义规范见 <code>教学webppt/编写守则.md</code>。
+      </p>
     </div>
   </Frame>
 );

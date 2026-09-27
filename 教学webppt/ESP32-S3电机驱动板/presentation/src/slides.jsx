@@ -295,6 +295,30 @@ const ArduinoApi = () => (
         ]}
       />
     </div>
+    <div className="mt-4">
+      <Steps title="展开：实测配方（无编码器直流有刷，履带 M1/M2）">
+        <Pre>{`# 必须的初始化（电机没有编码器也要调 begin！否则不出 PWM）
+emo.begin();
+emo.getEncoderMotor(M1)->begin(90);   // M1=0 M2=1 M3=2 M4=3；getMotor(4) 越界
+emo.getEncoderMotor(M2)->begin(90);
+
+# 开环驱动：pwm 取 -100~100（负值反转、0 停）
+emo.getMotor(M1)->spin(±pwm);
+
+# 四个坑（官方示例 A9/A10 直接照抄在本板无效）
+# 1) 漏 begin(90)：串口/网络正常但 spin/run+setSpeed/updateDuty 全都不出 PWM
+# 2) 占空比 40~50 低于静摩擦阈值完全不动，60 起能走、100 满速（映射 60~100）
+# 3) 不要用 updateVelocity()/spinRPM()：无编码器反馈恒 0 → PID 饱和满 PWM
+#    （零速指令下轮子自己转）；编码器未 begin 时读 PCNT 会 abort() 重启
+# 4) 电机库只在核心 1（Arduino loop()）调用；核心 0 的 micro-ROS 任务里 spin() 无效
+
+# 安全：加「N ms 无指令就 spin(0)」保护
+# 差速映射：左 = x - z，右 = x + z（z>0 左转，本车实测方向正确）`}</Pre>
+        <p className="text-[0.84rem] text-muted">
+          真机台架实测（2026-09）结论；完整表格见 <code>docs/ESP32-S3电机驱动板资料.md</code> 第三节第 5 小节，可烧录工程见 <code>教学demo/ESP32-S3-microROS/</code>。
+        </p>
+      </Steps>
+    </div>
   </Frame>
 );
 
@@ -611,6 +635,35 @@ const Downloads = () => (
       <Quote>
         原理图与 Arduino 库已放本地 <code>files/</code>，随 deck 一起分发即可离线打开；烧录工具与 Mixly/ROS 2 源码走官网/百度网盘，见资料文档第八节。本仓库自写的代码（脚本/工具）同样放 <code>files/</code> 供下载，源文件改动后同步刷新该副本。
       </Quote>
+    </div>
+    <div className="mt-4">
+      <Steps title="展开：全部下载入口与来源链接">
+        <Pre>{`# 本地（随 deck 分发，离线可用）
+files/SCH_EMO_Lite.pdf              12V 版原理图
+files/SCH_EMO_MAX_3-V1.0_USE.pdf    24V 版原理图
+files/QGP_EVMotor.zip               Arduino 库
+files/serial_monitor.zip            串口波形监控工具（本仓库自写）
+
+# 网盘（需登录百度账号）
+QGP_EVMotor 库        https://pan.baidu.com/s/1Ics52oTadGGIVccjC52InA?pwd=1314
+Mixly 3.0 已配插件    https://pan.baidu.com/s/1cP_Ca2-YIF1ggjxb3lBMuw?pwd=2jih
+Mixly 奇果派 S3 插件  https://pan.baidu.com/s/12dWAfmevUxAKlHdhSA3Abg?pwd=1314
+ROS 2 示例源码        https://pan.baidu.com/s/1L9PQhWvsiyluuN4WXUIEoA?pwd=5bg8
+安卓 App 物联网遥控   https://pan.baidu.com/s/1uJ_lGoXwTgDLesGdStcYuQ?pwd=ate5
+安卓 App 视频车       https://pan.baidu.com/s/1Lu2Tys0gsobUnCzFyeGd8g?pwd=1314
+
+# 官网 / 网页
+Windows 烧录工具  https://doc.7gp.cn/download/FlashingTool.zip（当前 404，未本地化）
+物联网控制端      http://rc.7gp.cn/
+Mixly 官网        https://mixly.cn/fredqian/mixly3
+
+# 来源（奇果派 S3 专题）
+专题      https://www.7gp.cn/archives/special/esp32-s3
+硬件      https://www.7gp.cn/archives/1391   Arduino https://www.7gp.cn/archives/1409
+Mixly     https://www.7gp.cn/archives/1410   物联网  https://www.7gp.cn/archives/1536
+视频车App https://www.7gp.cn/archives/1495   烧录工具 https://www.7gp.cn/archives/1516
+遥控器    https://www.7gp.cn/archives/1714   ROS 2   https://www.7gp.cn/archives/1747`}</Pre>
+      </Steps>
     </div>
   </Frame>
 );

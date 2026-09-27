@@ -234,7 +234,14 @@ python "教学demo/摄像头远程显示/cam_view.py" --host 172.26.188.116
 python "教学demo/摄像头远程显示/cam_view.py" --check --frames 60
 
 # 4) 要最高采集
-python cam_view.py --width 1280 --height 960 --quality 100 --fps 25`}</Pre>
+python cam_view.py --width 1280 --height 960 --quality 100 --fps 25
+
+# 仓库内默认参数（docs/摄像头参数.md）
+# cam_server.py：--device 0 / --width 640 --height 480 / --fps 30（硬件封顶 25）
+#                --quality 100 / --port 5000 / --bind 172.26.188.116
+# cam_view.py：  --host 172.26.188.116 / --port 5000 / --frames 0（不停止）/ --check 关
+
+# 注意：Pi 重启后 /home/nanzhida/cam_server.py 与后台进程都会丢，需重新上传并启动`}</Pre>
       </Steps>
     </div>
   </Frame>
@@ -268,6 +275,9 @@ const Closing = () => (
           --check 无窗口即可验证链路。
         </Card>
       </Grid>
+      <p className="text-[0.86rem] text-muted">
+        完整流程图（总体数据流、服务端/客户端状态机）见 <code>docs/设计原理流程图.md</code>；摄像头能力与参数见 <code>docs/摄像头参数.md</code>。
+      </p>
     </div>
   </Frame>
 );

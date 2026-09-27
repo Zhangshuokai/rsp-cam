@@ -316,6 +316,21 @@ const Verify = () => (
         data: hello_from_pi
       </Code>
     </Grid>
+    <div className="mt-4">
+      <Steps title="展开：自测复现命令（容器内发布/订阅回环）">
+        <Pre>{`docker run --rm --network host ros:jazzy-ros-base bash -lc '
+  source /opt/ros/jazzy/setup.bash
+  echo "ROS_DISTRO=$(printenv ROS_DISTRO)"; echo "pkg_count=$(ros2 pkg list | wc -l)"
+  ros2 topic pub -r 5 /kilo_test std_msgs/msg/String "{data: hello_from_pi}" >/tmp/pub.log 2>&1 &
+  sleep 3; timeout 5 ros2 topic echo --once /kilo_test; kill %1'
+
+# 期望输出
+# ROS_DISTRO=jazzy
+# pkg_count=194
+# rclpy: rclpy
+# data: hello_from_pi`}</Pre>
+      </Steps>
+    </div>
   </Frame>
 );
 
@@ -380,6 +395,33 @@ const Checklist = () => (
           在容器里跑视觉节点；若要接 MCU，再起 micro-ROS Agent。
         </Card>
       </Grid>
+    </div>
+    <div className="mt-4">
+      <Steps title="展开：micro-ROS 在本项目的落地（2026-09 实测）">
+        <Pre>{`# 1) Pi 侧 Agent：zhangsk 的 ~/microros_ws（micro-ROS-Agent + micro_ros_msgs，
+#    均取 jazzy 分支、--depth 1）colcon build --symlink-install 成功（约 2 分半）
+docker run -d --name microros_agent --network host \\
+  -v ~/microros_ws:/microros_ws ros:jazzy-ros-base bash -lc \\
+  'source /opt/ros/jazzy/setup.bash; source /microros_ws/install/setup.bash; \\
+   exec ros2 run micro_ros_agent micro_ros_agent udp4 --port 8888'
+# 看日志 / 停止：docker logs -f microros_agent ｜ docker rm -f microros_agent
+
+# 2) ESP32-S3 侧：教学demo/ESP32-S3-microROS/（micro_ros_platformio，
+#    board_microros_distro = jazzy + board_microros_transport = wifi，
+#    节点名 esp32_car，接 /cmd_vel、发 /esp32/heartbeat）
+#    首次要编 libmicroros，Windows 原生编不了 → 见 docs/工具链与踩坑.md 第二节
+
+# 3) 踩坑：Agent 固定跑在默认 DDS 域 0，不认 ROS_DOMAIN_ID
+#    Pi 侧客户端若 export ROS_DOMAIN_ID=42，连 /esp32/heartbeat 都看不到
+
+# 4) 结果：ros2 node list → /esp32_car；/esp32/heartbeat ≈1 Hz；
+#    teleop 发 /cmd_vel 后左右履带前进/后退/左转/右转/停车方向全对（架空台架实测）
+
+# 来源：micro-ROS 官站 https://micro.vulcanexus.org/
+#       硬件列表 https://micro.vulcanexus.org/docs/overview/hardware/
+#       Pi 安装指引 https://docs.ros.org/en/jazzy/How-To-Guides/Installing-on-Raspberry-Pi.html
+#       REP-2000 https://reps.openrobotics.org/rep-2000/ ｜ 官方镜像 https://hub.docker.com/_/ros`}</Pre>
+      </Steps>
     </div>
   </Frame>
 );
