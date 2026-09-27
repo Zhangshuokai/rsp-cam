@@ -20,3 +20,6 @@ node_modules/
 
 # PlatformIO：构建产物与预编译的 libmicroros（体积大，不入库）
 .pio/
+
+# ESP32-S3 固件的本机私密配置（Wi-Fi 密码等；模板见同目录 secrets.example.h）
+教学demo/ESP32-S3-microROS/include/secrets.h

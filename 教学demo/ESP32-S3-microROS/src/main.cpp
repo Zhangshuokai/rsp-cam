@@ -13,12 +13,26 @@
 #include <geometry_msgs/msg/twist.h>
 #include <std_msgs/msg/int32.h>
 
-// ---- 配置参数：按现场修改 ----
+// 私密配置（Wi-Fi 密码、Agent IP）放 include/secrets.h：该文件已在 .gitignore 里，不入库。
+// 没有它时用下面的占位默认值；模板见 include/secrets.example.h。
+#if __has_include("secrets.h")
+#include "secrets.h"
+#endif
+
+// ---- 配置参数（secrets.h 里未定义时的默认值） ----
+#ifndef WIFI_SSID
 #define WIFI_SSID "your_wifi_ssid"       // 必须是 2.4 GHz
+#endif
+#ifndef WIFI_PASSWORD
 #define WIFI_PASSWORD "your_wifi_password"
+#endif
+#ifndef AGENT_IP
 #define AGENT_IP "192.168.31.29"         // 树莓派在同一网段的地址，不是 127.0.0.1
+#endif
+#ifndef AGENT_PORT
 #define AGENT_PORT 8888
-// ------------------------------
+#endif
+// ---------------------------------------------
 
 // 超过这么久没收到 /cmd_vel 就停车（丢包 / Agent 断连保护）
 #define CMD_TIMEOUT_MS 1000

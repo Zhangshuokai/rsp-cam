@@ -21,6 +21,7 @@ lib/QGP_EVMotor/                     官方电机库的精简子集（见其 REA
   ├─ src/ESP32Encoder.h
   └─ src/esp32s3/libqgpmotor.a       官方预编译静态库（0.84 MB）
 pi/heartbeat_listener.py             官方示例的心跳监听节点（Pi 侧，原样保留）
+include/secrets.example.h            本机私密配置模板（复制为 secrets.h 后填值，secrets.h 不入库）
 ```
 
 ## 关键限制：Windows 上需要先在 WSL 编一次库
@@ -57,13 +58,24 @@ build_flags =
   -lqgpmotor
 ```
 
-改 `src/main.cpp` 顶部：
+改 Wi-Fi 与 Agent 参数：**推荐**复制 `include/secrets.example.h` 为 `include/secrets.h` 再填值——
+`secrets.h` 已在 `.gitignore` 里，密码不会入库、也不会进 deck 的下载包：
 
 ```cpp
-#define WIFI_SSID "your_wifi_ssid"       // 必须是 2.4 GHz
+// include/secrets.h
+#define WIFI_SSID     "your_wifi_ssid"    // 必须是 2.4 GHz（ESP32-S3 不支持 5 GHz）
 #define WIFI_PASSWORD "your_wifi_password"
-#define AGENT_IP "192.168.31.29"         // 树莓派在同一网段的地址，不是 127.0.0.1
-#define AGENT_PORT 8888
+#define AGENT_IP      "192.168.31.29"     // 树莓派 wlan0 的地址，同网段
+#define AGENT_PORT    8888
+```
+
+没有 `secrets.h` 时用 `src/main.cpp` 里的占位默认值（同样是这 4 个宏，`#ifndef` 保护）：
+
+```cpp
+#ifndef WIFI_SSID
+#define WIFI_SSID "your_wifi_ssid"
+#endif
+/* …WIFI_PASSWORD / AGENT_IP / AGENT_PORT 同理… */
 ```
 
 > 节点名 `esp32_car`、话题 `/cmd_vel` 与 `/esp32/heartbeat` 都照官方示例。
@@ -71,6 +83,7 @@ build_flags =
 > `set_microros_wifi_transports()` 第 3 参是 `IPAddress`。
 > 官方示例用的是 **gitee 镜像** `ohhuo/micro_ros_platformio` 且没写 distro；本工程用官方仓库 +
 > `jazzy`，两者不能混：`libmicroros` 必须和 `board_microros_distro` 一致，换镜像要重编库。
+> 注意 `firmware.bin` 里会带 Wi-Fi 明文密码（固件本来就得知道），烧录产物别外传。
 
 ## 程序结构（照官方示例）
 
