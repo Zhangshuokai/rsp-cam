@@ -97,6 +97,23 @@ _joy.Analog(BPSS_LY);                  // 左摇杆 Y 轴
 
 进阶源码与出厂程序用 PlatformIO 开发，**不公开**，需购物好评后联系客服索取。
 
+### 5. 电机驱动 API 实测要点（`QGP_EVMotor` 库）
+
+> 本节是**在本项目真机上台架实测**的结论（2026-09，履带车、电机为无编码器直流有刷、只接 M1/M2）。官方示例 A9/A10 直接照抄在本板**无效**。
+
+| 事项 | 结论 |
+| --- | --- |
+| 通道号 | `M1=0 M2=1 M3=2 M4=3`（`EMotionPI.h` 里的 `#define`）；`emo.getMotor(4)` 越界返回空指针 |
+| 初始化 | `emo.begin()` 之后**必须**对要用的通道调 `emo.getEncoderMotor(Mn)->begin(90)`（减速比 1:90）。**电机没有编码器也要调**——它同时负责初始化电机驱动输出 |
+| 漏掉初始化的现象 | 串口/网络一切正常，但 `getMotor()->spin()`、`run()+setSpeed()`、`BaseChassis::updateDuty()` **全都静默不出 PWM**，轮子纹丝不动 |
+| 开环驱动 | `emo.getMotor(Mn)->spin(int pwm)`，`pwm` 取 -100~100（负值反转、0 停） |
+| 占空比阈值 | 实测 40~50 低于静摩擦阈值**完全不动**，60 起能走、100 满速 → 非零指令映射到 60~100 |
+| 不要用的接口 | `BaseChassis::updateVelocity()` / `EMO_EncoderMotor::spinRPM()` 是「目标 RPM + PID」；无编码器时反馈恒 0，PID 会积分饱和到满 PWM——**零速指令下轮子自己转**；编码器未 `begin()` 时读 PCNT 还会在日志路径 `abort()` 重启 |
+| 调用位置 | 电机库调用只在**核心 1**（Arduino `loop()`）做；从核心 0 的 micro-ROS 任务里调 `spin()` 不出 PWM |
+| 安全 | 建议加「N ms 无指令就 `spin(0)`」保护；差速映射 `左 = x − z`、`右 = x + z`（z>0 左转，本车实测方向正确） |
+
+可直接编译烧录的完整工程与验证记录：`教学demo/ESP32-S3-microROS/`；讲义见 `教学webppt/ESP32-S3接入micro-ROS/`。
+
 ## 四、遥控器
 
 | | 蓝牙遥控器 | 单手 RC 遥控器 |
@@ -150,7 +167,11 @@ ros2 run micro_ros_agent micro_ros_agent udp4 --port 8888
 
 源码（含 ROS 2 代码与 `heartbeat_listener.py`）：[百度网盘](https://pan.baidu.com/s/1L9PQhWvsiyluuN4WXUIEoA?pwd=5bg8)。
 
-> **本项目对接要点**：本仓库的 PI 是 Debian 13 + **Docker 版 ROS 2 Jazzy**（见 `ROS2与micro-ROS选型.md`），并非示例里的 Ubuntu 原生安装。要在本项目复用该方案，需在 ROS 2 容器内安装/运行 **micro-ROS Agent**，并用 `--network host` 让 Agent 的 UDP 8888 直接落在宿主机网络上，ESP32 才能发现到它；跨机/跨容器还需统一 `ROS_DOMAIN_ID` 并处理 DDS 发现（参考 `教学demo/ROS2消息通路验证/`）。是否引入 micro-ROS 的决策条件见 `ROS2与micro-ROS选型.md` 第六节。
+> **本项目对接要点（2026-09 实测落地）**：本仓库的 Pi 是 Debian 13 + **Docker 版 ROS 2 Jazzy**（见 `ROS2与micro-ROS选型.md`），并非示例里的 Ubuntu 原生安装。落地做法：在容器里 `colcon build` 出 Agent（工作区挂 `~/microros_ws`），用 `--network host` 跑 `ros2 run micro_ros_agent micro_ros_agent udp4 --port 8888`；ESP32-S3 走 Wi-Fi 连它的 `192.168.31.29:8888`。
+>
+> **注意（踩过）**：micro-ROS Agent **固定跑在默认 DDS 域 0**，不认 `ROS_DOMAIN_ID`——Pi 侧客户端（`ros2 topic echo`、`teleop`、`heartbeat_listener.py`）**不要**再 `export ROS_DOMAIN_ID=42`，否则连 `/esp32/heartbeat` 都看不到。
+>
+> 完整搭建记录、固件工程与实测结论：`ROS2与micro-ROS选型.md` 第六节、`教学demo/ESP32-S3-microROS/`；电机驱动侧的配方见本文第三节第 5 小节。
 
 ## 七、串口调试与实测遥测
 

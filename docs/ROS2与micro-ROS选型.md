@@ -196,6 +196,22 @@ flowchart LR
 
 > 手头这块 **奇果派 S3 机器人控制板（ESP32-S3 电机驱动板）** 的硬件、编程（Arduino / Mixly / PlatformIO）、遥控器与官方 micro-ROS 双向通讯示例，已整理到 `ESP32-S3电机驱动板资料.md`；要在本项目的 Docker 版 ROS 2 上复用，见该文第六节的对接要点。
 
+### 本项目已落地（2026-09 实测）
+
+- **Pi 侧 Agent**：`zhangsk` 上 `~/microros_ws`（`micro-ROS-Agent` + `micro_ros_msgs`，均取 `jazzy` 分支，各 `--depth 1`）已 `colcon build --symlink-install` 成功（本机 2 核 2 GB，约 2 分半）。用 Docker 容器常驻运行：
+
+  ```bash
+  docker run -d --name microros_agent --network host \
+    -v ~/microros_ws:/microros_ws ros:jazzy-ros-base bash -lc \
+    'source /opt/ros/jazzy/setup.bash; source /microros_ws/install/setup.bash; \
+     exec ros2 run micro_ros_agent micro_ros_agent udp4 --port 8888'
+  # 看日志 / 停止：docker logs -f microros_agent ｜ docker rm -f microros_agent
+  ```
+- **ESP32-S3 侧**：PlatformIO 工程 `教学demo/ESP32-S3-microROS/`（依赖 `micro_ros_platformio`，`board_microros_distro = jazzy` + `board_microros_transport = wifi`，节点名 `esp32_car`，接 `/cmd_vel`、发 `/esp32/heartbeat`）。上游首次构建要 POSIX shell + `colcon` 编 `libmicroros`，**Windows 原生编不了**（报 `'.' is not recognized`）：用 `tools/microros_lib_wsl.sh` 在 WSL 里编一次、把 `libmicroros/` 拷回工程 `.pio` 即可，之后 Windows 上 `pio run -t upload` 正常。
+- **踩坑：Agent 不认 `ROS_DOMAIN_ID`**，固定跑在**默认域 0**；Pi 侧客户端若 `export ROS_DOMAIN_ID=42`，`ros2 topic list` 里连 `/esp32/heartbeat` 都没有（实测）。本仓库第七节的 ping-pong 演示是另一套栈，那里两端统一用 42 没问题。
+- **结果**：`ros2 node list` → `/esp32_car`；`/esp32/heartbeat` ≈1 Hz；`teleop_twist_keyboard` 发 `/cmd_vel` 后左右履带前进/后退/左转/右转/停车**方向全部正确**（架空台架实测）。串口同时可看到官方的 `[ROS] Heartbeat sent: n` 与 `Received Twist message`。
+- 电机驱动侧的具体配方（`getEncoderMotor(Mn)->begin(90)`、`getMotor(Mn)->spin()`、占空比 60~100、库调用只在核心 1）见 `ESP32-S3电机驱动板资料.md` 第三节第 5 小节；下载包 `教学webppt/ESP32-S3接入micro-ROS/files/ESP32-S3-microROS.zip`。
+
 ## 七、跨机验证：WSL2 ↔ 树莓派 ping-pong
 
 本机在 WSL2 里装了第二份 ROS 2（Ubuntu 24.04 + `ros-jazzy-ros-base`，apt 走清华 TUNA 镜像），

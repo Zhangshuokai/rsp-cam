@@ -7,8 +7,8 @@
 - `设计原理流程图.md` —— 摄像头远程显示（`教学demo/摄像头远程显示/`）的程序设计原理、数据流与流程图。
 - `摄像头参数.md` —— 新 Pi `zhangsk` 所用 USB 摄像头的硬件能力、可调控件与实测性能。
 - `摄像头选型.md` —— UVC/CSI 协议对比与摄像头选型建议（含型号参考）。
-- `ROS2与micro-ROS选型.md` —— 树莓派上 ROS 2 与 micro-ROS 的选型结论，以及在 `zhangsk` 上用 Docker 安装 ROS 2 Jazzy 的完整记录（含代理加速）。
-- `ESP32-S3电机驱动板资料.md` —— 奇果派 S3 机器人控制板（ESP32-S3 电机驱动板）的硬件规格、接线、Arduino/Mixly/PlatformIO 开发、遥控器、物联网与 micro-ROS 对接资料汇总，含**实测**的两个 USB 串口差别、遥测格式与 10 通道对应（来源 7gp.cn 专题 + 本项目实测）。
+- `ROS2与micro-ROS选型.md` —— 树莓派上 ROS 2 与 micro-ROS 的选型结论，在 `zhangsk` 上用 Docker 安装 ROS 2 Jazzy 的完整记录（含代理加速），以及 **micro-ROS 在本项目的落地记录**（Pi 侧 Agent 构建/启动、ESP32-S3 固件工程、DDS 默认域 0 的坑）。
+- `ESP32-S3电机驱动板资料.md` —— 奇果派 S3 机器人控制板（ESP32-S3 电机驱动板）的硬件规格、接线、Arduino/Mixly/PlatformIO 开发、遥控器、物联网与 micro-ROS 对接资料汇总，含**实测**的两个 USB 串口差别、遥测格式、10 通道对应与 **QGP_EVMotor 电机驱动 API 实测配方**（来源 7gp.cn 专题 + 本项目实测）。
 
 ## 约定
 
