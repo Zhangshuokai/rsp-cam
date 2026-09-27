@@ -89,27 +89,45 @@ build_flags =
 
 | 位置 | 做什么 |
 | --- | --- |
-| `setup()` | `emo.begin()` + `createBaseChassis(BaseChassis::MECANUM)`，再 `xTaskCreatePinnedToCore(microros_task, …, 10240, …, 0)` |
+| `setup()` | `emo.begin()` → `emo.getEncoderMotor(M1/M2)->begin(90)`（**必须**，见下）→ 取 `emo.getMotor(M1/M2)` 句柄 → 刹车，再 `xTaskCreatePinnedToCore(microros_task, …, 10240, …, 0)` |
 | `microros_task`（核心 0） | `wait_for_wifi(30s)`（失败 `ESP.restart()`）→ `set_microros_wifi_transports` → 循环：`ping_agent` 通了就 `create_entities()`；`spin_some` + `ping_agent(100,3)` 判掉线 → `destroy_entities()` 重连；`millis()` 每 1 s 发心跳 |
-| `twist_callback` | 打印 `Received Twist message`（官方保留），再接 `chassis->updateVelocity()` 控车 |
-| `loop()`（核心 1） | 只做断连/丢包保护：1 s 没收到 `/cmd_vel` 就 `chassis->stop()` |
+| `twist_callback`（核心 0） | 打印 `Received Twist message`，只计算左右目标占空比写入 `target_l/target_r` |
+| `loop()`（核心 1） | 把目标占空比经 `drive_motor()` 下发；1 s 没收到 `/cmd_vel` 就归零停车 |
 
-## 控车逻辑
+## 控车逻辑（本板实测配方，2026-09）
 
-`twist_callback` 把 Twist 直接交给官方 `BaseChassis`（两者速度定义一致：米/秒、米/秒、弧度/秒）：
+实车是**履带/两轮差速、电机为无编码器直流有刷**，只接 M1（左）、M2（右）。
+逐条都是台架实测结论，踩过坑，别照官方 A9/A10 直接抄：
 
 ```cpp
-chassis->updateVelocity(clampf(linear_x, MAX_LINEAR),
-                        clampf(linear_y, MAX_LINEAR),
-                        clampf(angular_z, MAX_ANGULAR));
-last_cmd_ms = millis();
-moving = true;
+// setup()：这一句不能少，否则所有 spin()/run() 都静默不出 PWM
+emo.begin();
+emo.getEncoderMotor(MOTOR_LEFT)->begin(90);    // 减速比 1:90
+emo.getEncoderMotor(MOTOR_RIGHT)->begin(90);
+motor_left  = emo.getMotor(MOTOR_LEFT);        // M1 = 0
+motor_right = emo.getMotor(MOTOR_RIGHT);       // M2 = 1
+
+// 回调里算目标（把指令映射进 60~100 的占空比带宽）
+target_l = scale_duty(clampf(fwd - turn, 1.0f));   // 左 = 前进 − 转向
+target_r = scale_duty(clampf(fwd + turn, 1.0f));   // 右 = 前进 + 转向
+
+// loop()（核心 1）里下发
+motor_left->spin((int)target_l);                   // -100~100，负值反转
 ```
 
-- 底盘类型 `BaseChassis::MECANUM`（麦轮，可横移）；纯差速车改成 `SKID_STEER` / `DIFFERENTIAL_DRIVE`。
-- `MAX_LINEAR` / `MAX_ANGULAR` 是限幅（默认 0.5 m/s、2.0 rad/s）。
-- 轮径、轮距、减速比等若要精确，用带参构造
-  `emo.createBaseChassis(BaseChassis::MECANUM, max_rpm, gear_ratio, ppr, voltage, wheel_diameter, wheel_y_distance)`。
+- **`EMO_EncoderMotor::begin(减速比)` 必须调**（哪怕电机没有编码器）：它负责把电机驱动
+  输出初始化起来。少这一步，`getMotor()->spin()`、`run()+setSpeed()`、`updateDuty()` 全都
+  不出 PWM，现象是「串口打印正常、轮子纹丝不动」——**实测踩过**。减速比本板 1:90
+  （`docs/ESP32-S3电机驱动板资料.md` 第三节、官方 A4 示例）。
+- **占空比要够大**：40~50 低于静摩擦阈值，轮子完全不动；60 起能走、100 满速。所以
+  `scale_duty()` 把非零指令映射到 `MOTOR_MIN_PWM(60) ~ MOTOR_MAX_PWM(100)`。
+- **不要用 `BaseChassis::updateVelocity()` / `spinRPM()`**：它们是「目标 RPM + PID」，
+  无编码器时反馈恒为 0，PID 会积分饱和到满 PWM——表现为**零速指令下轮子自己转**（实测踩过），
+  一收到 `/cmd_vel` 还可能因 PCNT 未初始化直接 `abort()` 重启。开环 `spin()` 才是对的。
+- **库调用只在核心 1 做**：从核心 0 的 micro-ROS 任务里调 `spin()` 不出 PWM（实测）；
+  所以回调只写目标值，`loop()` 负责下发。
+- 电机通道号：`M1=0 M2=1 M3=2 M4=3`（头文件宏），`getMotor(4)` 越界返回空指针。
+- `MAX_LINEAR` / `MAX_ANGULAR` 是输入限幅（默认 0.5 m/s、2.0 rad/s），与占空比带宽独立。
 
 ## 编译与烧录（Windows）
 

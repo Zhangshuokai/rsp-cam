@@ -1,7 +1,11 @@
 // ESP32-S3 micro-ROS 固件
-// 结构照奇果派官方示例（micro-ROS.zip 的 src/main.cpp）：FreeRTOS 后台任务里管
-// WiFi + Agent 连接（ping 检测 / 断线重建实体 / 定时发心跳），
-// 本工程只把官方示例里"只打印"的 twist_callback 换成 QGP_EVMotor 麦轮底盘控制。
+// 结构照奇果派官方 micro-ROS 示例（micro-ROS.zip 的 src/main.cpp）：FreeRTOS 后台任务里管
+// WiFi + Agent 连接（ping 检测 / 断线重建实体 / 定时发心跳）。
+// 控车部分照官方 A2 履带示例：直接驱动 M1 / M2 两个 EMO_DCMotor。
+//
+// 实测记录（2026-09）：
+//   · BaseChassis::updateVelocity() 走编码器 PID，零速会被算成满 PWM（轮子自己转），
+//     且必须先对编码器电机 begin(减速比)；updateDuty() 在本板不出 PWM。故改用直接驱动。
 #include <Arduino.h>
 #include <micro_ros_platformio.h>
 #include <WiFi.h>
@@ -36,9 +40,16 @@
 
 // 超过这么久没收到 /cmd_vel 就停车（丢包 / Agent 断连保护）
 #define CMD_TIMEOUT_MS 1000
-// 速度限幅：米/秒、弧度/秒
+// /cmd_vel 到 PWM 的换算上限：米/秒、弧度/秒
 #define MAX_LINEAR 0.5f
 #define MAX_ANGULAR 2.0f
+// 电机：实车是履带/两轮差速，只接 M1（左）、M2（右）
+#define MOTOR_LEFT M1
+#define MOTOR_RIGHT M2
+// 官方 A2 履带示例：起步 30、上限 100。但本车实测 40~50 低于静摩擦阈值（轮子不转），
+// 60 起能走、100 满速，所以最小起步值取 60。
+#define MOTOR_MIN_PWM 60.0f
+#define MOTOR_MAX_PWM 100.0f
 
 rclc_executor_t executor;
 rclc_support_t support;
@@ -52,11 +63,16 @@ std_msgs__msg__Int32 pub_msg;
 bool micro_ros_connected = false;
 int heartbeat_count = 0;
 
-// 底盘（QGP_EVMotor）
+// 电机（句柄在 setup() 里取；全局先置空）
 EMotionPI emo;
-BaseChassis *chassis = nullptr;
+EMO_DCMotor *motor_left = nullptr;   // M1 左履带
+EMO_DCMotor *motor_right = nullptr;  // M2 右履带
+
 static volatile unsigned long last_cmd_ms = 0;
 static volatile bool moving = false;
+// 目标占空比（由核心 0 的回调写、核心 1 的 loop 下发；库调用只在核心 1 做）
+static volatile float target_l = 0.0f;
+static volatile float target_r = 0.0f;
 
 // 函数声明
 bool create_entities();
@@ -70,23 +86,43 @@ static float clampf(float v, float limit) {
   return v;
 }
 
-// 收到 Twist 时：官方示例只打印，这里换成真实控车
+// 把归一化速度 n∈[-1,1] 映射到占空比：0 → 0（停），非零 → [MOTOR_MIN_PWM, MOTOR_MAX_PWM]。
+// 这样一给指令就能越过静摩擦起步，同时速度随指令大小成比例（60 慢、100 满速）。
+static float scale_duty(float n) {
+  if (n > 1.0f) n = 1.0f;
+  if (n < -1.0f) n = -1.0f;
+  if (n == 0.0f) return 0.0f;
+  float d = MOTOR_MIN_PWM + fabsf(n) * (MOTOR_MAX_PWM - MOTOR_MIN_PWM);
+  return n > 0.0f ? d : -d;
+}
+
+// pwm > 0 正转、< 0 反转、0 停。用官方 EMO_DCMotor::spin(int)（-100~100 开环占空比）。
+static void drive_motor(EMO_DCMotor *m, float pwm) {
+  if (!m) return;
+  if (pwm > MOTOR_MAX_PWM) pwm = MOTOR_MAX_PWM;
+  if (pwm < -MOTOR_MAX_PWM) pwm = -MOTOR_MAX_PWM;
+  m->spin((int)pwm);
+}
+
+// 收到 Twist：linear.x 前后、angular.z 转向（>0 逆时针/左转）
 void twist_callback(const void *msg_in) {
   const geometry_msgs__msg__Twist *twist_msg =
       (const geometry_msgs__msg__Twist *)msg_in;
   float linear_x = twist_msg->linear.x;
-  float linear_y = twist_msg->linear.y;
+  float linear_y = twist_msg->linear.y;   // 履带车用不到，保留打印
   float angular_z = twist_msg->angular.z;
   Serial.printf("Received Twist message: xyz = %f,%f,%f\n", linear_x, linear_y,
                 angular_z);
 
-  if (!chassis) return;
-  // Twist（m/s, m/s, rad/s）与麦轮底盘速度定义一致，直接下发
-  chassis->updateVelocity(clampf(linear_x, MAX_LINEAR),
-                          clampf(linear_y, MAX_LINEAR),
-                          clampf(angular_z, MAX_ANGULAR));
+  float fwd = clampf(linear_x / MAX_LINEAR, 1.0f);    // ±1
+  float turn = clampf(angular_z / MAX_ANGULAR, 1.0f); // ±1
+  // 只算目标值，真正的库调用放到 loop()（核心 1）里做；差速：左 = 前进 − 转向，右 = 前进 + 转向
+  target_l = scale_duty(clampf(fwd - turn, 1.0f));
+  target_r = scale_duty(clampf(fwd + turn, 1.0f));
+  Serial.printf("cmd L=%d R=%d\n", (int)target_l, (int)target_r);
+
   last_cmd_ms = millis();
-  moving = true;
+  moving = (fwd != 0.0f || turn != 0.0f);
 }
 
 // 创建 micro-ROS 实体
@@ -218,6 +254,9 @@ void microros_task(void *param) {
       if (ret != RCL_RET_OK || rmw_uros_ping_agent(100, 3) != RMW_RET_OK) {
         Serial.println("[ROS] Connection lost!");
         destroy_entities();
+        target_l = 0.0f;   // 断连即停（实际下发在核心 1 的 loop 里）
+        target_r = 0.0f;
+        moving = false;
         continue;
       }
 
@@ -239,19 +278,38 @@ void microros_task(void *param) {
 void setup() {
   Serial.begin(115200);
 
-  // 底盘先初始化：上电即为停止状态
+  // 电机初始化（实测结论，2026-09）：
+  // ① emo.begin() 初始化板级外设；
+  // ② emo.getEncoderMotor(M1/M2)->begin(90) 必须调（本板电机无编码器也照样要调）：
+  //    它负责把电机驱动输出初始化起来，少这一步所有 spin()/run() 都不出 PWM；减速比 1:90。
+  // ③ 之后用 EMO_DCMotor::spin(±pwm) 开环驱动即可（官方 A9 的用法）；注意 pwm 要够大，
+  //    40~50 带不动电机，实测 60 起步、100 满速。
   emo.begin();
-  chassis = emo.createBaseChassis(BaseChassis::MECANUM);
+  EMO_EncoderMotor *enc_left = emo.getEncoderMotor(MOTOR_LEFT);
+  EMO_EncoderMotor *enc_right = emo.getEncoderMotor(MOTOR_RIGHT);
+  if (enc_left) enc_left->begin(90);
+  if (enc_right) enc_right->begin(90);
+
+  motor_left = emo.getMotor(MOTOR_LEFT);
+  motor_right = emo.getMotor(MOTOR_RIGHT);
+  Serial.printf("motors: left=%p right=%p enc=%p/%p\n", (void *)motor_left,
+                (void *)motor_right, (void *)enc_left, (void *)enc_right);
+  drive_motor(motor_left, 0);
+  drive_motor(motor_right, 0);
 
   xTaskCreatePinnedToCore(microros_task, "microros_task", 10240, NULL, 1, NULL, 0);
   Serial.println("setup done");
 }
 
 void loop() {
-  // 这里放其它逻辑；当前只做断连/丢包保护：1 s 没收到 /cmd_vel 就停车
-  if (moving && chassis && (millis() - last_cmd_ms) > CMD_TIMEOUT_MS) {
-    chassis->stop();
+  // 电机库调用统一在本函数（核心 1，Arduino loopTask）里做：
+  // 实测从核心 0 的 micro-ROS 任务里调 spin() 不出 PWM，放核心 1 才有效。
+  if (moving && (millis() - last_cmd_ms) > CMD_TIMEOUT_MS) {
+    target_l = 0.0f;   // 丢包/断连保护：1 s 没收到就停
+    target_r = 0.0f;
     moving = false;
   }
+  drive_motor(motor_left, target_l);
+  drive_motor(motor_right, target_r);
   delay(10);
 }
