@@ -14,12 +14,13 @@
 
 - 摄像头远程显示：`教学demo/摄像头远程显示/{cam_server.py,cam_view.py}`（原理见 `docs/设计原理流程图.md`，硬件见 `docs/摄像头参数.md`、`docs/摄像头选型.md`）。
   Pi 端运行前需 `sudo apt-get install -y python3-opencv`，脚本放 `/home/nanzhida/cam_server.py`，后台启动 `nohup python3 cam_server.py > /tmp/cam_server.log 2>&1 &`；本机 `python "教学demo/摄像头远程显示/cam_view.py"`（默认 `172.26.188.116:5000`）。
-- 树莓派连接工具：`tools/pi.py`（含 `--put <本地> <远端>` 只上传不执行）。
+- 树莓派连接工具：`tools/pi.py`（含 `--put <本地> <远端>` 只上传不执行）。完整用法、两台 Pi 参数、网络配置与排障见 `docs/树莓派连接与部署.md`；工具链坑（PlatformIO 加速、WSL 编库、链接参数、PowerShell/串口）见 `docs/工具链与踩坑.md`。
 - ESP32-S3 电机驱动板（奇果派 S3 机器人控制板）资料汇总：`docs/ESP32-S3电机驱动板资料.md`（硬件/接线/Arduino/Mixly/物联网/micro-ROS）。
 - ESP32-S3 接入 micro-ROS 的完整步骤 deck：`教学webppt/ESP32-S3接入micro-ROS/`；背景见 `docs/ESP32-S3电机驱动板资料.md` 第六节与 `docs/ROS2与micro-ROS选型.md` 第六节。
 - ESP32-S3 micro-ROS 固件工程（PlatformIO）：`教学demo/ESP32-S3-microROS/`（头文件是 `micro_ros_platformio.h`，`board_microros_distro = jazzy` + `board_microros_transport = wifi`；**结构照奇果派官方示例**——FreeRTOS 任务管 WiFi/`rmw_uros_ping_agent` 重连/心跳，节点名 `esp32_car`）。控车按**实测配方**（见下条「已踩过的坑」与工程 README）：`emo.begin()` → `emo.getEncoderMotor(M1/M2)->begin(90)`（**必须**）→ `emo.getMotor(M1/M2)->spin(±占空比)`，占空比映射到 60~100，库调用只在核心 1（`loop()`）做，含 1 s 断连停车。**Windows 编不了 micro_ros_platformio 的 libmicroros**（上游首次构建用 POSIX shell + colcon，报 `'.' is not recognized`）：先在 WSL 跑 `tools/microros_lib_wsl.sh` 编库并拷回工程 `.pio`，之后 Windows 上 `pio run` / `-t upload` 正常（实测 RAM 20.8% / Flash 23.4%）。电机库是官方包的精简子集（`lib/QGP_EVMotor/`，只留 `EMotionPI.h`+`ESP32Encoder.h`+`esp32s3/libqgpmotor.a`，0.86 MB；蓝牙手柄那套 NimBLE 约 4.5 MB 裁掉）。Pi 侧监听节点 `pi/heartbeat_listener.py`（官方原样，用 `pi.py --put` 上传）。下载：`教学webppt/ESP32-S3接入micro-ROS/files/{ESP32-S3-microROS.zip,micro-ROS-official-src.zip}`。
 - 串口波形监控 GUI：`tools/serial_monitor/serial_monitor.py`（tkinter + pyserial；示波器风格、10 通道泳道、悬停游标、点击徽标隐藏通道）。用法 `python tools/serial_monitor/serial_monitor.py --port <COM> --baud 115200 --autostart`（先用 `--list` 确认端口）；无硬件用 `--demo` 看界面、`--names` 改通道名。依赖 `python -m pip install pyserial`（tkinter 随 Python 自带）；通道定义（遥控器 `c0…c9` → `ch1…ch4 / swa-5…swd-8 / vra / vrb`）见其 `README.md`。下载：`教学webppt/ESP32-S3电机驱动板/files/serial_monitor.zip`（随 deck 分发）。
-- 不入库：`__pycache__` / `*.pyc`、`数据/*/` 内容（只保留 `.gitkeep`）、`node_modules/` 与 `**/presentation/dist/`、`.vscode/`（Live Server 写的端口）、`.pio/`（PlatformIO 构建产物与预编译 `libmicroros`，约 60 MB）。
+- 不入库：`__pycache__` / `*.pyc`、`数据/*/` 内容（只保留 `.gitkeep`）、`node_modules/` 与 `**/presentation/dist/`、`.vscode/`（Live Server 写的端口）、`.pio/`（PlatformIO 构建产物与预编译 `libmicroros`，约 60 MB）、`教学demo/ESP32-S3-microROS/include/secrets.h`（含 Wi-Fi 密码，模板 `secrets.example.h` 入库）。
+- 本节工作流规则的文字版（含完整归档表、不入库清单、下载地址与附件约定）：`docs/工作区结构与协作约定.md`；`AGENTS.md` 与 `docs/` 两处改动需同步。
 
 ## ESP32-S3 板（奇果派 S3）串口与供电
 
