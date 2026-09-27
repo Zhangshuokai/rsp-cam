@@ -527,8 +527,55 @@ const Integration = () => (
   </Frame>
 );
 
+const SerialDebug = () => (
+  <Frame kicker="调试与实测" floor="14" title="串口调试与波形监控" wide>
+    <DataTable
+      head={["USB 口", "系统识别", "能不能看到输出"]}
+      rows={[
+        [
+          <strong className="font-bold text-ink">USB-C（CH343 转串口）</strong>,
+          "USB-Enhanced-SERIAL CH343 (COMx)",
+          <strong className="font-bold text-ink">能：控制台在 UART0 / 115200，也是烧录口</strong>,
+        ],
+        [
+          "原生 USB（USB-Serial/JTAG）",
+          "VID:PID = 303A:1001",
+          "不能：固件不往 USB CDC 打印，接它看不到数据",
+        ],
+      ]}
+    />
+    <div className="mt-5">
+      <Grid cols={2}>
+        <Card title="实测遥测：每 ~500 ms 一行 10 个数值" icon={Terminal}>
+          <code>992,992,1376,992,992,192,192,992,1126,924</code>
+          <br />
+          数值是原始计数（非 µs）：摇杆中立约 992，开关两档 192 / 992。全 0 或整行恒定 = 没接电机 / 没动遥控器，不是故障。
+        </Card>
+        <Card title="通道对应（当前遥控器）" icon={Usb}>
+          c0–c3 = ch1–ch4；c4–c7 = swa-5 … swd-8；c8 / c9 = vra / vrb。换遥控器需重新确认，软件默认命名见工具 README。
+        </Card>
+      </Grid>
+    </div>
+    <div className="mt-5">
+      <Steps title="展开：用 tools/serial_monitor 看实时波形">
+        <Pre>{`# 1) 确认端口（板子 USB-C 口 → CH343，本机实测为 COM9）
+python tools/serial_monitor/serial_monitor.py --list
+
+# 2) 打开并自动开始采集
+python tools/serial_monitor/serial_monitor.py --port COM9 --baud 115200 --autostart
+
+# 3) 没有硬件也能先看界面
+python tools/serial_monitor/serial_monitor.py --demo`}</Pre>
+        <p className="text-[0.84rem] text-muted">
+          依赖 pyserial（<code>python -m pip install pyserial</code>），tkinter 随 Python 自带；打开串口会让板子复位一次并打印 ROM 启动日志，属正常现象。
+        </p>
+      </Steps>
+    </div>
+  </Frame>
+);
+
 const Downloads = () => (
-  <Frame kicker="收尾" floor="14" title="下载入口与文档" wide>
+  <Frame kicker="收尾" floor="15" title="下载入口与文档" wide>
     <DataTable
       head={["资源", "入口"]}
       rows={[
@@ -549,12 +596,20 @@ const Downloads = () => (
           <A href="https://doc.7gp.cn/download/FlashingTool.zip">FlashingTool.zip（官网直链）</A>,
         ],
         ["物联网网页控制端", <A href="http://rc.7gp.cn/">rc.7gp.cn</A>],
+        [
+          "串口波形监控工具（本仓库自写代码）",
+          <span>
+            <A href="./files/serial_monitor.zip">serial_monitor.zip（本地下载）</A>
+            <br />
+            <code className="text-[0.8rem] text-muted">tools/serial_monitor/</code>
+          </span>,
+        ],
         ["完整资料整理", "docs/ESP32-S3电机驱动板资料.md"],
       ]}
     />
     <div className="mt-5">
       <Quote>
-        原理图与 Arduino 库已放本地 <code>files/</code>，随 deck 一起分发即可离线打开；烧录工具与 Mixly/ROS 2 源码走官网/百度网盘，见资料文档第七节。
+        原理图与 Arduino 库已放本地 <code>files/</code>，随 deck 一起分发即可离线打开；烧录工具与 Mixly/ROS 2 源码走官网/百度网盘，见资料文档第八节。本仓库自写的代码（脚本/工具）同样放 <code>files/</code> 供下载，源文件改动后同步刷新该副本。
       </Quote>
     </div>
   </Frame>
@@ -575,6 +630,7 @@ export const slides = [
   { nav: "数据包格式", group: "遥控与联网", el: <Packet /> },
   { nav: "micro-ROS 通讯", group: "ROS 2 对接", el: <Ros2 /> },
   { nav: "本项目落地", group: "ROS 2 对接", el: <Integration /> },
+  { nav: "串口调试与波形监控", group: "调试与实测", el: <SerialDebug /> },
   { nav: "下载与文档", group: "收尾", el: <Downloads /> },
 ];
 

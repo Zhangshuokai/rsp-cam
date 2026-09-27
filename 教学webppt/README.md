@@ -55,5 +55,5 @@ npm run build    # 产物 dist/index.html
 - `摄像头参数与选型/` —— 感知器件：UVC 协议、硬件参数与型号建议
 - `摄像头远程显示/` —— 感知应用：采集 / 传输 / 显示解耦（教学 demo 讲解）
 - `ROS2与micro-ROS选型/` —— 通信：选型结论、树莓派 Docker 安装 ROS 2 Jazzy、WSL2 跨机 ping-pong 验证
-- `ESP32-S3电机驱动板/` —— 执行：奇果派 S3 机器人控制板，硬件与接线、Arduino/Mixly 开发、遥控与物联网、micro-ROS 对接
+- `ESP32-S3电机驱动板/` —— 执行：奇果派 S3 机器人控制板，硬件与接线、Arduino/Mixly 开发、遥控与物联网、micro-ROS 对接、串口调试与波形监控
 - `ESP32-S3接入micro-ROS/` —— 执行：S3 写 micro-ROS 固件、Pi 上跑 Agent，UDP4 通路与验证

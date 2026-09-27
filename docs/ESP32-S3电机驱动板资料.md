@@ -152,7 +152,65 @@ ros2 run micro_ros_agent micro_ros_agent udp4 --port 8888
 
 > **本项目对接要点**：本仓库的 PI 是 Debian 13 + **Docker 版 ROS 2 Jazzy**（见 `ROS2与micro-ROS选型.md`），并非示例里的 Ubuntu 原生安装。要在本项目复用该方案，需在 ROS 2 容器内安装/运行 **micro-ROS Agent**，并用 `--network host` 让 Agent 的 UDP 8888 直接落在宿主机网络上，ESP32 才能发现到它；跨机/跨容器还需统一 `ROS_DOMAIN_ID` 并处理 DDS 发现（参考 `教学demo/ROS2消息通路验证/`）。是否引入 micro-ROS 的决策条件见 `ROS2与micro-ROS选型.md` 第六节。
 
-## 七、下载与入口汇总
+## 七、串口调试与实测遥测
+
+> 本节是**在本项目真机上实测**的结果（板子接本机 USB，2026-09-27），官方文档只说明了"Type-C 供电/下载"，没写这两个口的差别。
+
+### 两个 USB 口
+
+| 口 | 系统识别 | 能否看到输出 |
+| --- | --- | --- |
+| **USB-C 口**（CH343 转串口） | `USB-Enhanced-SERIAL CH343 (COMx)`，`VID:PID=1A86:55D3` | **能**：固件控制台在 **UART0 / 115200**，官方烧录工具与 Arduino 也都走这个口 |
+| **原生 USB 口**（ESP32-S3 USB-Serial/JTAG） | `VID:PID=303A:1001`，会枚举出 COM 口与 JTAG 设备 | **不能**：固件没往 USB CDC 打印，接它看不到任何数据 |
+
+- COM 号不固定（实测为 `COM9`），用 `python tools/serial_monitor/serial_monitor.py --list` 或设备管理器确认。
+- 打开 CH343 串口会经 DTR/RTS 自动复位电路让板子重启一次并打印 ROM 日志：
+
+```
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x1 (POWERON),boot:0x8 (SPI_FAST_FLASH_BOOT)
+mode:DIO, clock div:1
+entry 0x403c98d0
+setup
+```
+
+`rst:0x1 (POWERON)` 是正常上电/复位，不是欠压；只有看到 `BROWNOUT` 类复位才要查供电。
+
+### 实测遥测格式
+
+`setup` 之后，固件每 **约 500 ms** 输出一行、逗号分隔的 **10 个十进制数值**：
+
+```
+992,992,1376,992,992,192,192,992,1126,924
+```
+
+- 10 个值的顺序固定，对应下表 10 个遥控器通道；与第五节讲的 **10 字节空口数据包不是同一件事**——这里是串口控制台的文本，那边是遥控器→板子的二进制包。
+- 数值是**原始计数**（不是 µs、也不是百分比）：摇杆/旋钮中立约在 `992` 附近，开关两档实测 `192` / `992`。
+- 全 `0` 或整行恒定 = 没有接电机 / 没有动遥控器，**不是故障**。
+
+### 通道对应（实测）
+
+| 位 | 通道名 | 含义 | 实测值示例 |
+| --- | --- | --- | --- |
+| c0 | `ch1` | 通道 1 | 992（中立） |
+| c1 | `ch2` | 通道 2 | 992（中立） |
+| c2 | `ch3` | 通道 3 | 1376（偏离中立） |
+| c3 | `ch4` | 通道 4 | 992（中立） |
+| c4 | `swa-5` | 开关 A | 992 / 192 两档 |
+| c5 | `swb-6` | 开关 B | 192 |
+| c6 | `swc-7` | 开关 C | 192 |
+| c7 | `swd-8` | 开关 D | 992 |
+| c8 | `vra` | 旋钮 A | 1126 |
+| c9 | `vrb` | 旋钮 B | 924 |
+
+> 该对应由当前遥控器定义给出；换遥控器需重新确认。软件里的默认命名（`DEFAULT_NAMES`）与 `--names` 覆盖方式见 `tools/serial_monitor/README.md`。
+
+### 配套工具
+
+- `tools/serial_monitor/` —— 把上面这种逗号分隔数值画成实时波形的桌面 GUI（示波器风格、每通道一条泳道、悬停游标读数、点击徽标隐藏通道、可导出 CSV）。命令与快捷键见其 `README.md`。
+
+## 八、下载与入口汇总
 
 | 资源 | 链接 |
 | --- | --- |
@@ -166,10 +224,11 @@ ros2 run micro_ros_agent micro_ros_agent udp4 --port 8888
 | 安卓 App：物联网遥控（pwd ate5） | <https://pan.baidu.com/s/1uJ_lGoXwTgDLesGdStcYuQ?pwd=ate5> |
 | 安卓 App：视频车（pwd 1314） | <https://pan.baidu.com/s/1Lu2Tys0gsobUnCzFyeGd8g?pwd=1314> |
 | Windows 程序烧录工具 | <https://doc.7gp.cn/download/FlashingTool.zip>（官网直链当前返回 404，暂未本地化） |
+| 串口波形监控工具（本仓库自写） | 本地：`tools/serial_monitor/`；随 deck 下载：`教学webppt/ESP32-S3电机驱动板/files/serial_monitor.zip` |
 | 物联网网页控制端 | <http://rc.7gp.cn/> |
 | Mixly 米思奇官网 | <https://mixly.cn/fredqian/mixly3> |
 
-## 八、来源
+## 九、来源
 
 - ESP32-S3 专题目录：<https://www.7gp.cn/archives/special/esp32-s3>
 - 硬件文档：<https://www.7gp.cn/archives/1391>
