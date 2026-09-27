@@ -322,7 +322,7 @@ const Skeleton = () => (
         points={[
           "连接：set_microros_wifi_transports(SSID, PASS, IPAddress(…), 8888)。",
           "内存与上下文：rcl_get_default_allocator + rclc_support_init。",
-          "节点：rclc_node_init_default(&node, \"esp32_node\", \"\", &support)。",
+          "节点：rclc_node_init_default(&node, \"esp32_car\", \"\", &support)。",
           "收发：publisher / subscription / timer 都挂到 executor。",
           "loop()：rclc_executor_spin_some(&executor, RCL_MS_TO_NS(100))。",
         ]}
@@ -333,7 +333,7 @@ const Skeleton = () => (
 allocator = rcl_get_default_allocator();
 rclc_support_init(&support, 0, NULL, &allocator);
 rclc_node_init_default(
-  &node, "esp32_node", "", &support);`}</Code>
+  &node, "esp32_car", "", &support);`}</Code>
         }
       />
       <Steps title="展开：最小可编译固件 main.cpp（完整）">
@@ -357,7 +357,7 @@ void setup() {
   rclc_support_init(&support, 0, NULL, &allocator);
 
   // ③ 建节点（名字就是 ros2 node list 里看到的名字）
-  rclc_node_init_default(&node, "esp32_node", "", &support);
+  rclc_node_init_default(&node, "esp32_car", "", &support);
 }
 
 void loop() {
@@ -426,6 +426,10 @@ void setup() {
 void loop() {
   rclc_executor_spin_some(&executor, RCL_MS_TO_NS(100));
 }`}</Code>
+        <p className="text-[0.84rem] text-muted">
+          本课定稿的固件（合并了官方示例）不用定时器：心跳在后台任务里用{" "}
+          <code>millis()</code> 计时发出；<code>rclc_timer</code> 是最小教学形式，两者等价。
+        </p>
       </Steps>
     </div>
   </Frame>
@@ -469,24 +473,31 @@ void cmd_cb(const void *msgin) {
 build_flags =
   -Llib/QGP_EVMotor/src/esp32s3
   -lqgpmotor`}</Code>
-        <Code>{`// src/main.cpp：上电先初始化底盘，再连 Agent
+        <Code>{`// src/main.cpp：上电先初始化底盘（官方示例把连接放进后台任务，这里照做）
 EMotionPI emo;
 BaseChassis *chassis = nullptr;
+volatile unsigned long last_cmd_ms = 0;
+volatile bool moving = false;
 
 void setup() {
   emo.begin();
   chassis = emo.createBaseChassis(BaseChassis::MECANUM);  // 麦轮；差速车用 SKID_STEER
-  /* …再接 Wi-Fi / rclc… */
+  xTaskCreatePinnedToCore(microros_task, "microros_task", 10240, NULL, 1, NULL, 0);
 }
 
 void loop() {
-  rclc_executor_spin_some(&executor, RCL_MS_TO_NS(100));
-  // 断连保护：1 s 没收到 /cmd_vel 就停车
-  if (moving && (millis() - last_cmd_ms) > 1000) {
+  // 断连保护：1 s 没收到 /cmd_vel 就停车（核心 1 上跑）
+  if (moving && chassis && (millis() - last_cmd_ms) > 1000) {
     chassis->stop();
     moving = false;
   }
 }`}</Code>
+        <p className="text-[0.84rem] text-muted">
+          官方示例里 <code>twist_callback</code> 只打印 <code>Received Twist message</code>；
+          我们把这一句后面接上 <code>chassis-&gt;updateVelocity()</code>，其余（WiFi 自检、
+          <code>rmw_uros_ping_agent</code> 探测、断线 <code>destroy_entities()</code> 重连、任务内
+          <code>millis()</code> 发心跳）都照官方。
+        </p>
         <p className="text-[0.84rem] text-muted">
           完整包（含手柄/示例）见 <code>教学webppt/ESP32-S3电机驱动板/files/QGP_EVMotor.zip</code>；
           要精确速度还需按轮径/轮距/减速比用带参构造。轮子先离地试。
@@ -556,7 +567,7 @@ const Startup = () => (
         no="4"
         title="四个步骤"
         tag="顺序"
-        goal="先让 Agent 在监听，再给 S3 上电；顺序反了固件会一直重连，需重启 S3。"
+        goal="先让 Agent 在监听，再给 S3 上电；顺序反了也不用重启（固件会按官方示例的 ping 机制自动重连）。"
         points={[
           "Pi：起 ROS 2 容器（--network host）→ 启动 Agent（udp4 8888）。",
           "Pi：另开终端 source ROS 2 → 运行监听 / 遥操作节点。",
@@ -610,7 +621,7 @@ const Verify = () => (
       <DataTable
         head={["检查", "命令", "期望"]}
         rows={[
-          ["节点接入", "ros2 node list", "出现 esp32_node"],
+          ["节点接入", "ros2 node list", "出现 esp32_car"],
           ["话题存在", "ros2 topic list | grep esp32", "/esp32/heartbeat"],
           ["心跳频率", "ros2 topic hz /esp32/heartbeat", "约 1 Hz"],
           ["指令下发", "ros2 topic echo /cmd_vel", "按键后出现 Twist，车随之动/停"],
@@ -621,7 +632,7 @@ const Verify = () => (
         <Code>{`export ROS_DOMAIN_ID=42
 source /opt/ros/jazzy/setup.bash
 
-ros2 node list                     # 期望：/esp32_node
+ros2 node list                     # 期望：/esp32_car
 ros2 topic list | grep heartbeat   # 期望：/esp32/heartbeat
 ros2 topic hz /esp32/heartbeat     # 期望：average rate ≈ 1
 ros2 topic echo /esp32/heartbeat   # 期望：data 递增
@@ -631,7 +642,7 @@ ros2 topic info /cmd_vel           # 期望：Publisher count ≥ 1
 ros2 topic echo /cmd_vel`}</Code>
         <p className="text-[0.84rem] text-muted">
           节点名以固件里 <code>rclc_node_init_default</code> 的第一个参数为准（本课为{" "}
-          <code>esp32_node</code>）。
+          <code>esp32_car</code>）。
         </p>
       </Steps>
       <Grid cols={2}>
@@ -708,7 +719,7 @@ const Wrap = () => (
           S3 发 /esp32/heartbeat、收 /cmd_vel；先跑通再谈控制。
         </Card>
         <Card title="顺序不可反" icon={Play}>
-          先起 Agent，再给 S3 上电；断线要重启固件重连。
+          先起 Agent 更顺；固件会自动重连（官方示例的 ping 机制），起晚了也不用重启板子。
         </Card>
         <Card title="已接上真控车" icon={Rocket}>
           cmd_cb 里 Twist 已直连 QGP_EVMotor 的 <code>BaseChassis::updateVelocity()</code>，
@@ -724,9 +735,13 @@ const Wrap = () => (
           </a>
           （platformio.ini、src/main.cpp、README、lib/QGP_EVMotor 精简子集）。
         </Card>
-        <Card title="官方 micro-ROS 示例（网盘）" icon={Download}>
-          奇果派官方「ESP32-S3 + 树莓派双向通讯」示例源码（含 ROS 2 代码与{" "}
-          <code>heartbeat_listener.py</code>）：
+        <Card title="官方 micro-ROS 示例（已并入）" icon={Download}>
+          本课固件就是官方示例的结构（后台任务 + ping 重连 + 心跳），只把回调换成真控车。
+          源码随 deck 附{" "}
+          <a className="underline break-all" href="./files/micro-ROS-official-src.zip">
+            files/micro-ROS-official-src.zip
+          </a>
+          ；网盘原链{" "}
           <a
             className="underline break-all"
             href="https://pan.baidu.com/s/1L9PQhWvsiyluuN4WXUIEoA?pwd=5bg8"
