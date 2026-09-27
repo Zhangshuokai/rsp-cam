@@ -20,6 +20,7 @@ import {
   CircuitBoard,
   Wrench,
   Activity,
+  RotateCcw,
 } from "lucide-react";
 import { Frame, Card, DataTable, Grid, Quote, Focus, Steps, Figure } from "./components.jsx";
 
@@ -93,7 +94,7 @@ const Goal = () => (
   <Frame kicker="概览" floor="01" title="本课目标：一收一发都跑通">
     <Grid cols={2}>
       <Card title="ESP32-S3 侧" icon={Cpu}>
-        用 PlatformIO 写 micro-ROS 固件：连 Wi-Fi、连 Agent、发心跳、订阅 /cmd_vel 驱动麦轮底盘。
+        用 PlatformIO 写 micro-ROS 固件：连 Wi-Fi、连 Agent、发心跳、订阅 /cmd_vel 驱动履带底盘（左右两路电机）。
       </Card>
       <Card title="树莓派侧" icon={Server}>
         在 ROS 2 容器里跑 micro-ROS Agent（UDP4:8888），把 S3 接进 ROS 2 图。
@@ -441,30 +442,32 @@ const CmdVel = () => (
       <Code>{`geometry_msgs__msg__Twist msg;
 rclc_subscription_init_default(&sub, &node,
   ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist),
-  "cmd_vel");
+  "/cmd_vel");
 rclc_executor_add_subscription(
   &executor, &sub, &msg, cmd_cb, ON_NEW_DATA);
 
 void cmd_cb(const void *msgin) {
   const geometry_msgs__msg__Twist *m =
       (const geometry_msgs__msg__Twist *)msgin;
-  chassis->updateVelocity(m->linear.x,   // 前后 m/s
-                          m->linear.y,   // 横移 m/s
-                          m->angular.z); // 转向 rad/s
+  // 只算左右目标占空比；真正的库调用放到 loop()（核心 1）里做
+  target_l = scale_duty(clampf(m->linear.x / MAX_LINEAR
+                               - m->angular.z / MAX_ANGULAR, 1.0f));
+  target_r = scale_duty(clampf(m->linear.x / MAX_LINEAR
+                               + m->angular.z / MAX_ANGULAR, 1.0f));
   last_cmd_ms = millis();                // 用于断连停车
 }`}</Code>
       <DataTable
-        head={["字段", "含义", "接到板上（QGP_EVMotor 麦轮底盘）"]}
+        head={["字段", "含义", "接到板上（履带/两轮差速，M1 左、M2 右）"]}
         rows={[
-          ["linear.x", "前后 m/s", "updateVelocity 第 1 参"],
-          ["linear.y", "横移 m/s", "updateVelocity 第 2 参"],
-          ["angular.z", "转向 rad/s", "updateVelocity 第 3 参"],
+          ["linear.x", "前后 m/s", "左右同向：左 = +x，右 = +x"],
+          ["angular.z", "转向 rad/s", "z>0：左减右加 → 车头左转"],
+          ["linear.y", "横移 m/s", "两轮车用不到，忽略"],
         ]}
       />
       <Steps title="展开：接官方电机库（lib/QGP_EVMotor + 链接参数）">
         <p className="text-[0.84rem] text-muted">
-          官方 Arduino 库 <code>QGP_EVMotor</code>（奇果派提供）里的 <code>BaseChassis</code> 速度定义与
-          Twist 完全一致（米/秒、米/秒、弧度/秒），所以回调里直接转发即可。工程内置的是它的
+          官方 Arduino 库 <code>QGP_EVMotor</code>（奇果派提供）里电机是 <code>EMO_DCMotor</code>，
+          <code>spin(-100~100)</code> 直接给开环占空比。工程内置的是它的
           <b>精简子集</b>（只留 <code>EMotionPI.h</code> + <code>ESP32Encoder.h</code> +{" "}
           <code>esp32s3/libqgpmotor.a</code>，0.86 MB；蓝牙手柄/PS2/MQTT/NimBLE 约 4.5 MB 已裁掉）。
         </p>
@@ -473,34 +476,45 @@ void cmd_cb(const void *msgin) {
 build_flags =
   -Llib/QGP_EVMotor/src/esp32s3
   -lqgpmotor`}</Code>
-        <Code>{`// src/main.cpp：上电先初始化底盘（官方示例把连接放进后台任务，这里照做）
+        <Code>{`// src/main.cpp：本板实测配方（履带车、电机无编码器）
 EMotionPI emo;
-BaseChassis *chassis = nullptr;
-volatile unsigned long last_cmd_ms = 0;
-volatile bool moving = false;
+EMO_DCMotor *motor_l = nullptr, *motor_r = nullptr;
+volatile float target_l = 0, target_r = 0;
 
 void setup() {
   emo.begin();
-  chassis = emo.createBaseChassis(BaseChassis::MECANUM);  // 麦轮；差速车用 SKID_STEER
+  // 关键①：先 begin(减速比=90)。本板少了这句，所有 spin()/run() 都静默不出 PWM
+  emo.getEncoderMotor(M1)->begin(90);
+  emo.getEncoderMotor(M2)->begin(90);
+  motor_l = emo.getMotor(M1);      // M1=0、M2=1（头文件里的通道宏）
+  motor_r = emo.getMotor(M2);
+  motor_l->spin(0); motor_r->spin(0);
   xTaskCreatePinnedToCore(microros_task, "microros_task", 10240, NULL, 1, NULL, 0);
 }
 
 void loop() {
-  // 断连保护：1 s 没收到 /cmd_vel 就停车（核心 1 上跑）
-  if (moving && chassis && (millis() - last_cmd_ms) > 1000) {
-    chassis->stop();
+  // 关键②：库调用只在核心 1 做（从 micro-ROS 任务里调 spin() 不出 PWM）
+  if (moving && (millis() - last_cmd_ms) > 1000) {   // 1 s 没指令就停
+    target_l = target_r = 0;
     moving = false;
   }
+  motor_l->spin((int)target_l);    // 关键③：占空比映射到 60~100，
+  motor_r->spin((int)target_r);    //        40~50 低于静摩擦阈值，轮子不动
 }`}</Code>
         <p className="text-[0.84rem] text-muted">
           官方示例里 <code>twist_callback</code> 只打印 <code>Received Twist message</code>；
-          我们把这一句后面接上 <code>chassis-&gt;updateVelocity()</code>，其余（WiFi 自检、
-          <code>rmw_uros_ping_agent</code> 探测、断线 <code>destroy_entities()</code> 重连、任务内
-          <code>millis()</code> 发心跳）都照官方。
+          其余（WiFi 自检、<code>rmw_uros_ping_agent</code> 探测、断线 <code>destroy_entities()</code> 重连、
+          任务内 <code>millis()</code> 发心跳）都照官方。
         </p>
         <p className="text-[0.84rem] text-muted">
-          完整包（含手柄/示例）见 <code>教学webppt/ESP32-S3电机驱动板/files/QGP_EVMotor.zip</code>；
-          要精确速度还需按轮径/轮距/减速比用带参构造。轮子先离地试。
+          实测（2026-09，架空台架）：零速 <code>L=0 R=0</code>；前进 x=0.2 → <code>L=76 R=76</code>；
+          后退 → <code>±76</code> 反向；z=+1.0 → <code>L=-80 R=80</code>（左退右进，车头左转）；
+          z=-1.0 相反；停发 1 s 自动归零。<b>方向与停车全部正确</b>。
+        </p>
+        <p className="text-[0.84rem] text-muted">
+          不要用 <code>BaseChassis::updateVelocity()</code> / <code>spinRPM()</code>：它们是
+          「目标 RPM + PID」，无编码器时反馈恒为 0，PID 饱和到满 PWM——零速指令下轮子会自己转（实测踩过）。
+          完整包（含手柄/示例）见 <code>教学webppt/ESP32-S3电机驱动板/files/QGP_EVMotor.zip</code>。
         </p>
       </Steps>
     </div>
@@ -521,7 +535,7 @@ const Params = () => (
         与 Agent 启动参数 <code>udp4 --port 8888</code> 一致。
       </Card>
       <Card title="ROS_DOMAIN_ID" icon={Layers}>
-        Pi 侧 Agent 与 teleop / 监听节点用同一个域（如 42）。
+        <b>不要设</b>：micro-ROS Agent 固定跑在默认域 0，客户端设成 42 就看不到话题（实测）。
       </Card>
     </Grid>
     <div className="mt-6 space-y-3">
@@ -585,17 +599,16 @@ const Startup = () => (
 ros2 run micro_ros_agent \\
   micro_ros_agent udp4 --port 8888
 
-# 终端 B：看心跳
-ROS_DOMAIN_ID=42 ros2 topic echo /esp32/heartbeat
+# 终端 B：看心跳（不要设 ROS_DOMAIN_ID）
+ros2 topic echo /esp32/heartbeat
 
 # 终端 C：键盘控车
-ROS_DOMAIN_ID=42 ros2 run \\
-  teleop_twist_keyboard teleop_twist_keyboard`}</Code>
+ros2 run teleop_twist_keyboard teleop_twist_keyboard`}</Code>
         }
       />
       <Steps title="展开：三终端完整启动步骤">
         <Code>{`# 每个终端先进入同一个容器
-docker exec -it microros bash
+docker exec -it microros_agent bash
 source /opt/ros/jazzy/setup.bash
 
 # --- 终端 A：Agent（必须最先起）---
@@ -603,18 +616,18 @@ source /microros_ws/install/setup.bash
 ros2 run micro_ros_agent micro_ros_agent udp4 --port 8888
 
 # --- 终端 B：看心跳 ---
-export ROS_DOMAIN_ID=42
+# 注意：不要 export ROS_DOMAIN_ID=42
+# micro-ROS Agent 固定在默认域 0，客户端设成 42 就看不到任何话题（实测）
 ros2 topic echo /esp32/heartbeat
 
 # --- 终端 C：键盘控车 ---
-export ROS_DOMAIN_ID=42
 # ros-base 不含 teleop，首次安装：
 apt-get update && apt-get install -y ros-jazzy-teleop-twist-keyboard
 ros2 run teleop_twist_keyboard teleop_twist_keyboard
 
 # 三个终端都就绪后，最后给 ESP32-S3 上电`}</Code>
         <p className="text-[0.84rem] text-muted">
-          三个终端必须用同一个 <code>ROS_DOMAIN_ID</code>；跨容器 / 跨机还要保证 DDS 发现可达。
+          三个终端都在默认域 0 就好（<b>别设</b> <code>ROS_DOMAIN_ID</code>）；跨机时还要保证 DDS 发现可达。
         </p>
       </Steps>
     </div>
@@ -635,8 +648,7 @@ const Verify = () => (
         ]}
       />
       <Steps title="展开：逐条验证命令与期望输出">
-        <Code>{`export ROS_DOMAIN_ID=42
-source /opt/ros/jazzy/setup.bash
+        <Code>{`source /opt/ros/jazzy/setup.bash    # 不要设 ROS_DOMAIN_ID（Agent 在默认域 0）
 
 ros2 node list                     # 期望：/esp32_car
 ros2 topic list | grep heartbeat   # 期望：/esp32/heartbeat
@@ -683,8 +695,8 @@ const Pitfalls = () => (
         <Card title="容器没加 host 网络" icon={Boxes} tone="warn">
           UDP 8888 只活在容器内，S3 到不了。
         </Card>
-        <Card title="DOMAIN_ID 不一致" icon={Layers} tone="warn">
-          Agent 与 teleop / 监听节点互相看不见。
+        <Card title="设了 ROS_DOMAIN_ID 就看不见" icon={Layers} tone="warn">
+          Agent 固定在域 0；客户端设成 42 时 <code>ros2 topic list</code> 里连 <code>/esp32/heartbeat</code> 都没有。
         </Card>
         <Card title="串口被监视器占用" icon={Terminal} tone="warn">
           用 serial 传输时先关掉 serial monitor，再让 Agent 开门。
@@ -694,6 +706,15 @@ const Pitfalls = () => (
         </Card>
         <Card title="链接报 EMotionPI 未定义" icon={Wrench} tone="warn">
           缺 <code>-lqgpmotor</code>：PIO 只加 LIBPATH、不加 <code>-l</code>（见「收 /cmd_vel」页）。
+        </Card>
+        <Card title="发 /cmd_vel 完全不动" icon={RotateCcw} tone="warn">
+          少了 <code>getEncoderMotor(M1/M2)-&gt;begin(90)</code>：驱动输出没初始化，<code>spin()</code> 静默不出 PWM。
+        </Card>
+        <Card title="占空比太小也不动" icon={Gauge} tone="warn">
+          <code>spin(40~50)</code> 低于静摩擦阈值，轮子纹丝不动；60 起才走，100 满速。
+        </Card>
+        <Card title="零速时轮子自己转" icon={AlertTriangle} tone="warn">
+          用了 <code>updateVelocity()</code> / <code>spinRPM()</code>（PID）：无编码器反馈恒 0，PID 饱和到满 PWM。
         </Card>
       </Grid>
       <Steps title="展开：连不上时的排查命令">
@@ -728,7 +749,7 @@ const Wrap = () => (
           先起 Agent 更顺；固件会自动重连（官方示例的 ping 机制），起晚了也不用重启板子。
         </Card>
         <Card title="已接上真控车" icon={Rocket}>
-          cmd_cb 里 Twist 已直连 QGP_EVMotor 的 <code>BaseChassis::updateVelocity()</code>，
+          Twist 已接到 QGP_EVMotor 的 <code>spin()</code> 驱动左右履带（架空台架实测方向全对），
           1 s 无指令自动停车。
         </Card>
         <Card title="下一步：闭环" icon={BookOpen}>
