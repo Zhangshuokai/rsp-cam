@@ -21,7 +21,10 @@ import {
   Wrench,
   Activity,
 } from "lucide-react";
-import { Frame, Card, DataTable, Grid, Quote, Focus, Steps } from "./components.jsx";
+import { Frame, Card, DataTable, Grid, Quote, Focus, Steps, Figure } from "./components.jsx";
+
+import rosListener from "./assets/ros-listener.jpg";
+import rosMonitor from "./assets/ros-monitor.jpg";
 
 /* 代码块：whitespace-pre 保留缩进与换行 */
 const Code = ({ children }) => (
@@ -603,6 +606,18 @@ ros2 topic echo /cmd_vel`}</Code>
           <code>esp32_node</code>）。
         </p>
       </Steps>
+      <Grid cols={2}>
+        <Figure
+          src={rosMonitor}
+          alt="ESP32-S3 串口日志"
+          caption="S3 串口：定时发 Heartbeat，收到 Twist 指令（图源：奇果派工坊）"
+        />
+        <Figure
+          src={rosListener}
+          alt="树莓派端心跳监听"
+          caption="Pi 端 heartbeat_listener：按频率打印心跳"
+        />
+      </Grid>
     </div>
   </Frame>
 );

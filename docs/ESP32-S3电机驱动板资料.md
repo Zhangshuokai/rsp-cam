@@ -156,16 +156,16 @@ ros2 run micro_ros_agent micro_ros_agent udp4 --port 8888
 
 | 资源 | 链接 |
 | --- | --- |
-| 12V 版原理图 EMO_Lite | <https://www.7gp.cn/wp-content/uploads/2025/08/SCH_EMO_Lite.pdf> |
-| 24V 版原理图 EM_MAX | <https://www.7gp.cn/wp-content/uploads/2025/08/SCH_EMO_MAX_3-V1.0_USE.pdf> |
-| Arduino 库 QGP_EVMotor.zip | <https://www.7gp.cn/wp-content/uploads/2025/11/QGP_EVMotor.zip> |
+| 12V 版原理图 EMO_Lite | 本地：`教学webppt/ESP32-S3电机驱动板/files/SCH_EMO_Lite.pdf` |
+| 24V 版原理图 EM_MAX | 本地：`教学webppt/ESP32-S3电机驱动板/files/SCH_EMO_MAX_3-V1.0_USE.pdf` |
+| Arduino 库 QGP_EVMotor.zip | 本地：`教学webppt/ESP32-S3电机驱动板/files/QGP_EVMotor.zip` |
 | Arduino 库（网盘，pwd 1314） | <https://pan.baidu.com/s/1Ics52oTadGGIVccjC52InA?pwd=1314> |
 | Mixly 3.0 已配插件（Win，pwd 2jih） | <https://pan.baidu.com/s/1cP_Ca2-YIF1ggjxb3lBMuw?pwd=2jih> |
 | Mixly 奇果派 S3 插件（pwd 1314） | <https://pan.baidu.com/s/12dWAfmevUxAKlHdhSA3Abg?pwd=1314> |
 | ROS 2 示例源码（pwd 5bg8） | <https://pan.baidu.com/s/1L9PQhWvsiyluuN4WXUIEoA?pwd=5bg8> |
 | 安卓 App：物联网遥控（pwd ate5） | <https://pan.baidu.com/s/1uJ_lGoXwTgDLesGdStcYuQ?pwd=ate5> |
 | 安卓 App：视频车（pwd 1314） | <https://pan.baidu.com/s/1Lu2Tys0gsobUnCzFyeGd8g?pwd=1314> |
-| Windows 程序烧录工具 | <https://doc.7gp.cn/download/FlashingTool.zip> |
+| Windows 程序烧录工具 | <https://doc.7gp.cn/download/FlashingTool.zip>（官网直链当前返回 404，暂未本地化） |
 | 物联网网页控制端 | <http://rc.7gp.cn/> |
 | Mixly 米思奇官网 | <https://mixly.cn/fredqian/mixly3> |
 

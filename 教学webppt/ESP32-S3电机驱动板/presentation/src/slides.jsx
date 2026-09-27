@@ -24,7 +24,18 @@ import {
   Server,
   Network,
 } from "lucide-react";
-import { Frame, Card, DataTable, Grid, Quote, Focus, Stat, Pill, Steps, Pre } from "./components.jsx";
+import { Frame, Card, DataTable, Grid, Quote, Focus, Stat, Pill, Steps, Pre, Figure } from "./components.jsx";
+
+import boardFront from "./assets/board-front.jpg";
+import wiringPower from "./assets/wiring-power.jpg";
+import wiringEncoder from "./assets/wiring-encoder.jpg";
+import flashTool from "./assets/flash-tool.jpg";
+import arduinoAddzip from "./assets/arduino-addzip.jpg";
+import arduinoBoard from "./assets/arduino-board.png";
+import mixlyInstall from "./assets/mixly-install.png";
+import remoteBle from "./assets/remote-ble.jpg";
+import remoteRc from "./assets/remote-rc.jpg";
+import iotMqtt from "./assets/iot-mqtt.jpg";
 
 const Code = ({ children }) => (
   <div className="surface overflow-x-auto p-4 font-mono text-[0.78rem] leading-relaxed text-ink md:text-[0.82rem]">
@@ -100,7 +111,7 @@ const Versions = () => (
       ]}
     />
     <div className="mt-5">
-      <Quote>两块板的原理图都在官网资料文档可下载（EMO_Lite / EM_MAX）。</Quote>
+      <Quote>原理图已存本地：<A href="./files/SCH_EMO_Lite.pdf">EMO_Lite.pdf</A> / <A href="./files/SCH_EMO_MAX_3-V1.0_USE.pdf">EM_MAX.pdf</A>（随 deck 分发）。</Quote>
     </div>
   </Frame>
 );
@@ -128,6 +139,13 @@ const Specs = () => (
         </Card>
       </Grid>
     </div>
+    <div className="mt-4">
+      <Figure
+        src={boardFront}
+        alt="奇果派 S3 控制板接口标注"
+        caption="官方接口标注：ESP32-S3 控制板（图源：奇果派工坊）"
+      />
+    </div>
   </Frame>
 );
 
@@ -150,6 +168,12 @@ const Wiring = () => (
     <div className="mt-6">
       <Quote>供电不足会使系统工作不稳定——官方推荐使用动力型（大放电电流）电池。</Quote>
     </div>
+    <div className="mt-4">
+      <Grid cols={2}>
+        <Figure src={wiringPower} alt="供电接线" caption="供电接线：DC 5.5-2.1 接口或电池接口（6–12V）" />
+        <Figure src={wiringEncoder} alt="编码器接口引脚" caption="编码器接口：M1–M4 的 VCC / GND / 信号" />
+      </Grid>
+    </div>
   </Frame>
 );
 
@@ -166,6 +190,13 @@ const DevPaths = () => (
     />
     <div className="mt-5">
       <Quote>同一块板，按需要选一条即可；入门与进阶源码可并存。</Quote>
+    </div>
+    <div className="mt-4">
+      <Figure
+        src={flashTool}
+        alt="奇果派程序烧录工具"
+        caption="程序烧录工具：选 ESP32-S3 板型、自动检测端口、一键烧录（图源：奇果派工坊）"
+      />
     </div>
   </Frame>
 );
@@ -205,7 +236,7 @@ const ArduinoFlow = () => (
       <Steps title="展开：Arduino IDE 从装库到烧录（完整步骤）">
         <ol className="list-decimal space-y-2 pl-5">
           <li>装 Arduino IDE，并在开发板管理器安装 esp32 支持。</li>
-          <li>下载 <code>QGP_EVMotor.zip</code>，用「项目 → 导入库 → 添加 .ZIP 库」导入。</li>
+          <li>下载 <A href="./files/QGP_EVMotor.zip">QGP_EVMotor.zip</A>，用「项目 → 导入库 → 添加 .ZIP 库」导入。</li>
           <li>更新库时先删 <code>Documents\Arduino\libraries\QGP_EVMotor</code> 再重导。</li>
           <li>打开「文件 → 示例 → QGP_EVMotor」，先另存为再改。</li>
           <li>工具 → 开发板 → esp32 → <code>ESP32S3 Dev Module</code>，选对端口后上传。</li>
@@ -226,6 +257,12 @@ void loop() {
   if (_joy.Button(BTN_DPAD_UP)) { /* 前进 */ }
 }`}</Pre>
       </Steps>
+    </div>
+    <div className="mt-4">
+      <Grid cols={2}>
+        <Figure src={arduinoAddzip} alt="Arduino 导入 ZIP 库" caption="项目 → 导入库 → 添加 .ZIP 库" />
+        <Figure src={arduinoBoard} alt="选择开发板" caption="工具 → 开发板 → ESP32S3 Dev Module" />
+      </Grid>
     </div>
   </Frame>
 );
@@ -297,6 +334,13 @@ const Mixly = () => (
         </ol>
       </Steps>
     </div>
+    <div className="mt-4">
+      <Figure
+        src={mixlyInstall}
+        alt="Mixly 导入板卡插件"
+        caption="Mixly「本地导入」插件：选「以板卡方式安装」，无需解压（图源：奇果派工坊）"
+      />
+    </div>
   </Frame>
 );
 
@@ -313,6 +357,12 @@ const Controllers = () => (
     />
     <div className="mt-5">
       <Quote>两种手柄的入门版源码都在官网/米思奇开源，进阶版找客服。</Quote>
+    </div>
+    <div className="mt-4">
+      <Grid cols={2}>
+        <Figure src={remoteBle} alt="蓝牙遥控器" caption="蓝牙遥控器：按键与充电口对照（图源：奇果派工坊）" />
+        <Figure src={remoteRc} alt="单手 RC 遥控器" caption="单手 RC 遥控器：摇杆、按钮与 LCD" />
+      </Grid>
     </div>
   </Frame>
 );
@@ -351,6 +401,13 @@ const Iot = () => (
 [6..9] 按钮位图（4 字节 = 32 位）
 摇杆默认 127；上/左到 0，下/右到 255`}</Pre>
       </Steps>
+    </div>
+    <div className="mt-4">
+      <Figure
+        src={iotMqtt}
+        alt="Mixly 物联网配置"
+        caption="Mixly 里填 Wi-Fi 与唯一通讯标识，上传后即可远程控制（图源：奇果派工坊）"
+      />
     </div>
   </Frame>
 );
@@ -477,26 +534,28 @@ const Downloads = () => (
       rows={[
         [
           "12V 原理图 EMO_Lite",
-          <A href="https://www.7gp.cn/wp-content/uploads/2025/08/SCH_EMO_Lite.pdf">SCH_EMO_Lite.pdf</A>,
+          <A href="./files/SCH_EMO_Lite.pdf">SCH_EMO_Lite.pdf（本地）</A>,
         ],
         [
           "24V 原理图 EM_MAX",
-          <A href="https://www.7gp.cn/wp-content/uploads/2025/08/SCH_EMO_MAX_3-V1.0_USE.pdf">SCH_EMO_MAX_3-V1.0_USE.pdf</A>,
+          <A href="./files/SCH_EMO_MAX_3-V1.0_USE.pdf">SCH_EMO_MAX_3-V1.0_USE.pdf（本地）</A>,
         ],
         [
           "Arduino 库 QGP_EVMotor.zip",
-          <A href="https://www.7gp.cn/wp-content/uploads/2025/11/QGP_EVMotor.zip">QGP_EVMotor.zip</A>,
+          <A href="./files/QGP_EVMotor.zip">QGP_EVMotor.zip（本地）</A>,
         ],
         [
           "Windows 程序烧录工具",
-          <A href="https://doc.7gp.cn/download/FlashingTool.zip">FlashingTool.zip</A>,
+          <A href="https://doc.7gp.cn/download/FlashingTool.zip">FlashingTool.zip（官网直链）</A>,
         ],
         ["物联网网页控制端", <A href="http://rc.7gp.cn/">rc.7gp.cn</A>],
         ["完整资料整理", "docs/ESP32-S3电机驱动板资料.md"],
       ]}
     />
     <div className="mt-5">
-      <Quote>Mixly 插件与 ROS 2 示例源码走百度网盘，链接见资料文档第七节。</Quote>
+      <Quote>
+        原理图与 Arduino 库已放本地 <code>files/</code>，随 deck 一起分发即可离线打开；烧录工具与 Mixly/ROS 2 源码走官网/百度网盘，见资料文档第七节。
+      </Quote>
     </div>
   </Frame>
 );

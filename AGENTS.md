@@ -28,6 +28,7 @@
 - **统一导航**：每个 deck 成品顶栏都有固定的「← 目录」链接（源码 `presentation/src/App.jsx` 顶栏的 `<a href="../index.html">`），回到 `教学webppt/index.html`；deck 内的分页侧栏称「大纲」，别和「目录」混称。
 - 各 deck 的 `components.jsx` 完全一致，`App.jsx` 仅品牌文案不同；改导航/交互要**所有 deck** 同步改并全部重建（`npm run build` 后把 `dist/index.html` 覆盖成品），否则成品与源码漂移。构建后不要留下「源码已改、成品未刷新」的状态。
 - **详情默认折叠**：完整步骤 / 全量命令放共用组件 `Steps`（`<details>`，摘要写「展开：…」，默认收起）＋ `Pre`（保留换行缩进的代码块）；正文只留要点。二者定义在 `components.jsx`，不要在 `slides.jsx` 里另写一套；规则见 `教学webppt/编写守则.md`。
+- **附件本地化**：deck 的可下载文件（PDF / zip）放 `<主题>/files/`，deck 里用相对链接 `./files/…` 引用，随目录一起分发，**不内联**进单文件；对应 `docs/` 里的下载链接同步改成本地路径。
 - 验证要求：桌面 1366×860 与手机 390×844 逐页断言 `overflowX === 0` 且首行可见；幻灯片外层用 `min-h-full` 而非 `h-full`（否则高页内容顶部会被顶掉）。
 
 ## 图表约定（全仓库）
