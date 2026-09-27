@@ -724,6 +724,17 @@ const Wrap = () => (
           </a>
           （platformio.ini、src/main.cpp、README、lib/QGP_EVMotor 精简子集）。
         </Card>
+        <Card title="官方 micro-ROS 示例（网盘）" icon={Download}>
+          奇果派官方「ESP32-S3 + 树莓派双向通讯」示例源码（含 ROS 2 代码与{" "}
+          <code>heartbeat_listener.py</code>）：
+          <a
+            className="underline break-all"
+            href="https://pan.baidu.com/s/1L9PQhWvsiyluuN4WXUIEoA?pwd=5bg8"
+          >
+            百度网盘（提取码 5bg8）
+          </a>
+          。
+        </Card>
       </Grid>
       <p className="text-[0.88rem] leading-relaxed text-muted md:text-[0.95rem]">
         背景与选型见 <code>ROS2与micro-ROS选型</code> deck；硬件、开发与遥控见{" "}
