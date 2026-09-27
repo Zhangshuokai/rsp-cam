@@ -1,7 +1,7 @@
-// ESP32-S3 micro-ROS 最小固件（PlatformIO + micro_ros_platformio）
-// 发心跳 /esp32/heartbeat、收 /cmd_vel
-// 对应 教学webppt/ESP32-S3接入micro-ROS 的「固件骨架 / 发心跳 / 收 /cmd_vel」页。
+// ESP32-S3 micro-ROS 固件：收 /cmd_vel 控车、发 /esp32/heartbeat
+// 电机/底盘用官方 QGP_EVMotor 库（内置精简子集，见 lib/QGP_EVMotor/README.md）。
 #include <micro_ros_platformio.h>
+#include <EMotionPI.h>
 
 #include <rcl/rcl.h>
 #include <rcl/error_handling.h>
@@ -20,6 +20,15 @@
 #define AGENT_PORT 8888
 // -----------------------------------------------------
 
+// 超过这么久没收到 /cmd_vel 就停车（丢包/断连保护）
+#define CMD_TIMEOUT_MS 1000
+// 速度上限：米/秒、弧度/秒（teleop 默认 0.5 m/s，这里做一层限幅）
+#define MAX_LINEAR 0.5f
+#define MAX_ANGULAR 2.0f
+
+EMotionPI emo;
+BaseChassis *chassis = nullptr;
+
 rcl_allocator_t allocator;
 rclc_support_t support;
 rcl_node_t node;
@@ -33,6 +42,15 @@ geometry_msgs__msg__Twist cmd_msg;
 
 rclc_executor_t executor;
 
+static unsigned long last_cmd_ms = 0;
+static bool moving = false;
+
+static float clampf(float v, float limit) {
+  if (v > limit) return limit;
+  if (v < -limit) return -limit;
+  return v;
+}
+
 void timer_cb(rcl_timer_t *timer, int64_t last_call_time) {
   (void)timer;
   (void)last_call_time;
@@ -42,12 +60,20 @@ void timer_cb(rcl_timer_t *timer, int64_t last_call_time) {
 
 void cmd_cb(const void *msgin) {
   const geometry_msgs__msg__Twist *m = (const geometry_msgs__msg__Twist *)msgin;
-  // m->linear.x 前后 / m->linear.y 横移 / m->angular.z 转向
-  // TODO：换成 QGP_EVMotor 的 EMO_DCMotor::run() / setSpeed()
-  (void)m;
+  if (!chassis) return;
+  // Twist (m/s, m/s, rad/s) 与麦轮底盘的速度定义一致，直接下发
+  chassis->updateVelocity(clampf(m->linear.x, MAX_LINEAR),
+                          clampf(m->linear.y, MAX_LINEAR),
+                          clampf(m->angular.z, MAX_ANGULAR));
+  last_cmd_ms = millis();
+  moving = true;
 }
 
 void setup() {
+  // 先初始化底盘：上电后电机处于停止状态
+  emo.begin();
+  chassis = emo.createBaseChassis(BaseChassis::MECANUM);
+
   set_microros_wifi_transports(
       (char *)WIFI_SSID, (char *)WIFI_PASS,
       IPAddress(AGENT_OCTET_0, AGENT_OCTET_1, AGENT_OCTET_2, AGENT_OCTET_3),
@@ -74,4 +100,9 @@ void setup() {
 
 void loop() {
   rclc_executor_spin_some(&executor, RCL_MS_TO_NS(100));
+
+  if (moving && chassis && (millis() - last_cmd_ms) > CMD_TIMEOUT_MS) {
+    chassis->stop();
+    moving = false;
+  }
 }

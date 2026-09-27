@@ -1,7 +1,7 @@
 # ESP32-S3 micro-ROS 固件工程（PlatformIO）
 
 奇果派 S3 机器人控制板（ESP32-S3-WROOM-1-N8R8）作为 ROS 2 节点接入的最小固件工程：
-发 `/esp32/heartbeat`（std_msgs/Int32，1 Hz）、收 `/cmd_vel`（geometry_msgs/Twist），
+发 `/esp32/heartbeat`（std_msgs/Int32，1 Hz）、收 `/cmd_vel`（geometry_msgs/Twist）**直接驱动麦轮底盘**，
 经树莓派上的 micro-ROS Agent（UDP4:8888）接入 ROS 2 图。
 
 配套讲义见 `教学webppt/ESP32-S3接入micro-ROS/`；背景见
@@ -10,8 +10,12 @@
 ## 目录
 
 ```
-platformio.ini     板型 / micro-ROS 发行版 / 传输 / 依赖
-src/main.cpp       固件：心跳发布者 + cmd_vel 订阅（回调里未接电机）
+platformio.ini                       板型 / micro-ROS 发行版 / 传输 / 依赖 / QGP 链接参数
+src/main.cpp                         固件：心跳发布 + cmd_vel 订阅 → 麦轮底盘
+lib/QGP_EVMotor/                     官方电机库的精简子集（见其 README.md）
+  ├─ src/EMotionPI.h                 EMotionPI / EMO_DCMotor / BaseChassis
+  ├─ src/ESP32Encoder.h
+  └─ src/esp32s3/libqgpmotor.a       官方预编译静态库（0.84 MB）
 ```
 
 ## 关键限制：Windows 上需要先在 WSL 编一次库
@@ -39,7 +43,15 @@ bash /mnt/c/vibecoding/rsp/tools/microros_lib_wsl.sh
 
 ## 配置
 
-`platformio.ini` 与树莓派 ROS 2 版本一致（`board_microros_distro = jazzy`，传输 `wifi`）。
+`platformio.ini` 与树莓派 ROS 2 版本一致（`board_microros_distro = jazzy`，传输 `wifi`），
+并对官方电机库补了链接参数（原因见 `lib/QGP_EVMotor/README.md`）：
+
+```ini
+build_flags =
+  -Llib/QGP_EVMotor/src/esp32s3
+  -lqgpmotor
+```
+
 改 `src/main.cpp` 顶部：
 
 ```cpp
@@ -55,6 +67,23 @@ bash /mnt/c/vibecoding/rsp/tools/microros_lib_wsl.sh
 > Agent 地址要填**树莓派可达的地址**（如 wlan0 的 `192.168.31.29`），不能写 `127.0.0.1`。
 > 头文件是 `#include <micro_ros_platformio.h>`（PlatformIO 版），
 > `set_microros_wifi_transports()` 的第 3 个参数是 `IPAddress`，不是字符串。
+
+## 控车逻辑
+
+`cmd_cb` 把 Twist 直接交给官方 `BaseChassis`（两者速度定义一致：米/秒、米/秒、弧度/秒）：
+
+```cpp
+chassis->updateVelocity(clampf(m->linear.x, MAX_LINEAR),
+                        clampf(m->linear.y, MAX_LINEAR),
+                        clampf(m->angular.z, MAX_ANGULAR));
+```
+
+- 底盘类型 `BaseChassis::MECANUM`（麦轮，可横移）；纯差速车改成 `SKID_STEER` / `DIFFERENTIAL_DRIVE`。
+- `MAX_LINEAR` / `MAX_ANGULAR` 是限幅，防止遥控脚本给过大的值（默认 0.5 m/s、2.0 rad/s）。
+- **丢包保护**：超过 `CMD_TIMEOUT_MS`（1000 ms）没收到 `/cmd_vel` 就 `chassis->stop()`，
+  避免断连后小车继续冲。
+- 轮径、轮距、减速比等若要精确，用带参构造
+  `emo.createBaseChassis(BaseChassis::MECANUM, max_rpm, gear_ratio, ppr, voltage, wheel_diameter, wheel_y_distance)`。
 
 ## 编译与烧录（Windows）
 
@@ -94,10 +123,16 @@ ros2 node list                     # /esp32_node
 ros2 topic hz /esp32/heartbeat     # ≈ 1
 ros2 topic echo /esp32/heartbeat   # data 递增
 ros2 topic info /cmd_vel           # Publisher count ≥ 1
+ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist \
+  "{linear: {x: 0.2}, angular: {z: 0.0}}"   # 车应前进，停发 1 s 后自动停
 ```
+
+> 上电前把驱动板接好 6–24 V 动力电池（USB 供电带不动电机），并让车轮离地先试。
 
 ## 说明
 
-回调 `cmd_cb` 里只解析出 `linear.x/y`、`angular.z`，未接电机；真控车时换成
-`QGP_EVMotor`（`教学webppt/ESP32-S3电机驱动板/files/QGP_EVMotor.zip`）的
-`EMO_DCMotor::run()` / `setSpeed()`。
+固件只做「通信 + 控车通路」；遥测回传（编码器/IMU → `/odom`）尚未接，可用
+`chassis->getOdometry(x, y, theta)` 扩展。若还要用蓝牙手柄直连控车，把官方完整包
+`教学webppt/ESP32-S3电机驱动板/files/QGP_EVMotor.zip` 解压覆盖 `lib/QGP_EVMotor/`
+（含 `BLEControlStick.h` 与 NimBLE），API 见
+`docs/ESP32-S3电机驱动板资料.md` 第三节。

@@ -34,6 +34,10 @@ echo "== 2/4 同步工程到 $WORK =="
 mkdir -p "$WORK/src"
 cp -f "$PROJ_WSL/platformio.ini" "$WORK/"
 cp -f "$PROJ_WSL/src/"*.cpp "$WORK/src/"
+if [ -d "$PROJ_WSL/lib" ]; then
+  rm -rf "$WORK/lib"
+  cp -R "$PROJ_WSL/lib" "$WORK/lib"
+fi
 
 echo "== 3/4 构建（首次会 clone micro-ROS 源码并交叉编译，数分钟）=="
 cd "$WORK"
