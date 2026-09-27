@@ -1,21 +1,26 @@
 # ESP32-S3 micro-ROS 固件工程（PlatformIO）
 
-奇果派 S3 机器人控制板（ESP32-S3-WROOM-1-N8R8）作为 ROS 2 节点接入的最小固件工程：
+奇果派 S3 机器人控制板（ESP32-S3-WROOM-1-N8R8）作为 ROS 2 节点接入：
 发 `/esp32/heartbeat`（std_msgs/Int32，1 Hz）、收 `/cmd_vel`（geometry_msgs/Twist）**直接驱动麦轮底盘**，
 经树莓派上的 micro-ROS Agent（UDP4:8888）接入 ROS 2 图。
 
-配套讲义见 `教学webppt/ESP32-S3接入micro-ROS/`；背景见
-`docs/ESP32-S3电机驱动板资料.md` 第六节、`docs/ROS2与micro-ROS选型.md` 第六节。
+结构照**奇果派官方示例**（`micro-ROS.zip`）：连接管理放进 FreeRTOS 后台任务，用
+`rmw_uros_ping_agent` 探测 Agent、断线销毁实体后自动重连；本工程只把官方示例里
+「只打印」的 `twist_callback` 换成 `QGP_EVMotor` 的真实控车。
+
+配套讲义见 `教学webppt/ESP32-S3接入micro-ROS/`；官方示例源码见
+`教学webppt/ESP32-S3接入micro-ROS/files/micro-ROS-official-src.zip`。
 
 ## 目录
 
 ```
 platformio.ini                       板型 / micro-ROS 发行版 / 传输 / 依赖 / QGP 链接参数
-src/main.cpp                         固件：心跳发布 + cmd_vel 订阅 → 麦轮底盘
+src/main.cpp                         固件：官方示例结构 + 麦轮控车
 lib/QGP_EVMotor/                     官方电机库的精简子集（见其 README.md）
   ├─ src/EMotionPI.h                 EMotionPI / EMO_DCMotor / BaseChassis
   ├─ src/ESP32Encoder.h
   └─ src/esp32s3/libqgpmotor.a       官方预编译静态库（0.84 MB）
+pi/heartbeat_listener.py             官方示例的心跳监听节点（Pi 侧，原样保留）
 ```
 
 ## 关键限制：Windows 上需要先在 WSL 编一次库
@@ -55,33 +60,41 @@ build_flags =
 改 `src/main.cpp` 顶部：
 
 ```cpp
-#define WIFI_SSID "your_wifi_ssid"     // 必须是 2.4 GHz
-#define WIFI_PASS "your_wifi_password"
-#define AGENT_OCTET_0 192               // 树莓派同一网段地址，如 192.168.31.29
-#define AGENT_OCTET_1 168
-#define AGENT_OCTET_2 31
-#define AGENT_OCTET_3 29
+#define WIFI_SSID "your_wifi_ssid"       // 必须是 2.4 GHz
+#define WIFI_PASSWORD "your_wifi_password"
+#define AGENT_IP "192.168.31.29"         // 树莓派在同一网段的地址，不是 127.0.0.1
 #define AGENT_PORT 8888
 ```
 
-> Agent 地址要填**树莓派可达的地址**（如 wlan0 的 `192.168.31.29`），不能写 `127.0.0.1`。
-> 头文件是 `#include <micro_ros_platformio.h>`（PlatformIO 版），
-> `set_microros_wifi_transports()` 的第 3 个参数是 `IPAddress`，不是字符串。
+> 节点名 `esp32_car`、话题 `/cmd_vel` 与 `/esp32/heartbeat` 都照官方示例。
+> 传输头文件是 `#include <micro_ros_platformio.h>`（PlatformIO 版），
+> `set_microros_wifi_transports()` 第 3 参是 `IPAddress`。
+> 官方示例用的是 **gitee 镜像** `ohhuo/micro_ros_platformio` 且没写 distro；本工程用官方仓库 +
+> `jazzy`，两者不能混：`libmicroros` 必须和 `board_microros_distro` 一致，换镜像要重编库。
+
+## 程序结构（照官方示例）
+
+| 位置 | 做什么 |
+| --- | --- |
+| `setup()` | `emo.begin()` + `createBaseChassis(BaseChassis::MECANUM)`，再 `xTaskCreatePinnedToCore(microros_task, …, 10240, …, 0)` |
+| `microros_task`（核心 0） | `wait_for_wifi(30s)`（失败 `ESP.restart()`）→ `set_microros_wifi_transports` → 循环：`ping_agent` 通了就 `create_entities()`；`spin_some` + `ping_agent(100,3)` 判掉线 → `destroy_entities()` 重连；`millis()` 每 1 s 发心跳 |
+| `twist_callback` | 打印 `Received Twist message`（官方保留），再接 `chassis->updateVelocity()` 控车 |
+| `loop()`（核心 1） | 只做断连/丢包保护：1 s 没收到 `/cmd_vel` 就 `chassis->stop()` |
 
 ## 控车逻辑
 
-`cmd_cb` 把 Twist 直接交给官方 `BaseChassis`（两者速度定义一致：米/秒、米/秒、弧度/秒）：
+`twist_callback` 把 Twist 直接交给官方 `BaseChassis`（两者速度定义一致：米/秒、米/秒、弧度/秒）：
 
 ```cpp
-chassis->updateVelocity(clampf(m->linear.x, MAX_LINEAR),
-                        clampf(m->linear.y, MAX_LINEAR),
-                        clampf(m->angular.z, MAX_ANGULAR));
+chassis->updateVelocity(clampf(linear_x, MAX_LINEAR),
+                        clampf(linear_y, MAX_LINEAR),
+                        clampf(angular_z, MAX_ANGULAR));
+last_cmd_ms = millis();
+moving = true;
 ```
 
 - 底盘类型 `BaseChassis::MECANUM`（麦轮，可横移）；纯差速车改成 `SKID_STEER` / `DIFFERENTIAL_DRIVE`。
-- `MAX_LINEAR` / `MAX_ANGULAR` 是限幅，防止遥控脚本给过大的值（默认 0.5 m/s、2.0 rad/s）。
-- **丢包保护**：超过 `CMD_TIMEOUT_MS`（1000 ms）没收到 `/cmd_vel` 就 `chassis->stop()`，
-  避免断连后小车继续冲。
+- `MAX_LINEAR` / `MAX_ANGULAR` 是限幅（默认 0.5 m/s、2.0 rad/s）。
 - 轮径、轮距、减速比等若要精确，用带参构造
   `emo.createBaseChassis(BaseChassis::MECANUM, max_rpm, gear_ratio, ppr, voltage, wheel_diameter, wheel_y_distance)`。
 
@@ -108,18 +121,22 @@ docker run -it --rm --network host -v ~/microros_ws:/microros_ws \
   source /microros_ws/install/setup.bash; \
   ros2 run micro_ros_agent micro_ros_agent udp4 --port 8888'
 
-# 另开终端：看心跳 / 键盘控车（同一个 ROS_DOMAIN_ID）
+# 另开终端：看心跳（官方示例的监听节点，已随本工程放在 pi/）
 export ROS_DOMAIN_ID=42
+python3 ~/microros_ws/src/heartbeat_listener.py     # 见 pi/README.md 的上传方法
+# 或简单看频率
 ros2 topic hz /esp32/heartbeat
+
+# 再开终端：键盘控车
 ros2 run teleop_twist_keyboard teleop_twist_keyboard
 ```
 
-顺序不可反：**先起 Agent，再给 ESP32-S3 上电**，否则固件一直重连。
+先起 Agent 更顺；起晚了也没关系——固件会自动重连，不用重启板子。
 
 ## 验收
 
 ```bash
-ros2 node list                     # /esp32_node
+ros2 node list                     # /esp32_car
 ros2 topic hz /esp32/heartbeat     # ≈ 1
 ros2 topic echo /esp32/heartbeat   # data 递增
 ros2 topic info /cmd_vel           # Publisher count ≥ 1
@@ -127,12 +144,14 @@ ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist \
   "{linear: {x: 0.2}, angular: {z: 0.0}}"   # 车应前进，停发 1 s 后自动停
 ```
 
+串口（115200）上同时能看到官方的日志：`[ROS] Agent found, creating entities...`、
+`[ROS] Heartbeat sent: n`、`Received Twist message: xyz = …`。
+
 > 上电前把驱动板接好 6–24 V 动力电池（USB 供电带不动电机），并让车轮离地先试。
 
 ## 说明
 
-固件只做「通信 + 控车通路」；遥测回传（编码器/IMU → `/odom`）尚未接，可用
-`chassis->getOdometry(x, y, theta)` 扩展。若还要用蓝牙手柄直连控车，把官方完整包
+遥测回传（编码器/IMU → `/odom`）尚未接，可用 `chassis->getOdometry(x, y, theta)` 扩展。
+若还要用蓝牙手柄直连控车，把官方完整包
 `教学webppt/ESP32-S3电机驱动板/files/QGP_EVMotor.zip` 解压覆盖 `lib/QGP_EVMotor/`
-（含 `BLEControlStick.h` 与 NimBLE），API 见
-`docs/ESP32-S3电机驱动板资料.md` 第三节。
+（含 `BLEControlStick.h` 与 NimBLE），API 见 `docs/ESP32-S3电机驱动板资料.md` 第三节。

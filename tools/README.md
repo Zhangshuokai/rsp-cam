@@ -13,6 +13,7 @@
 
 ```
 python tools/pi.py [--sudo] [--host <IP>] [--user <u>] [--pass <p>] [--file <本地脚本>] '<命令>'
+python tools/pi.py --put <本地文件> <Pi 上的绝对路径>     # 只上传，不执行
 ```
 
 默认指向新 Pi `172.26.188.116`（账号 `nanzhida`）。

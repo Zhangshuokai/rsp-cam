@@ -14,10 +14,10 @@
 
 - 摄像头远程显示：`教学demo/摄像头远程显示/{cam_server.py,cam_view.py}`（原理见 `docs/设计原理流程图.md`，硬件见 `docs/摄像头参数.md`、`docs/摄像头选型.md`）。
   Pi 端运行前需 `sudo apt-get install -y python3-opencv`，脚本放 `/home/nanzhida/cam_server.py`，后台启动 `nohup python3 cam_server.py > /tmp/cam_server.log 2>&1 &`；本机 `python "教学demo/摄像头远程显示/cam_view.py"`（默认 `172.26.188.116:5000`）。
-- 树莓派连接工具：`tools/pi.py`。
+- 树莓派连接工具：`tools/pi.py`（含 `--put <本地> <远端>` 只上传不执行）。
 - ESP32-S3 电机驱动板（奇果派 S3 机器人控制板）资料汇总：`docs/ESP32-S3电机驱动板资料.md`（硬件/接线/Arduino/Mixly/物联网/micro-ROS）。
 - ESP32-S3 接入 micro-ROS 的完整步骤 deck：`教学webppt/ESP32-S3接入micro-ROS/`；背景见 `docs/ESP32-S3电机驱动板资料.md` 第六节与 `docs/ROS2与micro-ROS选型.md` 第六节。
-- ESP32-S3 micro-ROS 固件工程（PlatformIO）：`教学demo/ESP32-S3-microROS/`（头文件是 `micro_ros_platformio.h`，`board_microros_distro = jazzy` + `board_microros_transport = wifi`；`cmd_cb` 已把 Twist 接到官方 `QGP_EVMotor` 的 `BaseChassis::updateVelocity()`，含 1 s 断连停车）。**Windows 编不了 micro_ros_platformio 的 libmicroros**（上游首次构建用 POSIX shell + colcon，报 `'.' is not recognized`）：先在 WSL 跑 `tools/microros_lib_wsl.sh` 编库并拷回工程 `.pio`，之后 Windows 上 `pio run` / `-t upload` 正常（实测 RAM 20.7% / Flash 22.7%）。电机库是官方包的精简子集（`lib/QGP_EVMotor/`，只留 `EMotionPI.h`+`ESP32Encoder.h`+`esp32s3/libqgpmotor.a`，0.86 MB；蓝牙手柄那套 NimBLE 约 4.5 MB 裁掉）。下载：`教学webppt/ESP32-S3接入micro-ROS/files/ESP32-S3-microROS.zip`。
+- ESP32-S3 micro-ROS 固件工程（PlatformIO）：`教学demo/ESP32-S3-microROS/`（头文件是 `micro_ros_platformio.h`，`board_microros_distro = jazzy` + `board_microros_transport = wifi`；**结构照奇果派官方示例**——FreeRTOS 任务管 WiFi/`rmw_uros_ping_agent` 重连/心跳，节点名 `esp32_car`，只把官方只打印的 `twist_callback` 换成官方 `QGP_EVMotor` 的 `BaseChassis::updateVelocity()`，含 1 s 断连停车）。**Windows 编不了 micro_ros_platformio 的 libmicroros**（上游首次构建用 POSIX shell + colcon，报 `'.' is not recognized`）：先在 WSL 跑 `tools/microros_lib_wsl.sh` 编库并拷回工程 `.pio`，之后 Windows 上 `pio run` / `-t upload` 正常（实测 RAM 20.8% / Flash 23.4%）。电机库是官方包的精简子集（`lib/QGP_EVMotor/`，只留 `EMotionPI.h`+`ESP32Encoder.h`+`esp32s3/libqgpmotor.a`，0.86 MB；蓝牙手柄那套 NimBLE 约 4.5 MB 裁掉）。Pi 侧监听节点 `pi/heartbeat_listener.py`（官方原样，用 `pi.py --put` 上传）。下载：`教学webppt/ESP32-S3接入micro-ROS/files/{ESP32-S3-microROS.zip,micro-ROS-official-src.zip}`。
 - 串口波形监控 GUI：`tools/serial_monitor/serial_monitor.py`（tkinter + pyserial；示波器风格、10 通道泳道、悬停游标、点击徽标隐藏通道）。用法 `python tools/serial_monitor/serial_monitor.py --port <COM> --baud 115200 --autostart`（先用 `--list` 确认端口）；无硬件用 `--demo` 看界面、`--names` 改通道名。依赖 `python -m pip install pyserial`（tkinter 随 Python 自带）；通道定义（遥控器 `c0…c9` → `ch1…ch4 / swa-5…swd-8 / vra / vrb`）见其 `README.md`。下载：`教学webppt/ESP32-S3电机驱动板/files/serial_monitor.zip`（随 deck 分发）。
 - 不入库：`__pycache__` / `*.pyc`、`数据/*/` 内容（只保留 `.gitkeep`）、`node_modules/` 与 `**/presentation/dist/`、`.vscode/`（Live Server 写的端口）、`.pio/`（PlatformIO 构建产物与预编译 `libmicroros`，约 60 MB）。
 
@@ -83,10 +83,12 @@
 
 ```
 python tools/pi.py [--sudo] [--host <IP>] [--user <u>] [--pass <p>] [--file <本地脚本>] '<命令>'
+python tools/pi.py --put <本地文件> <Pi 上的绝对路径>     # 只上传，不执行（SFTP，不做 ~ 展开）
 ```
 
 - 选项可任意顺序、可省略；`fe80::...%20` 这种带 scope 的链路本地地址可直接作为 `--host` 传入（Windows `getaddrinfo` 认识 `%<ifIndex>`，paramiko 可用）。
 - 底层用 paramiko（已装在用户级 Python 3.14：`C:\Users\z\AppData\Roaming\Python\Python314\site-packages`）：务必用 PATH 上同一个 `python`（3.14.6）运行 `tools/pi.py`，换解释器会 `ModuleNotFoundError: paramiko`。Windows 自带 OpenSSH 没有 sshpass，所以**不要**直接调 `ssh`，密码无法非交互传入。
+- `pi.py` 已把 stdout/stderr `reconfigure` 成 UTF-8（`errors=replace`）：否则远端输出里的中文/`\ufeff` 会让 Windows 控制台 GBK 直接 `UnicodeEncodeError` 崩掉。改这个脚本别再删这两行。
 - 复杂命令、含引号/括号/管道的命令一律写成 **纯 ASCII** 的 `.sh`，用 `--file` 上传到 `/tmp/kilo-run.sh` 执行。PowerShell → paramiko → bash 三层引号极易被破坏（会报 `unexpected token` / `bash: - : invalid option`）。
 - PowerShell 5.1：不支持 `&&`；**不要把中文路径写进 `.ps1` 文件**——UTF-8 无 BOM 的脚本会被按 ANSI 读取，生成乱码目录、文件落错位置（本仓库踩过：`教学webppt` 变 `鏁欏webppt`）。中文路径改用 **bash 内联命令**（工具按 UTF-8 传入），或写成带 BOM 的脚本。网卡操作用 `Get-NetAdapter | Where-Object { $_.ifIndex -eq <号> }` 管道传对象，不要用中文网卡名。
 - `Restart-NetAdapter` / `Disable-NetAdapter` / `Enable-NetAdapter` 都不接受 `-InterfaceIndex`，必须走上面的管道；`Get-NetAdapterStatistics` / `Get-NetAdapterAdvancedProperty` 同理（只接受 `-Name`，或用管道）。
