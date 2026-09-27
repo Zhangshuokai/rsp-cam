@@ -13,7 +13,7 @@ import {
   Server,
   Eye,
 } from "lucide-react";
-import { Frame, Card, DataTable, Grid, Quote, Stat, Focus } from "./components.jsx";
+import { Frame, Card, DataTable, Grid, Quote, Stat, Focus, Steps, Pre } from "./components.jsx";
 
 const Cover = () => (
   <div className="mx-auto flex w-full max-w-[80rem] flex-1 flex-col justify-center">
@@ -88,6 +88,22 @@ const Protocol = () => (
         读写两侧 10s 空闲超时，防止瞬时抖动拖死进程。
       </Card>
     </Grid>
+    <div className="mt-4">
+      <Steps title="展开：帧协议完整定义">
+        <Pre>{`帧 = [4 字节长度][JPEG 载荷]
+
+长度：大端无符号 32 位，单位字节
+边界校验：0 < 长度 ≤ 8 MiB，否则判非法并断开
+超时：读 / 写两侧各 10 s 空闲超时
+连接：单客户端 listen(1)，TCP_NODELAY 关闭 Nagle
+
+收帧伪码：
+  len = recv_exact(4)
+  if not (0 < len <= 8 * 1024 * 1024): abort
+  jpeg = recv_exact(len)
+  img = cv2.imdecode(jpeg, IMREAD_COLOR)`}</Pre>
+      </Steps>
+    </div>
   </Frame>
 );
 
@@ -111,6 +127,20 @@ const PiSide = () => (
         </Card>
       }
     />
+    <div className="mt-4">
+      <Steps title="展开：cam_server.py 全部参数">
+        <Pre>{`python3 cam_server.py \\
+  --device /dev/video0 \\       # 摄像头设备
+  --width 1280 --height 960 \\  # 分辨率（上限）
+  --fps 25 \\                   # 目标帧率
+  --quality 100 \\              # JPEG 质量 0–100
+  --port 5000 \\                # 监听端口
+  --bind 172.26.188.116         # 监听地址（默认本机直连 IP）
+
+# 依赖（Pi 端）
+sudo apt-get install -y python3-opencv`}</Pre>
+      </Steps>
+    </div>
   </Frame>
 );
 
@@ -135,6 +165,20 @@ const PcSide = () => (
         </Card>
       }
     />
+    <div className="mt-4">
+      <Steps title="展开：cam_view.py 全部参数与退出码">
+        <Pre>{`python cam_view.py \\
+  --host 172.26.188.116 \\      # 服务端地址
+  --port 5000 \\                # 服务端端口
+  --check \\                    # 无窗口模式（无人值守验证）
+  --frames 60                   # --check 下统计的帧数
+
+# 依赖（本机）
+pip install opencv-python numpy
+
+# 退出码：0 = 正常 / 校验通过，非 0 = 连接或校验失败`}</Pre>
+      </Steps>
+    </div>
   </Frame>
 );
 
@@ -173,6 +217,25 @@ const Run = () => (
     </Grid>
     <div className="mt-6">
       <Quote>依赖：Pi 端 python3-opencv；本机 opencv-python + numpy。</Quote>
+    </div>
+    <div className="mt-4">
+      <Steps title="展开：从依赖安装到跑通（完整步骤）">
+        <Pre>{`# 1) Pi 端装依赖并启动服务
+sudo apt-get install -y python3-opencv
+# 把 cam_server.py 传到 Pi 后后台启动
+nohup python3 cam_server.py --bind 172.26.188.116 > /tmp/cam_server.log 2>&1 &
+ss -ltn | grep 5000             # 确认监听
+
+# 2) 本机装依赖并显示
+pip install opencv-python numpy
+python "教学demo/摄像头远程显示/cam_view.py" --host 172.26.188.116
+
+# 3) 无窗口验证（脚本化 / 无人值守）
+python "教学demo/摄像头远程显示/cam_view.py" --check --frames 60
+
+# 4) 要最高采集
+python cam_view.py --width 1280 --height 960 --quality 100 --fps 25`}</Pre>
+      </Steps>
     </div>
   </Frame>
 );

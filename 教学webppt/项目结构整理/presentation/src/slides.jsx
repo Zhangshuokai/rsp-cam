@@ -13,7 +13,7 @@ import {
   GitBranch,
   Rocket,
 } from "lucide-react";
-import { Frame, Card, DataTable, Grid, Quote, Focus } from "./components.jsx";
+import { Frame, Card, DataTable, Grid, Quote, Focus, Steps, Pre } from "./components.jsx";
 
 const Cover = () => (
   <div className="mx-auto flex w-full max-w-[80rem] flex-1 flex-col justify-center">
@@ -85,6 +85,22 @@ const Tree = () => (
         ["tools/", "工程工具（树莓派连接脚本）"],
       ]}
     />
+    <div className="mt-4">
+      <Steps title="展开：完整目录树（含二级）">
+        <Pre>{`rsp/
+├── AGENTS.md          # 协作 / 环境备忘（树莓派连接与操作）
+├── README.md          # 项目总览与目录约定
+├── docs/              # 技术文档：设计原理、硬件参数、选型
+├── 培训/              # 培训资料与赛项规则解读
+├── 教学demo/          # 可直接运行的教学演示（每个 demo 一子目录）
+├── 教学webppt/        # 线下教学 web 幻灯片（每个主题一子目录）
+├── 算法/              # 视觉 / 控制算法实现
+├── 模型/              # 模型权重与产物
+├── 训练/              # 模型训练脚本、配置与数据说明
+├── 数据/              # 数据集（raw / interim / processed / external）
+└── tools/             # 工程工具（树莓派连接脚本）`}</Pre>
+      </Steps>
+    </div>
   </Frame>
 );
 
@@ -123,6 +139,20 @@ const Filing = () => (
         线下教学 webppt → 教学webppt/ 下以主题命名的子目录。
       </Card>
     </Grid>
+    <div className="mt-4">
+      <Steps title="展开：归档去向速查（完整）">
+        <Pre>{`培训资料 / 规则解读   → 培训/
+可运行最小示例        → 教学demo/<名称>/
+技术文档              → docs/
+算法实现              → 算法/
+权重与产物            → 模型/
+训练脚本              → 训练/
+数据集                → 数据/（内容不入库）
+脚本工具              → tools/
+线下教学 webppt       → 教学webppt/<主题>/
+新增 / 归档内容后     → 同步生成或更新对应 webppt 并构建成品`}</Pre>
+      </Steps>
+    </div>
   </Frame>
 );
 
@@ -148,6 +178,22 @@ const Workflow = () => (
         </Card>
       }
     />
+    <div className="mt-4">
+      <Steps title="展开：归档操作完整命令">
+        <Pre>{`# 1) 移动已跟踪文件（保留历史），路径含中文要加引号
+git mv "赛项.md" "培训/赛项.md"
+git mv "cam_server.py" "教学demo/摄像头远程显示/cam_server.py"
+
+# 2) 新增目录先建 README，说明用途与命名
+#    并在目标 README 与根 README 里登记
+
+# 3) 只暂存本次相关文件
+git add "培训/README.md" "培训/赛项.md" README.md
+
+# 4) 提交信息沿用历史风格（不主动 push）
+git commit -m "docs: 归档赛项资料到 培训/"`}</Pre>
+      </Steps>
+    </div>
   </Frame>
 );
 
@@ -167,6 +213,26 @@ const AfterCommit = () => (
         单文件可双击打开，支持键盘 / 滑动翻页与手机适配。
       </Card>
     </Grid>
+    <div className="mt-4">
+      <Steps title="展开：新增主题 deck 的完整流程">
+        <Pre>{`# 1) 复制技能模板（或已有 deck）到新主题目录
+#    教学webppt/<主题>/presentation/
+
+# 2) 只改 src/slides.jsx（内容）与标题 / 品牌
+#    components.jsx 各 deck 保持完全一致
+
+# 3) 构建并把成品放到主题目录根
+cd "教学webppt/<主题>/presentation"
+npm install
+npm run build
+cp dist/index.html "../index.html"
+
+# 4) 同步目录首页与 README
+#    教学webppt/index.html 加卡片；README.md「已有主题」加条目
+
+# 5) 校验：1366×860 与 390×844 逐页 overflowX === 0 且首行可见`}</Pre>
+      </Steps>
+    </div>
   </Frame>
 );
 

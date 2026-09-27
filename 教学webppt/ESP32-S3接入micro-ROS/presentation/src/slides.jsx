@@ -21,7 +21,7 @@ import {
   Wrench,
   Activity,
 } from "lucide-react";
-import { Frame, Card, DataTable, Grid, Quote, Focus } from "./components.jsx";
+import { Frame, Card, DataTable, Grid, Quote, Focus, Steps } from "./components.jsx";
 
 /* 代码块：whitespace-pre 保留缩进与换行 */
 const Code = ({ children }) => (
@@ -43,6 +43,9 @@ const Cover = () => (
     <p className="mt-5 max-w-4xl border-l-4 border-brand-500 pl-4 text-[1rem] leading-relaxed text-slateink md:mt-8 md:pl-5 md:text-[1.15rem]">
       在 ESP32-S3 上写 micro-ROS 固件，通过树莓派上的 <b>micro-ROS Agent</b> 接入 ROS 2：
       收 <code>/cmd_vel</code> 控车，发 <code>/esp32/heartbeat</code> 报活。
+    </p>
+    <p className="mt-4 text-[0.86rem] text-muted md:text-[0.92rem]">
+      每页默认只留要点；点「展开完整步骤」可看该步的全量命令与完整代码。
     </p>
   </div>
 );
@@ -99,7 +102,7 @@ ROS 2 图
 
 const Esp32Env = () => (
   <Frame kicker="准备" floor="03" title="ESP32 侧：PlatformIO + micro-ROS" wide>
-    <div className="space-y-5">
+    <div className="space-y-4">
       <Grid cols={2}>
         <Card title="为什么用 PlatformIO" icon={Wrench}>
           官方示例即 VSCode + PlatformIO；装依赖、编译、烧录一条龙。
@@ -122,13 +125,38 @@ board_microros_distro = jazzy
 board_microros_transport = wifi
 lib_deps =
   https://github.com/micro-ROS/micro_ros_platformio.git`}</Code>
+      <Steps title="展开：从零建工程（完整步骤）">
+        <ol className="list-decimal space-y-2 pl-5">
+          <li>
+            安装 VSCode，再装扩展 <b>PlatformIO IDE</b>；首次打开会自动安装 PlatformIO Core。
+          </li>
+          <li>
+            PlatformIO Home → <b>New Project</b>：名称自定，Board 选{" "}
+            <code>ESP32-S3-DevKitC-1</code>，Framework 选 <code>Arduino</code>。
+          </li>
+          <li>
+            把生成的 <code>platformio.ini</code> 替换为上面的配置（板型、传输、micro-ROS 依赖）。
+          </li>
+          <li>
+            保存后 PlatformIO 自动下载 espressif32 平台与 <code>micro_ros_platformio</code>；
+            首次较慢，需能访问 GitHub（国内走本机 Clash 代理）。
+          </li>
+          <li>
+            在 <code>src/main.cpp</code> 里 <code>#include &lt;micro_ros_arduino.h&gt;</code>，转到「固件骨架」页继续。
+          </li>
+        </ol>
+        <p className="text-[0.84rem] text-muted">
+          提示：关键是把 <code>board_microros_transport</code> 设为 <code>wifi</code> 或{" "}
+          <code>serial</code>；SSID、密码与 Agent IP 在固件里设置（见「固件骨架」）。
+        </p>
+      </Steps>
     </div>
   </Frame>
 );
 
 const AgentSetup = () => (
   <Frame kicker="准备" floor="04" title="树莓派侧：在 ROS 2 容器里跑 Agent" wide>
-    <div className="space-y-5">
+    <div className="space-y-4">
       <Grid cols={2}>
         <Card title="构建来源" icon={Boxes}>
           官方源码 micro-ROS-Agent + micro_ros_msgs（jazzy 分支），用 colcon build。
@@ -152,6 +180,41 @@ source /opt/ros/jazzy/setup.bash
 cd /microros_ws && colcon build
 source install/setup.bash
 ros2 run micro_ros_agent micro_ros_agent udp4 --port 8888`}</Code>
+      <Steps title="展开：Pi 上完整部署步骤（含拉源码）">
+        <Code>{`# ── 宿主机（Pi）上执行 ──
+mkdir -p ~/microros_ws/src
+
+docker run -it --rm --network host \\
+  -v ~/microros_ws:/microros_ws \\
+  --name microros \\
+  ros:jazzy-ros-base bash
+
+# ── 以下都在容器内执行 ──
+source /opt/ros/jazzy/setup.bash
+cd /microros_ws
+
+# 首次：拉取官方 Agent 与消息包（jazzy 分支）
+git clone -b jazzy \\
+  https://github.com/micro-ROS/micro-ROS-Agent.git src/micro-ROS-Agent
+git clone -b jazzy \\
+  https://github.com/micro-ROS/micro_ros_msgs.git src/micro_ros_msgs
+
+# 首次若缺依赖（可选）
+apt-get update && apt-get install -y python3-rosdep
+rosdep update
+rosdep install --from-paths src --ignore-src -y
+
+# 首次：编译 Agent
+colcon build --symlink-install
+source install/setup.bash
+
+# 之后每次启动 Agent
+ros2 run micro_ros_agent micro_ros_agent udp4 --port 8888`}</Code>
+        <p className="text-[0.84rem] text-muted">
+          工作区挂载在宿主机 <code>~/microros_ws</code>，容器 <code>--rm</code> 退出也不丢；
+          下次重进只需 <code>source /microros_ws/install/setup.bash</code>。
+        </p>
+      </Steps>
     </div>
   </Frame>
 );
@@ -171,42 +234,93 @@ const Transport = () => (
         ],
       ]}
     />
-    <div className="mt-5">
+    <div className="mt-4">
       <Quote>本课默认 UDP4——车能自由移动，不必拖一根数据线。</Quote>
+    </div>
+    <div className="mt-4">
+      <Steps title="展开：串口传输的完整步骤（备选）">
+        <ol className="list-decimal space-y-2 pl-5">
+          <li>
+            <code>platformio.ini</code> 里把 <code>board_microros_transport</code> 改成{" "}
+            <code>serial</code>，固件里改用 <code>set_microros_transports()</code>。
+          </li>
+          <li>把板子用 USB 接到 Pi，确认串口设备：<code>ls -l /dev/ttyUSB* /dev/ttyACM*</code>。</li>
+          <li>
+            启动 Agent 时加上串口设备（容器要映射）：<code>--dev /dev/ttyUSB0</code>。
+          </li>
+        </ol>
+        <Code>{`# 容器内（映射串口后）
+ros2 run micro_ros_agent micro_ros_agent serial --dev /dev/ttyUSB0 -b 115200
+
+# 宿主机起容器时映射串口
+docker run -it --rm --network host \\
+  --device /dev/ttyUSB0 \\
+  -v ~/microros_ws:/microros_ws ros:jazzy-ros-base bash`}</Code>
+      </Steps>
     </div>
   </Frame>
 );
 
 const Skeleton = () => (
   <Frame kicker="编程" floor="06" title="固件骨架：rclc 五步" wide>
-    <Focus
-      no="5"
-      title="初始化顺序是固定的"
-      tag="rclc"
-      goal="micro-ROS 固件的结构就是「接传输 → 建 allocator/support → 建节点 → 建收发 → 交给 executor」。"
-      points={[
-        "连接：set_microros_wifi_transports(SSID, PASS, AgentIP, 8888)。",
-        "内存与上下文：rcl_get_default_allocator + rclc_support_init。",
-        "节点：rclc_node_init_default(&node, \"esp32_node\", \"\", &support)。",
-        "收发：publisher / subscription / timer 都挂到 executor。",
-        "loop()：rclc_executor_spin_some(&executor, RCL_MS_TO_NS(100))。",
-      ]}
-      aside={
-        <Code>{`set_microros_wifi_transports(
+    <div className="space-y-4">
+      <Focus
+        no="5"
+        title="初始化顺序是固定的"
+        tag="rclc"
+        goal="micro-ROS 固件的结构就是「接传输 → 建 allocator/support → 建节点 → 建收发 → 交给 executor」。"
+        points={[
+          "连接：set_microros_wifi_transports(SSID, PASS, AgentIP, 8888)。",
+          "内存与上下文：rcl_get_default_allocator + rclc_support_init。",
+          "节点：rclc_node_init_default(&node, \"esp32_node\", \"\", &support)。",
+          "收发：publisher / subscription / timer 都挂到 executor。",
+          "loop()：rclc_executor_spin_some(&executor, RCL_MS_TO_NS(100))。",
+        ]}
+        aside={
+          <Code>{`set_microros_wifi_transports(
   "SSID", "PASS", "192.168.31.29", 8888);
 
 allocator = rcl_get_default_allocator();
 rclc_support_init(&support, 0, NULL, &allocator);
 rclc_node_init_default(
   &node, "esp32_node", "", &support);`}</Code>
-      }
-    />
+        }
+      />
+      <Steps title="展开：最小可编译固件 main.cpp（完整）">
+        <Code>{`#include <micro_ros_arduino.h>
+
+#include <rcl/rcl.h>
+#include <rclc/rclc.h>
+#include <rclc/executor.h>
+
+rcl_allocator_t allocator;
+rclc_support_t  support;
+rcl_node_t      node;
+
+void setup() {
+  // ① 接传输：Wi-Fi 名 / 密码 / Agent 的 IP / 端口
+  set_microros_wifi_transports(
+    "SSID", "PASS", "192.168.31.29", 8888);
+
+  // ② 内存与上下文
+  allocator = rcl_get_default_allocator();
+  rclc_support_init(&support, 0, NULL, &allocator);
+
+  // ③ 建节点（名字就是 ros2 node list 里看到的名字）
+  rclc_node_init_default(&node, "esp32_node", "", &support);
+}
+
+void loop() {
+  delay(100);   // ④⑤ 的收发在后面的页里挂上来
+}`}</Code>
+      </Steps>
+    </div>
   </Frame>
 );
 
 const Heartbeat = () => (
   <Frame kicker="编程" floor="07" title="发心跳：发布者 + 定时器" wide>
-    <div className="space-y-5">
+    <div className="space-y-4">
       <Code>{`rclc_publisher_init_default(&pub, &node,
   ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32),
   "esp32/heartbeat");
@@ -233,13 +347,43 @@ void timer_cb(rcl_timer_t *t, int64_t last_call) {
           证明 S3 在线，Pi 端可统计收包频率。
         </Card>
       </Grid>
+      <Steps title="展开：加上发布者与定时器（完整固件）">
+        <Code>{`rcl_publisher_t pub;
+std_msgs__msg__Int32 msg;
+rcl_timer_t      timer;
+rclc_executor_t  executor;
+
+void timer_cb(rcl_timer_t *t, int64_t last_call) {
+  msg.data++;
+  rcl_publish(&pub, &msg, NULL);   // 每秒发一次
+}
+
+void setup() {
+  /* …前面骨架的 ①②③ 三步… */
+
+  // ④ 发布者 + 定时器
+  rclc_publisher_init_default(&pub, &node,
+    ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32),
+    "esp32/heartbeat");
+  rclc_timer_init_default(&timer, &support,
+    RCL_MS_TO_NS(1000), timer_cb);
+
+  // ⑤ 挂到 executor（句柄数 ≥ 实际实体数）
+  rclc_executor_init(&executor, &support.context, 2, &allocator);
+  rclc_executor_add_timer(&executor, &timer);
+}
+
+void loop() {
+  rclc_executor_spin_some(&executor, RCL_MS_TO_NS(100));
+}`}</Code>
+      </Steps>
     </div>
   </Frame>
 );
 
 const CmdVel = () => (
   <Frame kicker="编程" floor="08" title="收指令：订阅 /cmd_vel" wide>
-    <div className="space-y-5">
+    <div className="space-y-4">
       <Code>{`geometry_msgs__msg__Twist msg;
 rclc_subscription_init_default(&sub, &node,
   ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist),
@@ -263,6 +407,33 @@ void cmd_cb(const void *msgin) {
           ["angular.z", "转向", "左右轮差速"],
         ]}
       />
+      <Steps title="展开：加上订阅与回调（完整固件）">
+        <Code>{`rcl_subscription_t sub;
+geometry_msgs__msg__Twist cmd;
+
+void cmd_cb(const void *msgin) {
+  const geometry_msgs__msg__Twist *m =
+      (const geometry_msgs__msg__Twist *)msgin;
+  float vx = m->linear.x;    // 前后
+  float vy = m->linear.y;    // 横移
+  float wz = m->angular.z;   // 转向
+  (void)vx; (void)vy; (void)wz;
+  // TODO：换成 EMO_DCMotor 的 run() / setSpeed()
+}
+
+void setup() {
+  /* …骨架 + 发布者 + 定时器… */
+
+  // 订阅 /cmd_vel
+  rclc_subscription_init_default(&sub, &node,
+    ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist),
+    "cmd_vel");
+  rclc_executor_add_subscription(
+    &executor, &sub, &cmd, cmd_cb, ON_NEW_DATA);
+
+  // 注意：executor 句柄数要覆盖 timer + subscription（如 2）
+}`}</Code>
+      </Steps>
     </div>
   </Frame>
 );
@@ -291,7 +462,7 @@ const Params = () => (
 
 const BuildFlash = () => (
   <Frame kicker="运行" floor="10" title="编译与烧录（PlatformIO）" wide>
-    <div className="space-y-5">
+    <div className="space-y-4">
       <Code>{`# 在固件工程目录
 pio run             # 编译
 pio run -t upload   # 烧录
@@ -304,25 +475,38 @@ pio device monitor  # 查看串口日志`}</Code>
           会拉取 micro-ROS 源码并打补丁，需能访问 GitHub，第一次耐心等。
         </Card>
       </Grid>
+      <Steps title="展开：从编译到烧录的完整流程">
+        <ol className="list-decimal space-y-2 pl-5">
+          <li>Type-C 线连板；设备管理器里出现串口（缺驱动装 CP210x / CH34x）。</li>
+          <li>PlatformIO 点 <b>Build</b>（等价 <code>pio run</code>）确认能编译通过。</li>
+          <li>点 <b>Upload</b>（等价 <code>pio run -t upload</code>）；上传时别同时开串口监视器。</li>
+          <li>看日志：<code>pio device monitor -b 115200</code>，<code>Ctrl+C</code> 退出。</li>
+          <li>若卡在连接：按住 <b>BOOT</b> 再点 <b>RST</b> 进入下载模式后重试。</li>
+        </ol>
+        <Code>{`pio run                        # 只编译
+pio run -t upload              # 编译并烧录
+pio device monitor -b 115200   # 看串口输出`}</Code>
+      </Steps>
     </div>
   </Frame>
 );
 
 const Startup = () => (
   <Frame kicker="运行" floor="11" title="启动顺序：先 Agent，后上电" wide>
-    <Focus
-      no="4"
-      title="四个步骤"
-      tag="顺序"
-      goal="先让 Agent 在监听，再给 S3 上电；顺序反了固件会一直重连，需重启 S3。"
-      points={[
-        "Pi：起 ROS 2 容器（--network host）→ 启动 Agent（udp4 8888）。",
-        "Pi：另开终端 source ROS 2 → 运行监听 / 遥操作节点。",
-        "S3：上电，固件主动连 Agent。",
-        "观察：Agent 打印 session created；topic list 出现 /esp32/heartbeat。",
-      ]}
-      aside={
-        <Code>{`# 终端 A：Agent
+    <div className="space-y-4">
+      <Focus
+        no="4"
+        title="四个步骤"
+        tag="顺序"
+        goal="先让 Agent 在监听，再给 S3 上电；顺序反了固件会一直重连，需重启 S3。"
+        points={[
+          "Pi：起 ROS 2 容器（--network host）→ 启动 Agent（udp4 8888）。",
+          "Pi：另开终端 source ROS 2 → 运行监听 / 遥操作节点。",
+          "S3：上电，固件主动连 Agent。",
+          "观察：Agent 打印 session created；topic list 出现 /esp32/heartbeat。",
+        ]}
+        aside={
+          <Code>{`# 终端 A：Agent
 ros2 run micro_ros_agent \\
   micro_ros_agent udp4 --port 8888
 
@@ -332,51 +516,110 @@ ROS_DOMAIN_ID=42 ros2 topic echo /esp32/heartbeat
 # 终端 C：键盘控车
 ROS_DOMAIN_ID=42 ros2 run \\
   teleop_twist_keyboard teleop_twist_keyboard`}</Code>
-      }
-    />
+        }
+      />
+      <Steps title="展开：三终端完整启动步骤">
+        <Code>{`# 每个终端先进入同一个容器
+docker exec -it microros bash
+source /opt/ros/jazzy/setup.bash
+
+# ── 终端 A：Agent（必须最先起）──
+source /microros_ws/install/setup.bash
+ros2 run micro_ros_agent micro_ros_agent udp4 --port 8888
+
+# ── 终端 B：看心跳 ──
+export ROS_DOMAIN_ID=42
+ros2 topic echo /esp32/heartbeat
+
+# ── 终端 C：键盘控车 ──
+export ROS_DOMAIN_ID=42
+# ros-base 不含 teleop，首次安装：
+apt-get update && apt-get install -y ros-jazzy-teleop-twist-keyboard
+ros2 run teleop_twist_keyboard teleop_twist_keyboard
+
+# 三个终端都就绪后，最后给 ESP32-S3 上电`}</Code>
+        <p className="text-[0.84rem] text-muted">
+          三个终端必须用同一个 <code>ROS_DOMAIN_ID</code>；跨容器 / 跨机还要保证 DDS 发现可达。
+        </p>
+      </Steps>
+    </div>
   </Frame>
 );
 
 const Verify = () => (
   <Frame kicker="验证" floor="12" title="验证清单" wide>
-    <DataTable
-      head={["检查", "命令", "期望"]}
-      rows={[
-        ["节点接入", "ros2 node list", "出现 esp32_node"],
-        ["话题存在", "ros2 topic list | grep esp32", "/esp32/heartbeat"],
-        ["心跳频率", "ros2 topic hz /esp32/heartbeat", "约 1 Hz"],
-        ["指令下发", "ros2 topic echo /cmd_vel", "按键后出现 Twist"],
-        ["Agent 日志", "session created", "S3 已连上"],
-      ]}
-    />
-    <div className="mt-5">
-      <Quote>心跳稳定、指令能到，说明「Pi 算 + MCU 控」的通路通了。</Quote>
+    <div className="space-y-4">
+      <DataTable
+        head={["检查", "命令", "期望"]}
+        rows={[
+          ["节点接入", "ros2 node list", "出现 esp32_node"],
+          ["话题存在", "ros2 topic list | grep esp32", "/esp32/heartbeat"],
+          ["心跳频率", "ros2 topic hz /esp32/heartbeat", "约 1 Hz"],
+          ["指令下发", "ros2 topic echo /cmd_vel", "按键后出现 Twist"],
+          ["Agent 日志", "session created", "S3 已连上"],
+        ]}
+      />
+      <Steps title="展开：逐条验证命令与期望输出">
+        <Code>{`export ROS_DOMAIN_ID=42
+source /opt/ros/jazzy/setup.bash
+
+ros2 node list                     # 期望：/esp32_node
+ros2 topic list | grep heartbeat   # 期望：/esp32/heartbeat
+ros2 topic hz /esp32/heartbeat     # 期望：average rate ≈ 1
+ros2 topic echo /esp32/heartbeat   # 期望：data 递增
+ros2 topic info /cmd_vel           # 期望：Publisher count ≥ 1
+
+# 先跑 teleop 按键，确认指令真的到了 S3
+ros2 topic echo /cmd_vel`}</Code>
+        <p className="text-[0.84rem] text-muted">
+          节点名以固件里 <code>rclc_node_init_default</code> 的第一个参数为准（本课为{" "}
+          <code>esp32_node</code>）。
+        </p>
+      </Steps>
     </div>
   </Frame>
 );
 
 const Pitfalls = () => (
   <Frame kicker="排障" floor="13" title="常见坑与排查" wide>
-    <Grid cols={2}>
-      <Card title="Agent 没起 / 端口被占" icon={AlertTriangle} tone="warn">
-        8888 无监听，S3 一直重连。
-      </Card>
-      <Card title="IP 或网段错" icon={Network} tone="warn">
-        S3 连的不是 Pi；确认与 Pi 在同一 Wi-Fi 网段。
-      </Card>
-      <Card title="只开了 5 GHz" icon={Wifi} tone="warn">
-        ESP32-S3 连不上，改用 2.4 GHz 频段。
-      </Card>
-      <Card title="容器没加 host 网络" icon={Boxes} tone="warn">
-        UDP 8888 只活在容器内，S3 到不了。
-      </Card>
-      <Card title="DOMAIN_ID 不一致" icon={Layers} tone="warn">
-        Agent 与 teleop / 监听节点互相看不见。
-      </Card>
-      <Card title="串口被监视器占用" icon={Terminal} tone="warn">
-        用 serial 传输时先关掉 serial monitor，再让 Agent 开门。
-      </Card>
-    </Grid>
+    <div className="space-y-4">
+      <Grid cols={2}>
+        <Card title="Agent 没起 / 端口被占" icon={AlertTriangle} tone="warn">
+          8888 无监听，S3 一直重连。
+        </Card>
+        <Card title="IP 或网段错" icon={Network} tone="warn">
+          S3 连的不是 Pi；确认与 Pi 在同一 Wi-Fi 网段。
+        </Card>
+        <Card title="只开了 5 GHz" icon={Wifi} tone="warn">
+          ESP32-S3 连不上，改用 2.4 GHz 频段。
+        </Card>
+        <Card title="容器没加 host 网络" icon={Boxes} tone="warn">
+          UDP 8888 只活在容器内，S3 到不了。
+        </Card>
+        <Card title="DOMAIN_ID 不一致" icon={Layers} tone="warn">
+          Agent 与 teleop / 监听节点互相看不见。
+        </Card>
+        <Card title="串口被监视器占用" icon={Terminal} tone="warn">
+          用 serial 传输时先关掉 serial monitor，再让 Agent 开门。
+        </Card>
+      </Grid>
+      <Steps title="展开：连不上时的排查命令">
+        <Code>{`# 1) Agent 是否在监听 8888（容器/宿主机内）
+ss -lunp | grep 8888
+
+# 2) Pi 上确认自己的 IP（填进固件的那个）
+ip -4 addr show wlan0
+
+# 3) 容器是否用了 host 网络
+docker inspect -f '{{.HostConfig.NetworkMode}}' microros   # 期望 host
+
+# 4) Agent 日志有没有 S3 会话
+#    出现 session established / create session 即已连上
+
+# 5) 网段与频段：S3 与 Pi 必须同网段可达，且用 2.4 GHz
+#    Agent IP 若写成 127.0.0.1，S3 永远连不上`}</Code>
+      </Steps>
+    </div>
   </Frame>
 );
 

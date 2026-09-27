@@ -14,7 +14,7 @@ import {
   Cable,
   Activity,
 } from "lucide-react";
-import { Frame, Card, DataTable, Grid, Quote, Focus } from "./components.jsx";
+import { Frame, Card, DataTable, Grid, Quote, Focus, Steps, Pre } from "./components.jsx";
 
 const Code = ({ children }) => (
   <div className="surface overflow-x-auto p-4 font-mono text-[0.78rem] leading-relaxed text-ink md:text-[0.82rem]">
@@ -90,6 +90,24 @@ const DirectLink = () => (
         走 Wi-Fi（Pi wlan0 192.168.31.29）操作，或用 nohup 延迟执行再轮询验证。
       </Card>
     </Grid>
+    <div className="mt-4">
+      <Steps title="展开：eth0 静态配置与改回 DHCP（完整命令）">
+        <Pre>{`# 在 Pi 上改 eth0（新 Pi 172.26.188.116，旧 Pi 172.26.188.115）
+sudo nmcli con mod netplan-eth0 \\
+  ipv4.method manual ipv4.addresses 172.26.188.116/24 \\
+  ipv4.gateway "" ipv4.never-default yes ipv6.method auto
+
+# 改 eth0 会掐断走网线的 SSH：放后台延迟执行，再轮询验证
+sudo nohup bash -c 'sleep 3; nmcli con up netplan-eth0' >/tmp/nm.log 2>&1 &
+
+# 验证
+ip -4 addr show eth0
+ip -6 addr show eth0 scope link
+
+# 改回 DHCP
+python tools/pi.py --sudo "nmcli con mod netplan-eth0 ipv4.method auto ipv4.addresses '' && nmcli con up netplan-eth0"`}</Pre>
+      </Steps>
+    </div>
   </Frame>
 );
 
@@ -110,6 +128,26 @@ const Tool = () => (
         ]}
       />
       <Quote>底层用 paramiko；Windows 自带 OpenSSH 没有 sshpass，不要直接调 ssh。</Quote>
+    </div>
+    <div className="mt-4">
+      <Steps title="展开：pi.py 完整用法与等价命令">
+        <Pre>{`# 基本
+python tools/pi.py "hostname"
+
+# 需要 root（账号不在 NOPASSWD，必须显式加 --sudo）
+python tools/pi.py --sudo "apt-get install -y python3-opencv"
+
+# 连旧 Pi
+python tools/pi.py --host 172.26.188.115 --user nczydx --pass 123456789 "hostname"
+
+# 上传并执行脚本（自动放到 /tmp/kilo-run.sh）
+python tools/pi.py --file C:\\Users\\z\\AppData\\Local\\Temp\\kilo\\run.sh
+
+# 复杂命令一律先写成纯 ASCII 的 .sh 再 --file 执行，避免三层引号损坏`}</Pre>
+      <p className="text-[0.84rem] text-muted">
+        底层 paramiko 装在用户级 Python 3.14；要用 PATH 上同一个 <code>python</code>（3.14.6）运行。
+      </p>
+      </Steps>
     </div>
   </Frame>
 );
@@ -132,6 +170,15 @@ const Usages = () => (
     </Grid>
     <div className="mt-6">
       <Quote>复杂命令 / 含引号括号管道 → 写成纯 ASCII 的 .sh，再用 --file 执行。</Quote>
+    </div>
+    <div className="mt-4">
+      <Steps title="展开：常用调用示例">
+        <Pre>{`python tools/pi.py "hostname"
+python tools/pi.py "ip -4 addr show eth0"
+python tools/pi.py --sudo "systemctl status docker --no-pager"
+python tools/pi.py --host fe80::2ecf:67ff:fece:9bce%20 "hostname"
+python tools/pi.py --file deploy_cam.sh`}</Pre>
+      </Steps>
     </div>
   </Frame>
 );
@@ -157,6 +204,23 @@ const Deploy = () => (
         </Card>
       }
     />
+    <div className="mt-4">
+      <Steps title="展开：部署后台服务（完整命令）">
+        <Pre>{`# 1) 本机写好纯 ASCII 脚本并上传执行
+python tools/pi.py --file start_service.sh
+
+# start_service.sh 示例（在 Pi 上运行）
+# nohup python3 cam_server.py --bind 172.26.188.116 \\
+#   > /tmp/cam_server.log 2>&1 &
+
+# 2) 在 Pi 上确认端口与进程
+python tools/pi.py "ss -ltn | grep 5000"
+python tools/pi.py "pgrep -af cam_server"
+
+# 3) 看日志
+python tools/pi.py "tail -n 50 /tmp/cam_server.log"`}</Pre>
+      </Steps>
+    </div>
   </Frame>
 );
 
@@ -172,6 +236,25 @@ const Troubleshoot = () => (
         ["Destination host unreachable", "ARP 无应答，网段不对", "确认 Pi 是否在该网段、链路是否 Up"],
       ]}
     />
+    <div className="mt-4">
+      <Steps title="展开：排障命令合集">
+        <Pre>{`# 本机（Windows）看链路与地址
+Get-NetAdapter | Where-Object { $_.ifIndex -eq 20 }
+Get-NetAdapterStatistics -Name "以太网"
+
+# 制造一次链路抖动（会短暂断网）
+Get-NetAdapter | Where-Object { $_.ifIndex -eq 20 } | Disable-NetAdapter
+Get-NetAdapter | Where-Object { $_.ifIndex -eq 20 } | Enable-NetAdapter
+
+# Pi 侧
+ip -4 addr show eth0
+ip -6 addr show eth0 scope link
+cat /etc/netplan/*.yaml
+
+# 从 Pi 看能否到本机（诊断入站是否被拦）
+ping -c 3 172.26.188.100`}</Pre>
+      </Steps>
+    </div>
   </Frame>
 );
 

@@ -17,7 +17,7 @@ import {
   BookOpen,
   Cable,
 } from "lucide-react";
-import { Frame, Card, DataTable, Grid, Quote, Focus, Stat } from "./components.jsx";
+import { Frame, Card, DataTable, Grid, Quote, Focus, Stat, Steps, Pre } from "./components.jsx";
 
 const Code = ({ children }) => (
   <div className="surface overflow-x-auto p-4 font-mono text-[0.78rem] leading-relaxed text-ink md:text-[0.82rem]">
@@ -211,6 +211,32 @@ const ProxySetup = () => (
       </Code>
       <Quote>拉镜像前确认本机 Clash 在运行且开了 allow-lan；已拉好的镜像与运行中的容器不受影响。</Quote>
     </div>
+    <div className="mt-4">
+      <Steps title="展开：Clash 代理与 dockerd 配置（完整命令）">
+        <Pre>{`# 本机 Clash Verge：allow-lan: true，mixed-port: 7897
+
+# Pi 上先验证代理连通（期望 401）
+curl -sS -o /dev/null -w '%{http_code}\\n' --max-time 12 \\
+  -x http://192.168.31.57:7897 https://registry-1.docker.io/v2/
+
+# 给 dockerd 配代理（systemd drop-in，不是 daemon.json）
+sudo mkdir -p /etc/systemd/system/docker.service.d
+sudo tee /etc/systemd/system/docker.service.d/http-proxy.conf >/dev/null <<'EOF'
+[Service]
+Environment="HTTP_PROXY=http://192.168.31.57:7897"
+Environment="HTTPS_PROXY=http://192.168.31.57:7897"
+Environment="NO_PROXY=localhost,127.0.0.1,::1,172.26.188.116,192.168.31.29"
+EOF
+
+# 清空 registry-mirrors，避免请求绕远
+echo '{}' | sudo tee /etc/docker/daemon.json
+
+sudo systemctl daemon-reload
+sudo systemctl restart docker
+systemctl show docker --property=Environment`}</Pre>
+        <p className="text-[0.84rem] text-muted">直连网线不可用时，把代理地址换成 <code>172.26.188.100:7897</code>。</p>
+      </Steps>
+    </div>
   </Frame>
 );
 
@@ -237,6 +263,23 @@ const Install = () => (
         ]}
       />
       <Quote>本次实测：Docker 26.1.5+dfsg1，Driver overlay2，Arch aarch64。</Quote>
+    </div>
+    <div className="mt-4">
+      <Steps title="展开：Docker 安装与拉取（完整命令）">
+        <Pre>{`# 装 Docker（Debian 13 自带 26.1.5）
+sudo apt-get update
+sudo apt-get install -y docker.io
+sudo systemctl enable --now docker
+sudo usermod -aG docker nanzhida      # 之后免 sudo，需重新登录
+
+# 拉镜像（依赖本机 Clash 代理已就绪）
+docker pull ros:jazzy-ros-core        # 511 MB
+docker pull ros:jazzy-ros-base        # 896 MB（推荐）
+
+# 确认
+docker images | grep ros
+docker version`}</Pre>
+      </Steps>
     </div>
   </Frame>
 );
@@ -300,6 +343,22 @@ const Daily = () => (
         ]}
       />
     </div>
+    <div className="mt-4">
+      <Steps title="展开：ros2.sh 启动器与常用映射（完整）">
+        <Pre>{`# /home/nanzhida/ros2.sh
+#!/bin/bash
+exec docker run -it --rm --network host --name ros2 "$@" \\
+  ros:jazzy-ros-base bash -lc 'source /opt/ros/jazzy/setup.bash; echo "ROS 2 ready."; exec bash'
+
+# 用法
+~/ros2.sh                                    # 进入 ROS 2
+~/ros2.sh --device /dev/video0               # 挂摄像头
+~/ros2.sh --device /dev/i2c-1 --device /dev/gpiomem   # 挂 GPIO / I2C
+~/ros2.sh --device /dev/ttyAMA0              # 挂串口（后续接 Agent）
+
+# 多容器互通：都加 --network host，并用同一 ROS_DOMAIN_ID`}</Pre>
+      </Steps>
+    </div>
   </Frame>
 );
 
@@ -341,6 +400,27 @@ const Wsl2Ros = () => (
         ~/.bashrc 已 source setup.bash；ros2 直接可用，与 Pi 直连同网段。
       </Card>
     </Grid>
+    <div className="mt-4">
+      <Steps title="展开：WSL2 装 ROS 2（完整步骤）">
+        <Pre>{`# WSL2（Ubuntu 24.04）内执行
+sudo apt install -y curl gnupg lsb-release
+sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key \\
+  -o /usr/share/keyrings/ros-archive-keyring.gpg
+echo "deb [arch=amd64 signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] \\
+http://mirrors.tuna.tsinghua.edu.cn/ros2/ubuntu noble main" \\
+  | sudo tee /etc/apt/sources.list.d/ros2.list
+sudo apt update
+sudo apt install -y ros-jazzy-ros-base
+
+# 每个新 shell 都要 source（写进 ~/.bashrc 即自动）
+echo 'source /opt/ros/jazzy/setup.bash' >> ~/.bashrc
+
+# .wslconfig（Windows 用户目录）：镜像网络，WSL 直接持有宿主 IP
+# [wsl2]
+# networkingMode=Mirrored
+# hostAddressLoopback=true`}</Pre>
+      </Steps>
+    </div>
   </Frame>
 );
 
@@ -362,6 +442,22 @@ const CrossDds = () => (
         </Card>
       </Grid>
       <Quote>判据：从 Pi ping 172.26.188.100 若 100% 丢包，就是本机入站被拦。</Quote>
+    </div>
+    <div className="mt-4">
+      <Steps title="展开：跨机 DDS 配置与放行（完整）">
+        <Pre>{`# 两端都用同一个域，并指定对端直连 IP
+export ROS_DOMAIN_ID=42
+export ROS_STATIC_PEERS=172.26.188.116   # WSL 侧指向 Pi
+export ROS_STATIC_PEERS=172.26.188.100   # Pi 侧指向 WSL
+
+# 本机入站 UDP 默认被拦，需管理员加定向放行：
+#   WSL Hyper-V 防火墙 + Windows 防火墙各一条
+#   只放行 172.26.188.116 的 UDP 入站
+# 判据：从 Pi ping 172.26.188.100，若 100% 丢包即入站被拦
+
+# WSL 侧测连通
+ping -c 2 172.26.188.116`}</Pre>
+      </Steps>
     </div>
   </Frame>
 );
@@ -398,6 +494,23 @@ const PingPong = () => (
         pong='...|pong#1@pi-zhangsk'
       </Code>
     </Grid>
+    <div className="mt-4">
+      <Steps title="展开：ping-pong 复现命令">
+        <Pre>{`# WSL2：发 ping
+cd 教学demo/ROS2消息通路验证
+ROS_DOMAIN_ID=42 ROS_STATIC_PEERS=172.26.188.116 python3 ping.py 5 3
+
+# 树莓派容器内：跑 pong
+docker run -it --rm --network host --hostname pi-zhangsk \\
+  -e ROS_DOMAIN_ID=42 -e ROS_STATIC_PEERS=172.26.188.100 \\
+  ros:jazzy-ros-base bash
+# 容器内
+source /opt/ros/jazzy/setup.bash
+python3 pong.py
+
+# 期望：5/5 rounds answered，RTT 1–2 ms，回包带 @pi-zhangsk`}</Pre>
+      </Steps>
+    </div>
   </Frame>
 );
 

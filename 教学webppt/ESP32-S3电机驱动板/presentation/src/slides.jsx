@@ -24,7 +24,7 @@ import {
   Server,
   Network,
 } from "lucide-react";
-import { Frame, Card, DataTable, Grid, Quote, Focus, Stat, Pill } from "./components.jsx";
+import { Frame, Card, DataTable, Grid, Quote, Focus, Stat, Pill, Steps, Pre } from "./components.jsx";
 
 const Code = ({ children }) => (
   <div className="surface overflow-x-auto p-4 font-mono text-[0.78rem] leading-relaxed text-ink md:text-[0.82rem]">
@@ -201,6 +201,32 @@ const ArduinoFlow = () => (
         </Code>
       }
     />
+    <div className="mt-4">
+      <Steps title="展开：Arduino IDE 从装库到烧录（完整步骤）">
+        <ol className="list-decimal space-y-2 pl-5">
+          <li>装 Arduino IDE，并在开发板管理器安装 esp32 支持。</li>
+          <li>下载 <code>QGP_EVMotor.zip</code>，用「项目 → 导入库 → 添加 .ZIP 库」导入。</li>
+          <li>更新库时先删 <code>Documents\Arduino\libraries\QGP_EVMotor</code> 再重导。</li>
+          <li>打开「文件 → 示例 → QGP_EVMotor」，先另存为再改。</li>
+          <li>工具 → 开发板 → esp32 → <code>ESP32S3 Dev Module</code>，选对端口后上传。</li>
+        </ol>
+        <Pre>{`#include "StickCB.h"
+#include "EMotionPI.h"
+
+BLEControlStick _joy;
+EMotionPI emo;
+
+void setup() {
+  _joy.setStickCallback(new StickCB());
+  _joy.begin();
+}
+
+void loop() {
+  _joy.update();          // 刷新手柄状态
+  if (_joy.Button(BTN_DPAD_UP)) { /* 前进 */ }
+}`}</Pre>
+      </Steps>
+    </div>
   </Frame>
 );
 
@@ -260,6 +286,17 @@ const Mixly = () => (
         拷贝到 ...\include\c++\8.4.0\bits\ 后，再上传。
       </Code>
     </div>
+    <div className="mt-4">
+      <Steps title="展开：Mixly 图形化完整步骤">
+        <ol className="list-decimal space-y-2 pl-5">
+          <li>Windows 用已配插件的 Mixly 3.0；Mac 去 Mixly 官网装最新版。</li>
+          <li>下载奇果派 S3 插件压缩包，<b>无需解压</b>，Mixly 里「本地导入」选压缩包。</li>
+          <li>打开示例先另存为再改，插板选串口上传；首次编译因蓝牙库较大较慢。</li>
+          <li>蓝牙手柄首次按住 <b>X 键 + Home 键</b>开机，4 号灯常亮即连上。</li>
+          <li>报错找不到 <code>bits/c++config.h</code>：把 xtensa 目录下 bits 内容拷到上一级 bits 后重传。</li>
+        </ol>
+      </Steps>
+    </div>
   </Frame>
 );
 
@@ -298,6 +335,22 @@ const Iot = () => (
     </Grid>
     <div className="mt-6">
       <Quote>有自建服务器时，改 Mixly 里的服务器信息 + 网页端开源代码配对即可。</Quote>
+    </div>
+    <div className="mt-4">
+      <Steps title="展开：物联网远程控制完整步骤">
+        <ol className="list-decimal space-y-2 pl-5">
+          <li>局域网用 Socket，跨网用 MQTT；Mixly 打开「物联网控制」示例。</li>
+          <li>改一个<b>唯一通讯标识</b>后上传。</li>
+          <li>控制端用网页 rc.7gp.cn 或安卓 App，填相同标识即可控。</li>
+          <li>带 4G 模块：连 <code>KiKuPi</code> 热点（密码 1234567890），插流量卡跨网遥控。</li>
+          <li>不带 4G：长按 boot 待 LED 变红，连 <code>RobotS3</code> 热点，浏览器开 192.168.123.1 配网。</li>
+        </ol>
+        <Pre>{`10 字节数据包（可自写控制端）：
+[0] 类型 1=数据 2=心跳    [1] 辅助
+[2] 左摇杆Y   [3] 左摇杆X   [4][5] 右摇杆
+[6..9] 按钮位图（4 字节 = 32 位）
+摇杆默认 127；上/左到 0，下/右到 255`}</Pre>
+      </Steps>
     </div>
   </Frame>
 );
@@ -370,6 +423,28 @@ const Ros2 = () => (
         </Code>
       }
     />
+    <div className="mt-4">
+      <Steps title="展开：官方示例完整命令（Pi 侧）">
+        <Pre>{`# 1) 建 micro-ROS Agent 工作区（jazzy 分支）
+mkdir -p ~/microros_ws/src && cd ~/microros_ws
+git clone https://github.com/micro-ROS/micro-ROS-Agent.git -b jazzy src/micro-ROS-Agent
+git clone https://github.com/micro-ROS/micro_ros_msgs.git -b jazzy src/micro_ros_msgs
+colcon build
+source install/setup.bash
+
+# 2) 启动 Agent（UDP4:8888）
+ros2 run micro_ros_agent micro_ros_agent udp4 --port 8888
+
+# 3) 键盘控车（另开终端）
+sudo apt install ros-jazzy-teleop-twist-keyboard
+ros2 run teleop_twist_keyboard teleop_twist_keyboard
+
+# 4) 看 ESP32 心跳
+python3 heartbeat_listener.py
+ros2 topic echo /esp32/heartbeat`}</Pre>
+        <p className="text-[0.84rem] text-muted">本项目的 Pi 是 Docker 版 ROS 2，复用要点见下一节与 docs。</p>
+      </Steps>
+    </div>
   </Frame>
 );
 

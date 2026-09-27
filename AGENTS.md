@@ -15,6 +15,7 @@
   Pi 端运行前需 `sudo apt-get install -y python3-opencv`，脚本放 `/home/nanzhida/cam_server.py`，后台启动 `nohup python3 cam_server.py > /tmp/cam_server.log 2>&1 &`；本机 `python "教学demo/摄像头远程显示/cam_view.py"`（默认 `172.26.188.116:5000`）。
 - 树莓派连接工具：`tools/pi.py`。
 - ESP32-S3 电机驱动板（奇果派 S3 机器人控制板）资料汇总：`docs/ESP32-S3电机驱动板资料.md`（硬件/接线/Arduino/Mixly/物联网/micro-ROS）。
+- ESP32-S3 接入 micro-ROS 的完整步骤 deck：`教学webppt/ESP32-S3接入micro-ROS/`；背景见 `docs/ESP32-S3电机驱动板资料.md` 第六节与 `docs/ROS2与micro-ROS选型.md` 第六节。
 - 不入库：`__pycache__` / `*.pyc`、`数据/*/` 内容（只保留 `.gitkeep`）、`node_modules/` 与 `**/presentation/dist/`、`.vscode/`（Live Server 写的端口）。
 
 ## 教学 webppt（教学webppt/）
@@ -22,10 +23,11 @@
 - 一个主题一个独立 Vite 工程：`教学webppt/<主题>/presentation/`；交付成品是 `教学webppt/<主题>/index.html`（单文件，可离线双击）。
 - 构建：`cd 教学webppt/<主题>/presentation` → `npm install` → `npm run build`，再把 `presentation/dist/index.html` 复制为上一级 `index.html`。
 - `presentation/index.html` 是**源码壳不是成品**（引用 `/src/main.jsx`，需 Vite）：它内置守卫，在 Live Server / 双击时会自动跳转到 `../index.html`；改源码用 `npm run dev`（默认 5173）。
-- 目录首页：`教学webppt/index.html`。新增 deck 用 `web-slide-deck` 技能（复制技能里的 `assets/deck-template/`，只改 `src/slides.jsx` 与标题/品牌）。
+- 目录首页：`教学webppt/index.html`。新增 deck 优先**复制一个已有 deck 的 `presentation/`**（保证 `components.jsx` 与各 deck 一致），只改 `src/slides.jsx` 与标题/品牌；`web-slide-deck` 技能里的 `assets/deck-template/` 已落后于本仓库（缺共用组件），直接用会造成组件不一致。
 - **编写守则**：组织 / 语言 / 顺序按 `教学webppt/编写守则.md`（依据多媒体学习认知理论与教学 PPT 规范）。全局主题顺序「工程与协作 → 环境与设备 → 感知 → 通信 → 执行」；单 deck 页序「封面 → 结论先行 → …… → 收尾」，收尾恒在最后。新增主题插到规定位置并同步 `index.html` 与 `README.md`；改顺序后必须重建成品。
 - **统一导航**：每个 deck 成品顶栏都有固定的「← 目录」链接（源码 `presentation/src/App.jsx` 顶栏的 `<a href="../index.html">`），回到 `教学webppt/index.html`；deck 内的分页侧栏称「大纲」，别和「目录」混称。
 - 各 deck 的 `components.jsx` 完全一致，`App.jsx` 仅品牌文案不同；改导航/交互要**所有 deck** 同步改并全部重建（`npm run build` 后把 `dist/index.html` 覆盖成品），否则成品与源码漂移。构建后不要留下「源码已改、成品未刷新」的状态。
+- **详情默认折叠**：完整步骤 / 全量命令放共用组件 `Steps`（`<details>`，摘要写「展开：…」，默认收起）＋ `Pre`（保留换行缩进的代码块）；正文只留要点。二者定义在 `components.jsx`，不要在 `slides.jsx` 里另写一套；规则见 `教学webppt/编写守则.md`。
 - 验证要求：桌面 1366×860 与手机 390×844 逐页断言 `overflowX === 0` 且首行可见；幻灯片外层用 `min-h-full` 而非 `h-full`（否则高页内容顶部会被顶掉）。
 
 ## 目标设备（两台树莓派，都走同一条直连网线）

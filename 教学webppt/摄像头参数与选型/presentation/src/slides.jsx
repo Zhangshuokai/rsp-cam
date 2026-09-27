@@ -14,7 +14,7 @@ import {
   Lightbulb,
   Wrench,
 } from "lucide-react";
-import { Frame, Card, DataTable, Grid, Quote, Stat } from "./components.jsx";
+import { Frame, Card, DataTable, Grid, Quote, Stat, Steps, Pre } from "./components.jsx";
 
 const Cover = () => (
   <div className="mx-auto flex w-full max-w-[80rem] flex-1 flex-col justify-center">
@@ -66,6 +66,25 @@ const Device = () => (
         ["快门", "卷帘（普通 webcam）"],
       ]}
     />
+    <div className="mt-4">
+      <Steps title="展开：用 v4l2-ctl 自己查参数（完整命令）">
+        <Pre>{`# 装工具
+sudo apt-get install -y v4l-utils
+
+# 列出设备与驱动
+v4l2-ctl --list-devices
+dmesg | grep -i uvc          # 例：Found UVC 1.00 device HD camera
+
+# 支持的分辨率 / 帧率
+v4l2-ctl -d /dev/video0 --list-formats-ext
+
+# 当前格式
+v4l2-ctl -d /dev/video0 --get-fmt-video
+
+# 所有可调控件及范围
+v4l2-ctl -d /dev/video0 --list-ctrls`}</Pre>
+      </Steps>
+    </div>
   </Frame>
 );
 
@@ -102,6 +121,22 @@ const Controls = () => (
         ["power_line_frequency 抗闪烁", "0–2", "0（Disabled）"],
       ]}
     />
+    <div className="mt-4">
+      <Steps title="展开：设置控件的完整命令">
+        <Pre>{`# 设置亮度 / 对比度 / 饱和度
+v4l2-ctl -d /dev/video0 -c brightness=160 -c contrast=140
+
+# 设分辨率与像素格式（MJPG）
+v4l2-ctl -d /dev/video0 --set-fmt-video=width=1280,height=960,pixelformat=MJPG
+
+# 抓一帧存盘
+v4l2-ctl -d /dev/video0 --stream-mmap --stream-count=1 --stream-to=frame.jpg
+
+# OpenCV 里同样可设（cap.set）
+# cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+# cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 960)`}</Pre>
+      </Steps>
+    </div>
   </Frame>
 );
 
@@ -155,6 +190,16 @@ const Models = () => (
         ["官方 CSI", "Camera Module 3（IMX708 12MP AF）· GS Camera（IMX296）", "非 UVC，用 picamera2"],
       ]}
     />
+    <div className="mt-4">
+      <Steps title="展开：选型核对清单">
+        <ol className="list-decimal space-y-2 pl-5">
+          <li>先确认现有摄像头能力（见「当前摄像头」页的 <code>v4l2-ctl</code> 命令），别为「协议」换。</li>
+          <li>按场景定硬需求：防拖影 → 全局快门；拍清小字 → 可对焦 / 高分辨率；弱光 → 大像素。</li>
+          <li>确认接口带宽：USB2 只能 MJPG；要未压缩低延迟需 USB3 或 CSI。</li>
+          <li>到货后复跑 <code>v4l2-ctl --list-formats-ext</code> 核对分辨率 / 帧率是否达标。</li>
+        </ol>
+      </Steps>
+    </div>
   </Frame>
 );
 

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { X } from "lucide-react";
+import { X, ChevronRight } from "lucide-react";
 
 /* ---------------------------------------------------------------- Frame */
 export function Frame({ kicker, floor, title, lead, children, wide }) {
@@ -247,4 +247,36 @@ export function Grid({ cols = 2, children }) {
     4: "md:grid-cols-2 xl:grid-cols-4",
   };
   return <div className={`grid gap-3 md:gap-4 ${map[cols] || map[2]}`}>{children}</div>;
+}
+
+/* ----------------------------------------------------------------- Pre */
+/* 多行代码块：保留换行与缩进，供折叠详情使用。 */
+export function Pre({ children }) {
+  return (
+    <div className="surface overflow-x-auto whitespace-pre p-4 font-mono text-[0.74rem] leading-relaxed text-ink md:text-[0.8rem]">
+      {children}
+    </div>
+  );
+}
+
+/* --------------------------------------------------------------- Steps */
+/* 详情折叠：默认收起，点摘要展开完整步骤。 */
+export function Steps({ title = "展开完整步骤", children }) {
+  return (
+    <details className="group surface overflow-hidden p-0">
+      <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-[0.9rem] font-bold text-brand-800 transition hover:bg-brand-50/60 md:px-5 [&::-webkit-details-marker]:hidden">
+        <ChevronRight
+          size={16}
+          className="flex-none transition-transform duration-200 group-open:rotate-90"
+        />
+        <span>{title}</span>
+        <span className="ml-auto flex-none rounded-full border border-line bg-canvas px-2 py-0.5 text-[0.68rem] font-semibold text-muted">
+          默认折叠
+        </span>
+      </summary>
+      <div className="space-y-3 border-t border-line px-4 py-4 text-[0.88rem] leading-relaxed text-slateink md:px-5">
+        {children}
+      </div>
+    </details>
+  );
 }
