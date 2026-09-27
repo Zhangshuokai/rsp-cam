@@ -138,7 +138,7 @@ const Esp32Env = () => (
           官方示例即 VSCode + PlatformIO；装依赖、编译、烧录一条龙。
         </Card>
         <Card title="micro-ROS 是依赖" icon={Download}>
-          在 platformio.ini 里引用 micro_ros_platformio，固件头文件用 <code>micro_ros_arduino.h</code>。
+          在 platformio.ini 里引用 micro_ros_platformio，固件头文件用 <code>micro_ros_platformio.h</code>。
         </Card>
         <Card title="板型与传输" icon={CircuitBoard}>
           板型选 ESP32-S3；传输选 <code>wifi</code>（或 <code>serial</code>）。
@@ -172,12 +172,32 @@ lib_deps =
             首次较慢，需能访问 GitHub（国内走本机 Clash 代理）。
           </li>
           <li>
-            在 <code>src/main.cpp</code> 里 <code>#include &lt;micro_ros_arduino.h&gt;</code>，转到「固件骨架」页继续。
+            在 <code>src/main.cpp</code> 里 <code>#include &lt;micro_ros_platformio.h&gt;</code>，转到「固件骨架」页继续。
           </li>
         </ol>
         <p className="text-[0.84rem] text-muted">
           提示：关键是把 <code>board_microros_transport</code> 设为 <code>wifi</code> 或{" "}
           <code>serial</code>；SSID、密码与 Agent IP 在固件里设置（见「固件骨架」）。
+        </p>
+      </Steps>
+      <Steps title="展开：Windows 上一次性编出 libmicroros（必看）">
+        <p className="text-[0.84rem] text-muted">
+          上游 <code>micro_ros_platformio</code> 首次构建会用 POSIX shell + <code>colcon</code>
+          从源码编 micro-ROS 静态库，Windows 的 <code>cmd</code> 跑不了，报{" "}
+          <code>{`'.' is not recognized`}</code>——这是上游限制，不是配置错。先在 WSL2
+          （Ubuntu + ROS 2 Jazzy + colcon）里编一次，把 <code>libmicroros/</code> 拷回工程，
+          之后 Windows 上 <code>pio run</code> 会打印 <code>micro-ROS already built</code> 直接链接。
+        </p>
+        <Code>{`# 在 WSL 里执行（本仓库自带脚本）
+bash /mnt/c/vibecoding/rsp/tools/microros_lib_wsl.sh
+
+# 脚本做的事：装 PlatformIO → 同步工程 → pio run（编库+固件）→ 把 libmicroros 拷回工程
+# 回到 Windows 工程：pio run 直接链接
+
+# 改了 distro / transport 后要清库重编
+pio run -t clean_microros   # 或删掉 .pio 库目录里的 libmicroros/，再跑上面的脚本`}</Code>
+        <p className="text-[0.84rem] text-muted">
+          预编译的 <code>libmicroros.a</code> 约 60 MB，放在 <code>.pio/</code> 里，不入库。
         </p>
       </Steps>
     </div>
@@ -300,7 +320,7 @@ const Skeleton = () => (
         tag="rclc"
         goal="micro-ROS 固件的结构就是「接传输 → 建 allocator/support → 建节点 → 建收发 → 交给 executor」。"
         points={[
-          "连接：set_microros_wifi_transports(SSID, PASS, AgentIP, 8888)。",
+          "连接：set_microros_wifi_transports(SSID, PASS, IPAddress(…), 8888)。",
           "内存与上下文：rcl_get_default_allocator + rclc_support_init。",
           "节点：rclc_node_init_default(&node, \"esp32_node\", \"\", &support)。",
           "收发：publisher / subscription / timer 都挂到 executor。",
@@ -308,7 +328,7 @@ const Skeleton = () => (
         ]}
         aside={
           <Code>{`set_microros_wifi_transports(
-  "SSID", "PASS", "192.168.31.29", 8888);
+  "SSID", "PASS", IPAddress(192, 168, 31, 29), 8888);
 
 allocator = rcl_get_default_allocator();
 rclc_support_init(&support, 0, NULL, &allocator);
@@ -317,7 +337,7 @@ rclc_node_init_default(
         }
       />
       <Steps title="展开：最小可编译固件 main.cpp（完整）">
-        <Code>{`#include <micro_ros_arduino.h>
+        <Code>{`#include <micro_ros_platformio.h>
 
 #include <rcl/rcl.h>
 #include <rclc/rclc.h>
@@ -330,7 +350,7 @@ rcl_node_t      node;
 void setup() {
   // ① 接传输：Wi-Fi 名 / 密码 / Agent 的 IP / 端口
   set_microros_wifi_transports(
-    "SSID", "PASS", "192.168.31.29", 8888);
+    "SSID", "PASS", IPAddress(192, 168, 31, 29), 8888);
 
   // ② 内存与上下文
   allocator = rcl_get_default_allocator();
@@ -644,6 +664,9 @@ const Pitfalls = () => (
         <Card title="串口被监视器占用" icon={Terminal} tone="warn">
           用 serial 传输时先关掉 serial monitor，再让 Agent 开门。
         </Card>
+        <Card title="Windows 编库失败" icon={AlertTriangle} tone="warn">
+          <code>'.' is not recognized</code>：Windows 编不了 libmicroros，先在 WSL 编一次（见「ESP32 侧环境」页）。
+        </Card>
       </Grid>
       <Steps title="展开：连不上时的排查命令">
         <Code>{`# 1) Agent 是否在监听 8888（容器/宿主机内）
@@ -681,6 +704,13 @@ const Wrap = () => (
         </Card>
         <Card title="再下一步：闭环" icon={BookOpen}>
           读编码器 / IMU，往 ROS 2 发 /odom 等反馈话题。
+        </Card>
+        <Card title="固件工程与脚本" icon={Download}>
+          仓库 <code>教学demo/ESP32-S3-microROS/</code>；随 deck 下载{" "}
+          <a className="underline" href="./files/ESP32-S3-microROS.zip">
+            files/ESP32-S3-microROS.zip
+          </a>
+          （含 platformio.ini、src/main.cpp、README）。
         </Card>
       </Grid>
       <p className="text-[0.88rem] leading-relaxed text-muted md:text-[0.95rem]">
