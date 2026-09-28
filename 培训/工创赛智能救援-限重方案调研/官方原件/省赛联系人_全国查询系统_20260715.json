@@ -1,0 +1,240 @@
+[
+ {
+  "province": "上海市",
+  "director": "胡庆夕",
+  "contact": "韩老师",
+  "phone": "13701678529",
+  "unit": "上海大学"
+ },
+ {
+  "province": "黑龙江省",
+  "director": "潘旭东",
+  "contact": "曾老师",
+  "phone": "18686869824",
+  "unit": "哈尔滨工业大学"
+ },
+ {
+  "province": "安徽省",
+  "director": "田杰",
+  "contact": "赵老师",
+  "phone": "15255129927",
+  "unit": "合肥工业大学"
+ },
+ {
+  "province": "云南省",
+  "director": "黎振华",
+  "contact": "王老师",
+  "phone": "13759175398",
+  "unit": "昆明理工大学"
+ },
+ {
+  "province": "四川省",
+  "director": "王杰",
+  "contact": "陈老师",
+  "phone": "18284593001",
+  "unit": "四川大学"
+ },
+ {
+  "province": "北京市",
+  "director": "汤彬",
+  "contact": "付老师",
+  "phone": "13699156139",
+  "unit": "北京理工大学"
+ },
+ {
+  "province": "山西省",
+  "director": "李卫国",
+  "contact": "孙老师",
+  "phone": "15235181435",
+  "unit": "太原理工大学"
+ },
+ {
+  "province": "青海省",
+  "director": "刘建强",
+  "contact": "王老师",
+  "phone": "13519789551",
+  "unit": "青海大学"
+ },
+ {
+  "province": "新疆生产建设兵团",
+  "director": "黄勇",
+  "contact": "王老师",
+  "phone": "18099938587",
+  "unit": "石河子大学"
+ },
+ {
+  "province": "河北省",
+  "director": "李耀刚",
+  "contact": "邱老师",
+  "phone": "15175589658",
+  "unit": "华北理工大学"
+ },
+ {
+  "province": "湖北省",
+  "director": "王书亭",
+  "contact": "吴老师",
+  "phone": "15607126088",
+  "unit": "华中科技大学"
+ },
+ {
+  "province": "江西省",
+  "director": "张树国",
+  "contact": "冯老师",
+  "phone": "18679450508",
+  "unit": "南昌航空大学"
+ },
+ {
+  "province": "陕西省",
+  "director": "蒋建军",
+  "contact": "吕老师",
+  "phone": "15353641908",
+  "unit": "西北工业大学"
+ },
+ {
+  "province": "吉林省",
+  "director": "李晓舟",
+  "contact": "顾老师",
+  "phone": "15043076236",
+  "unit": "长春理工大学"
+ },
+ {
+  "province": "内蒙古自治区",
+  "director": "陈杰",
+  "contact": "李老师",
+  "phone": "13847123475",
+  "unit": "内蒙古工业大学"
+ },
+ {
+  "province": "西藏自治区",
+  "director": "周龙",
+  "contact": "何老师",
+  "phone": "17390896785",
+  "unit": "西藏农牧大学"
+ },
+ {
+  "province": "天津市",
+  "director": "徐国胜",
+  "contact": "姚老师",
+  "phone": "15122214080",
+  "unit": "天津职业技术师范大学"
+ },
+ {
+  "province": "辽宁省",
+  "director": "王亚杰",
+  "contact": "杨老师",
+  "phone": "18040036300",
+  "unit": "沈阳航空航天大学"
+ },
+ {
+  "province": "浙江省",
+  "director": "周继烈",
+  "contact": "钱老师",
+  "phone": "13957131401",
+  "unit": "浙江大学"
+ },
+ {
+  "province": "贵州省",
+  "director": "黄政",
+  "contact": "王老师",
+  "phone": "18302529387",
+  "unit": "贵州理工学院"
+ },
+ {
+  "province": "福建省",
+  "director": "何炳蔚",
+  "contact": "蔡老师",
+  "phone": "13696877895",
+  "unit": "福州大学"
+ },
+ {
+  "province": "新疆维吾尔自治区",
+  "director": "乌日开西·艾依提",
+  "contact": "王老师",
+  "phone": "18835171271",
+  "unit": "新疆大学"
+ },
+ {
+  "province": "广东省",
+  "director": "谢小柱",
+  "contact": "梁老师",
+  "phone": "15360861403",
+  "unit": "广东工业大学"
+ },
+ {
+  "province": "香港特别行政区",
+  "director": "谢小柱",
+  "contact": "梁老师",
+  "phone": "15360861403",
+  "unit": "广东工业大学"
+ },
+ {
+  "province": "澳门特别行政区",
+  "director": "谢小柱",
+  "contact": "梁老师",
+  "phone": "15360861403",
+  "unit": "广东工业大学"
+ },
+ {
+  "province": "江苏省",
+  "director": "陈建松",
+  "contact": "尹老师",
+  "phone": "13506216125",
+  "unit": "东南大学"
+ },
+ {
+  "province": "广西壮族自治区",
+  "director": "赵中华",
+  "contact": "管老师",
+  "phone": "13472165120",
+  "unit": "桂林电子科技大学"
+ },
+ {
+  "province": "湖南省",
+  "director": "吴万荣",
+  "contact": "田老师",
+  "phone": "15116469630",
+  "unit": "中南大学"
+ },
+ {
+  "province": "河南省",
+  "director": "张英琦",
+  "contact": "行老师",
+  "phone": "13721469706",
+  "unit": "河南理工大学"
+ },
+ {
+  "province": "重庆市",
+  "director": "何高法",
+  "contact": "邱老师",
+  "phone": "18983211224",
+  "unit": "重庆科技大学"
+ },
+ {
+  "province": "宁夏回族自治区",
+  "director": "丁剑",
+  "contact": "祝老师",
+  "phone": "13995212672",
+  "unit": "北方民族大学"
+ },
+ {
+  "province": "海南省",
+  "director": "唐荣年",
+  "contact": "陈老师",
+  "phone": "18976958031",
+  "unit": "海南科技职业大学"
+ },
+ {
+  "province": "山东省",
+  "director": "宋锐",
+  "contact": "柴老师",
+  "phone": "18264170530",
+  "unit": "山东大学"
+ },
+ {
+  "province": "甘肃省",
+  "director": "杨东亚",
+  "contact": "张老师",
+  "phone": "13909448718",
+  "unit": "兰州理工大学"
+ }
+]
