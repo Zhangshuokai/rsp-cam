@@ -29,23 +29,45 @@ import {
   Percent,
   Siren,
 } from "lucide-react";
-import { Frame, Card, DataTable, Grid, Quote, Focus, Steps, Pre, Stat } from "./components.jsx";
+import { Frame, Card, DataTable, Grid, Quote, Focus, Steps, Pre, Stat, Figure } from "./components.jsx";
+
+import realBucea from "./assets/real-bucea.jpg";
+import fieldImg from "./assets/field.png";
+import targetsImg from "./assets/targets.png";
+import safetyImg from "./assets/safety.png";
+import liveWeight from "./assets/live-weight.jpg";
+import liveChassis from "./assets/live-chassis.jpg";
+import liveTransport from "./assets/live-transport.jpg";
+import realJiangxi from "./assets/real-jiangxi.jpg";
+import realTianzhi from "./assets/real-tianzhi.jpg";
+import realTracks from "./assets/real-tracks.jpg";
+import realCad from "./assets/real-cad.jpg";
+import qrProvince from "./assets/qr-province.png";
 
 /* ------------------------------------------------------------ Cover */
 const Cover = () => (
   <div className="mx-auto flex w-full max-w-[80rem] flex-1 flex-col justify-center">
-    <span className="mb-4 inline-flex w-fit items-center rounded-full border border-brand-300 bg-paper px-3 py-1 text-[0.72rem] font-semibold tracking-[0.12em] text-brand-700 md:mb-6 md:px-4 md:py-1.5 md:text-[0.82rem]">
-      培训讲义 · 2026-09-28 · v1.0
-    </span>
-    <h1 className="text-[2rem] font-extrabold leading-[1.15] tracking-tight text-ink sm:text-[2.5rem] md:text-[3.5rem]">
-      智能救援车辆设计
-      <br />
-      <span className="text-brand-600">1.5kg 限重下的整车方案</span>
-    </h1>
-    <p className="mt-5 max-w-4xl border-l-4 border-brand-500 pl-4 text-[1rem] leading-relaxed text-slateink md:mt-8 md:pl-5 md:text-[1.15rem]">
-      面向 2027 年第十届工创赛「智能+工程创新赛道 · 智能救援」：在 ≤1.5kg、≤300×300×200mm、单电源不可换、全自主的硬约束下，
-      把「移动 + 感知 + 越障 + 推拨转运 + 对抗防护」做成一台能稳定得分的小车。
-    </p>
+    <div className="grid items-center gap-6 lg:grid-cols-[1.2fr_1fr] lg:gap-10">
+      <div>
+        <span className="mb-4 inline-flex w-fit items-center rounded-full border border-brand-300 bg-paper px-3 py-1 text-[0.72rem] font-semibold tracking-[0.12em] text-brand-700 md:mb-6 md:px-4 md:py-1.5 md:text-[0.82rem]">
+          培训讲义 · 2026-09-28 · v1.0
+        </span>
+        <h1 className="text-[2rem] font-extrabold leading-[1.15] tracking-tight text-ink sm:text-[2.5rem] md:text-[3.5rem]">
+          智能救援车辆设计
+          <br />
+          <span className="text-brand-600">1.5kg 限重下的整车方案</span>
+        </h1>
+        <p className="mt-5 max-w-4xl border-l-4 border-brand-500 pl-4 text-[1rem] leading-relaxed text-slateink md:mt-8 md:pl-5 md:text-[1.15rem]">
+          面向 2027 年第十届工创赛「智能+工程创新赛道 · 智能救援」：在 ≤1.5kg、≤300×300×200mm、单电源不可换、全自主的硬约束下，
+          把「移动 + 感知 + 越障 + 推拨转运 + 对抗防护」做成一台能稳定得分的小车。
+        </p>
+      </div>
+      <Figure
+        src={realBucea}
+        alt="公开获奖救援机器人实物（北京建筑大学，2025）"
+        caption="公开获奖实机：3D 打印车体 + 框式拨具 + 双目相机（BUCEA-EPIC，2025）"
+      />
+    </div>
   </div>
 );
 
@@ -122,7 +144,8 @@ const Scoring = () => (
       <Stat value="10" unit="分/个" label="核心物资：黑色 40mm 正四面体" tone="warn" />
       <Stat value="15" unit="分/个" label="伤员：橘色 80×40×40mm，须单独转运" tone="good" />
     </Grid>
-    <div className="mt-4">
+    <div className="mt-4 grid gap-4 lg:grid-cols-[1.35fr_1fr] lg:items-start">
+      <div>
       <DataTable
         head={["规则点", "后果"]}
         widths={["62%", "38%"]}
@@ -135,57 +158,31 @@ const Scoring = () => (
           ["停走 15 秒、失控、一键启动后再次触碰作品", "本轮结束"],
         ]}
       />
+      </div>
+      <Figure
+        src={targetsImg}
+        alt="四类救援目标（官方命题解析）"
+        caption="初赛四类目标：绿正方体 / 黑正四面体 / 橘色伤员 / 浅蓝危险目标（官方命题解析）"
+      />
     </div>
   </Frame>
 );
 
-/* ------------------------------------------------------- 场地 SVG */
-const FieldSvg = () => (
-  <svg viewBox="0 0 420 300" className="h-auto w-full" role="img" aria-label="场地与安全区俯视示意">
-    <rect x="10" y="10" width="400" height="280" rx="8" fill="#f6f9fd" stroke="#93cdfb" strokeWidth="2" />
-    <text x="210" y="30" textAnchor="middle" fontSize="11" fill="#64748b">约 3000 × 3000 mm（以现场提供为准）</text>
-
-    {/* 出发区 1-4（顶部，洋红） */}
-    {[0, 1, 2, 3].map((i) => (
-      <g key={i}>
-        <rect x={40 + i * 88} y="44" width="44" height="30" rx="4" fill="#fde7f3" stroke="#db2777" strokeWidth="1.5" />
-        <text x={62 + i * 88} y="63" textAnchor="middle" fontSize="11" fill="#9d174d">{i + 1}</text>
-      </g>
-    ))}
-    {/* 减速带 3 根 */}
-    {[0, 1, 2].map((i) => (
-      <rect key={i} x="40" y={90 + i * 16} width="336" height="8" rx="2" fill="#f3d9a4" stroke="#b4690e" strokeWidth="1" />
-    ))}
-    <text x="376" y="112" textAnchor="end" fontSize="10" fill="#b4690e">减速带 ×3</text>
-
-    {/* 中心目标堆 */}
-    <rect x="150" y="150" width="120" height="66" rx="6" fill="#eef7ef" stroke="#0f8a5f" strokeWidth="1.5" strokeDasharray="5 4" />
-    <text x="210" y="176" textAnchor="middle" fontSize="11" fill="#0f8a5f">救援目标（公共）</text>
-    <text x="210" y="196" textAnchor="middle" fontSize="10" fill="#64748b">普通 · 核心 · 伤员 · 危险</text>
-
-    {/* 安全区（底部两角，直角三角，含隔板） */}
-    <g>
-      <path d="M22 240 L104 240 L22 288 Z" fill="#e8f1ff" stroke="#1f72d6" strokeWidth="1.5" />
-      <line x1="60" y1="240" x2="60" y2="264" stroke="#1f72d6" strokeWidth="1" />
-      <text x="40" y="258" fontSize="9" fill="#1a5cae">物资</text>
-      <text x="74" y="258" fontSize="9" fill="#1a5cae">伤员</text>
-    </g>
-    <g>
-      <path d="M398 240 L316 240 L398 288 Z" fill="#fdeceb" stroke="#d23f3f" strokeWidth="1.5" />
-      <line x1="360" y1="240" x2="360" y2="264" stroke="#d23f3f" strokeWidth="1" />
-      <text x="376" y="258" fontSize="9" fill="#b3261e">物资</text>
-      <text x="330" y="258" fontSize="9" fill="#b3261e">伤员</text>
-    </g>
-    <text x="63" y="228" textAnchor="middle" fontSize="10" fill="#1f72d6">本队安全区</text>
-    <text x="357" y="228" textAnchor="middle" fontSize="10" fill="#d23f3f">对方安全区</text>
-  </svg>
-);
-
+/* ------------------------------------------------------- 场地 */
 const Field = () => (
   <Frame kicker="背景" floor="05" title="场地与目标：几何决定机构" wide>
     <div className="grid items-start gap-5 md:gap-6 lg:grid-cols-[1.05fr_1fr] lg:gap-8">
-      <div className="surface p-3 md:p-4">
-        <FieldSvg />
+      <div className="space-y-4">
+        <Figure
+          src={fieldImg}
+          alt="2027 智能救援场地图（官方命题解析）"
+          caption="官方命题解析：场地全貌，约 3000×3000mm，四周加固围栏"
+        />
+        <Figure
+          src={safetyImg}
+          alt="安全区与减速带（官方命题解析）"
+          caption="安全区围栏截面为直角三角、内含物资/伤员两区；出发区前 3 根减速带"
+        />
       </div>
       <div className="space-y-3">
         <Card title="关键尺寸" icon={Ruler} tone="brand">
@@ -263,7 +260,7 @@ const Budget = () => (
         规格书重量 ≠ 实物；采购后逐一上秤回填，打印件按切片预估 ×1.05。
       </Card>
     </Grid>
-    <div className="mt-4">
+    <div className="mt-4 grid items-start gap-4 lg:grid-cols-[1.3fr_1fr]">
       <Steps title="展开：经验分账与预算校核（完整）">
         <p>起步分账（估算）：动力 25–35% ｜ 电池 8–12% ｜ 主控+感知 5–15% ｜ 结构 15–25% ｜ 执行机构 5–10% ｜ 线材+紧固件+杂项 8–15%。</p>
         <DataTable
@@ -280,6 +277,11 @@ const Budget = () => (
 线材                         按总重 4–8% 预留（≈60–120 g）
 任何增项：先从「结构」和「紧固件」里找空间`}</Pre>
       </Steps>
+      <Figure
+        src={liveWeight}
+        alt="2027 专题直播：1.5kg 重量预算页"
+        caption="2027 专题直播的 1.5kg 重量预算页（厂商口径，克重未实物核验，正式 BOM 前自测）"
+      />
     </div>
   </Frame>
 );
@@ -303,6 +305,11 @@ const Chassis = () => (
       <Card title="轮径与通过性" icon={Cog} tone="brand">
         差速用 Φ65mm 橡胶轮（35–40g/个）+ 后辅助轮 + 万向球；减速带区降速、直线段加速。
       </Card>
+    </div>
+    <div className="mt-4 grid gap-3 md:grid-cols-3 md:gap-4">
+      <Figure src={liveChassis} alt="2027 专题直播：底盘选型页" caption="2027 直播底盘选型页：差速 vs 四麦轮" />
+      <Figure src={realJiangxi} alt="江西省赛实机" caption="江西省赛实车：双车同场，推目标入安全区" />
+      <Figure src={realTianzhi} alt="天职师大实机" caption="天职师大 2025 省赛夺冠：车稳、动作净" />
     </div>
   </Frame>
 );
@@ -354,6 +361,10 @@ const Mechanism = () => (
     <p className="mt-3 text-[0.84rem] text-muted">
       机械臂（2025 明文除外、2027 明文禁止抓取）与本赛项不相容；旋转扫臂可控性差，不推荐。
     </p>
+    <div className="mt-4 grid gap-3 md:grid-cols-2 md:gap-4">
+      <Figure src={liveTransport} alt="2027 专题直播：转运机构页" caption="2027 直播转运机构页：贯穿式自适应通道 / 框式拨具" />
+      <Figure src={realTracks} alt="履带+推铲实机" caption="公开实机：履带底盘 + 前置大弧面推铲（推 / 铲流派）" />
+    </div>
   </Frame>
 );
 
@@ -405,6 +416,13 @@ const Layout = () => (
         </Card>
       }
     />
+    <div className="mt-4">
+      <Figure
+        src={realCad}
+        alt="公开机械方案 CAD（2026）"
+        caption="公开实机机械方案 CAD：低重心、楔形推铲与紧凑布局（仅供构型参考）"
+      />
+    </div>
   </Frame>
 );
 
@@ -745,8 +763,11 @@ const Actions = () => (
         ["5", "确认参赛资格口径", "预通知原文「普通高等教育本科院校全日制在校本科生」——职业本科是否适用，先问省赛再问秘书处"],
       ]}
     />
-    <div className="mt-4">
+    <div className="mt-4 grid items-start gap-4 md:grid-cols-[1fr_auto]">
       <Quote>进入省级复赛后不能更换任何参赛人员；每名学生仅限一个赛项、一支队。名单一次报准。</Quote>
+      <div className="w-full max-w-[15rem]">
+        <Figure src={qrProvince} alt="各省赛联系人查询系统二维码（官方）" caption="官方省赛联系人查询二维码" />
+      </div>
     </div>
   </Frame>
 );
