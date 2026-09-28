@@ -779,21 +779,36 @@ const Closing = () => (
       <Quote>
         本 deck 由本仓库「工创赛智能救援-限重方案调研包 v1.0（2026-09-28）」整理而成；克重与直播数据为二手参考，正式 BOM 前请自测。
       </Quote>
-      <Grid cols={3}>
-        <Card title="调研包（本仓库）" icon={BookOpen} tone="brand">
-          完整报告与官方原件：<br />
-          <code className="break-all">培训/工创赛智能救援-限重方案调研/</code><br />
-          先读其中的 <code>README-交付说明.md</code>，主件 <code>00-调研报告（主件）.md</code>。
+      <Grid cols={2}>
+        <Card title="调研包核心文档 + 官方原件（zip）" icon={BookOpen} tone="brand">
+          主件调研报告与重量 / 选型 / 文献笔记，以及命题与运行、评分与规则（发布稿）、命题解析 51 页、两批服务商通知、2025 获奖名单等官方原件。
+          <br />
+          <a
+            href="./files/工创赛智能救援-调研包-核心文档与官方原件.zip"
+            className="break-all font-semibold text-brand-700 underline"
+          >
+            下载：工创赛智能救援-调研包-核心文档与官方原件.zip
+          </a>
+        </Card>
+        <Card title="文字版教程（Markdown）" icon={Package} tone="brand">
+          本 deck 的完整文字版，便于检索与复制。
+          <br />
+          <a href="./files/智能救援车辆设计-文字版教程.md" className="break-all font-semibold text-brand-700 underline">
+            下载：智能救援车辆设计-文字版教程.md
+          </a>
+        </Card>
+        <Card title="公开对标（GitHub）" icon={GitBranch} tone="slate">
+          <a className="font-semibold text-brand-700 underline" href="https://github.com/BUCEA-EPIC/intelligent-rescue-2025">BUCEA-EPIC（Jetson+STM32）</a>｜
+          <a className="font-semibold text-brand-700 underline" href="https://github.com/Pinle-Yu/2025-intelligent-rescue-vision">Pinle-Yu（MaixCAM 省一）</a>｜
+          <a className="font-semibold text-brand-700 underline" href="https://github.com/Nsea261168/gongchuang-car-archive">Nsea261168（差速实证）</a>｜
+          <a className="font-semibold text-brand-700 underline" href="https://github.com/starpicke/Intelligent-Rescue">starpicke（ROS2）</a>。
         </Card>
         <Card title="官方依据" icon={ShieldCheck} tone="good">
-          命题与运行、评分与规则（发布稿）、命题解析 51 页、两批服务商通知——均在调研包的 <code>官方原件/</code>。
-        </Card>
-        <Card title="公开对标" icon={GitBranch} tone="slate">
-          BUCEA-EPIC/intelligent-rescue-2025（Jetson+STM32）｜Pinle-Yu/2025-intelligent-rescue-vision（MaixCAM 省一）｜Nsea261168/gongchuang-car-archive（差速实证）｜starpicke/Intelligent-Rescue（ROS2）。
+          发布稿、命题解析、服务商通知与 2025 获奖名单已随上面的调研包 zip 一并提供（<code>官方原件/</code>）。
         </Card>
       </Grid>
       <p className="text-[0.86rem] text-muted">
-        路径：<code>教学webppt/智能救援车辆设计/</code>（成品单文件，离线可播）｜文字版：<code>docs/智能救援车辆设计.md</code>
+        路径：<code>教学webppt/智能救援车辆设计/</code>（成品单文件 + <code>files/</code> 附件，离线可播）
       </p>
     </div>
   </Frame>

@@ -388,8 +388,11 @@ const Checklist = () => (
         <Card title="拉镜像的前提" icon={Wifi} tone="warn">
           本机 Clash 在运行且 allow-lan；关掉则 docker pull 失败。
         </Card>
-        <Card title="文档与来源" icon={BookOpen}>
-          详见 docs/ROS2与micro-ROS选型.md（含 micro-ROS 官方硬件列表与 ROS 2 Tier 分级）。
+        <Card title="配套下载（随 deck 分发）" icon={Download}>
+          <a className="font-semibold text-brand-700 underline" href="./files/ROS2消息通路验证.zip">
+            ROS2消息通路验证.zip
+          </a>
+          （ping.py / pong.py / README，跨机 DDS 验证脚本）。
         </Card>
         <Card title="下一步" icon={ListChecks}>
           在容器里跑视觉节点；若要接 MCU，再起 micro-ROS Agent。
@@ -518,7 +521,11 @@ const PingPong = () => (
           RTT 1–2 ms，avg 1.3 ms；回包带 @pi-zhangsk，证明经过树莓派 ROS 2 图。
         </Card>
         <Card title="复现" icon={BookOpen}>
-          脚本与防火墙规则见 教学demo/ROS2消息通路验证/。
+          脚本与防火墙规则见{" "}
+          <a className="font-semibold text-brand-700 underline" href="./files/ROS2消息通路验证.zip">
+            ROS2消息通路验证.zip
+          </a>
+          。
         </Card>
       </div>
       <Code>

@@ -245,8 +245,15 @@ JPEG 质量  上限 100；90→100 肉眼提升很小、体积翻倍，1280×960
 定焦镜头   近距离小字发虚无法软件解决，需拉开到对焦距离或换自动对焦/高分辨率
 控件状态   属驱动持久状态，改一次会保留（除非重启/重新设置），不是脚本默认值
 
-完整参数表见 docs/摄像头参数.md（含可调控件默认值、软件默认参数与实测性能）。`}</Pre>
+完整参数表随 deck 下载「摄像头参数.md」（含可调控件默认值、软件默认参数与实测性能）。`}</Pre>
       </Steps>
+      <div className="mt-4">
+        <Card title="参数与选型文档（随 deck 分发）" icon={Camera}>
+          <a className="font-semibold text-brand-700 underline" href="./files/摄像头参数.md">摄像头参数.md</a>
+          {" ｜ "}
+          <a className="font-semibold text-brand-700 underline" href="./files/摄像头选型.md">摄像头选型.md</a>
+        </Card>
+      </div>
     </div>
   </Frame>
 );

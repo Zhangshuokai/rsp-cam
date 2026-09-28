@@ -275,8 +275,16 @@ const Closing = () => (
           --check 无窗口即可验证链路。
         </Card>
       </Grid>
+      <div className="mt-4">
+        <Card title="脚本下载（随 deck 分发）" icon={Terminal}>
+          <a className="font-semibold text-brand-700 underline" href="./files/摄像头远程显示.zip">
+            摄像头远程显示.zip
+          </a>
+          （cam_server.py + cam_view.py + README）。
+        </Card>
+      </div>
       <p className="text-[0.86rem] text-muted">
-        完整流程图（总体数据流、服务端/客户端状态机）见 <code>docs/设计原理流程图.md</code>；摄像头能力与参数见 <code>docs/摄像头参数.md</code>。
+        完整流程图（总体数据流、服务端 / 客户端状态机）与摄像头参数说明随仓库 <code>docs/</code> 文档提供。
       </p>
     </div>
   </Frame>

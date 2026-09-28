@@ -514,7 +514,8 @@ void loop() {
         <p className="text-[0.84rem] text-muted">
           不要用 <code>BaseChassis::updateVelocity()</code> / <code>spinRPM()</code>：它们是
           「目标 RPM + PID」，无编码器时反馈恒为 0，PID 饱和到满 PWM——零速指令下轮子会自己转（实测踩过）。
-          完整包（含手柄/示例）见 <code>教学webppt/ESP32-S3电机驱动板/files/QGP_EVMotor.zip</code>。
+          完整包（含手柄 / 示例）随 deck 下载{" "}
+          <a className="underline" href="./files/QGP_EVMotor.zip">files/QGP_EVMotor.zip</a>。
         </p>
       </Steps>
     </div>

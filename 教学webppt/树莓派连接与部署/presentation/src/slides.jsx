@@ -358,8 +358,16 @@ const Closing = () => (
           一律走 tools/pi.py，不手敲 ssh。
         </Card>
       </Grid>
+      <div className="mt-4">
+        <Card title="工具下载（随 deck 分发）" icon={Upload}>
+          <a className="font-semibold text-brand-700 underline" href="./files/pi工具与WSL编库脚本.zip">
+            pi工具与WSL编库脚本.zip
+          </a>
+          （pi.py + microros_lib_wsl.sh + README）。
+        </Card>
+      </div>
       <p className="text-[0.86rem] text-muted">
-        文字版：<code>docs/树莓派连接与部署.md</code>（含本 deck 全部命令、参数表与排障清单）；工具链坑见 <code>docs/工具链与踩坑.md</code>。
+        本 deck 全部命令、参数表与排障清单，以及 PlatformIO / WSL 工具链踩坑，随仓库 <code>docs/</code> 文档提供。
       </p>
     </div>
   </Frame>

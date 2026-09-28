@@ -278,7 +278,7 @@ const Closing = () => (
   <Frame kicker="收尾" floor="09" title="一句话约定">
     <div className="space-y-5">
       <Quote>
-        根目录只作暂存区：任何文档在提交前必须归档，并同步更新对应 md；每次提交后确认是否生成教学 webppt。
+        根目录只作暂存区：任何文档在提交前必须归档，并同步更新对应 md；归档 / 新增内容后自动生成或更新教学 webppt。
       </Quote>
       <Grid cols={3}>
         <Card title="分类明确" icon={FolderTree}>
@@ -291,8 +291,16 @@ const Closing = () => (
           目录约定写进 AGENTS.md，新会话可直接遵循。
         </Card>
       </Grid>
+      <div className="mt-4">
+        <Card title="协作约定文字版（随 deck 分发）" icon={FileText}>
+          <a className="font-semibold text-brand-700 underline" href="./files/工作区结构与协作约定.md">
+            工作区结构与协作约定.md
+          </a>
+          （完整归档表、不入库清单、webppt 构建与附件 / 下载约定）。
+        </Card>
+      </div>
       <p className="text-[0.86rem] text-muted">
-        文字版：<code>docs/工作区结构与协作约定.md</code>（完整归档表、不入库清单、webppt 构建与附件/下载约定）；讲义规范见 <code>教学webppt/编写守则.md</code>。
+        讲义规范（组织 / 语言 / 顺序、导航、折叠与附件约定）随仓库 <code>教学webppt/</code> 提供。
       </p>
     </div>
   </Frame>
