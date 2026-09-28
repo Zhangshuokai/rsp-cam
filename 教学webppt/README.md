@@ -57,3 +57,4 @@ npm run build    # 产物 dist/index.html
 - `ROS2与micro-ROS选型/` —— 通信：选型结论、树莓派 Docker 安装 ROS 2 Jazzy、WSL2 跨机 ping-pong 验证
 - `ESP32-S3电机驱动板/` —— 执行：奇果派 S3 机器人控制板，硬件与接线、Arduino/Mixly 开发、遥控与物联网、micro-ROS 对接、串口调试与波形监控
 - `ESP32-S3接入micro-ROS/` —— 执行：S3 写 micro-ROS 固件、Pi 上跑 Agent，UDP4 通路与验证；含**实测**的电机驱动配方（`begin(90)` / `spin()` / 占空比 60~100 / 库调用只在核心 1）与 DDS 默认域 0 的坑
+- `智能救援车辆设计/` —— 整车集成：1.5kg 限重下的整车方案（规则红线、重量预算、底盘/算力/转运机构选型、框式拨具与视觉流水线、任务状态机、三阶段路线与现场自测）
