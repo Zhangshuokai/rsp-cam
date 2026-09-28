@@ -6,7 +6,7 @@
 
 - 用户常在**根目录**新建/更新文档：提交前必须把它归档进合适分类目录，并同步更新相关 md（目标目录的 `README.md`，必要时根 `README.md`）。移动已跟踪文件用 `git mv` 保留历史；路径含中文，命令里要加引号。
 - 归档去向：培训资料/规则解读 → `培训/`；可运行最小示例 → `教学demo/<名称>/`；技术文档 → `docs/`；算法 → `算法/`；权重与产物 → `模型/`；训练脚本 → `训练/`；数据集 → `数据/`（内容不入库）；脚本工具 → `tools/`；线下教学 webppt → `教学webppt/<主题>/`。
-- **本地编写的代码必须给出下载地址**：`tools/`、`教学demo/` 里我们自己写的脚本/工具，要在交付物（deck 的收尾下载页、`docs/` 相关文档、最终答复）里给出「去哪下载」，不能只留一个仓库路径。离线首选：把文件（或打包成 zip）放进对应的 `教学webppt/<主题>/files/`，deck 里用相对链接 `./files/…` 引用（随 deck 分发、离线可用，也是唯一不依赖推送的地址）。在线地址（仓库 `origin` = `https://github.com/Zhangshuokai/rsp-cam`）：`https://github.com/Zhangshuokai/rsp-cam/blob/main/<路径>`，raw 直链 `https://raw.githubusercontent.com/Zhangshuokai/rsp-cam/main/<路径>`（实测可直连，不用代理）。**写 GitHub 地址前先确认该文件已在 `origin/main` 上**——未推送的文件链接是 404，此时只给仓库内路径或 `files/` 副本。`files/` 里的副本与源文件改动后要同步刷新，别留两个版本。
+- **本地编写的代码必须给出下载地址**：`tools/`、`教学demo/` 里我们自己写的脚本/工具，要在交付物（deck 的收尾下载页、`docs/` 相关文档、最终答复）里给出「去哪下载」，不能只留一个仓库路径。离线首选：把文件（或打包成 zip）放进对应的 `教学webppt/<主题>/files/`，deck 里用相对链接 `./files/…` 引用（随 deck 分发、离线可用，也是唯一不依赖推送的地址）。在线地址（仓库 `origin` = `https://github.com/Zhangshuokai/rsp-cam`）：`https://github.com/Zhangshuokai/rsp-cam/blob/main/<路径>`，raw 直链 `https://raw.githubusercontent.com/Zhangshuokai/rsp-cam/main/<路径>`（raw 直连不稳定、需重试，见「已踩过的坑」的联网抓资料条目）。**写 GitHub 地址前先确认该文件已在 `origin/main` 上**——未推送的文件链接是 404，此时只给仓库内路径或 `files/` 副本。`files/` 里的副本与源文件改动后要同步刷新，别留两个版本。
 - **添加/归档新内容后自动更新 webppt**：用 `web-slide-deck` 技能生成或更新对应主题，产物放 `教学webppt/<主题>/`，并**执行构建把成品刷新**（见下节），不再逐次询问用户。新增 deck 还要同步 `教学webppt/index.html` 目录首页与 `教学webppt/README.md` 的「已有主题」。
 - 提交信息沿用历史风格（`feat(...):` / `docs(...):` 等 + 中文描述）；不要主动 push。
 
@@ -19,6 +19,7 @@
 - ESP32-S3 接入 micro-ROS 的完整步骤 deck：`教学webppt/ESP32-S3接入micro-ROS/`；背景见 `docs/ESP32-S3电机驱动板资料.md` 第六节与 `docs/ROS2与micro-ROS选型.md` 第六节。
 - ESP32-S3 micro-ROS 固件工程（PlatformIO）：`教学demo/ESP32-S3-microROS/`（头文件是 `micro_ros_platformio.h`，`board_microros_distro = jazzy` + `board_microros_transport = wifi`；**结构照奇果派官方示例**——FreeRTOS 任务管 WiFi/`rmw_uros_ping_agent` 重连/心跳，节点名 `esp32_car`）。控车按**实测配方**（见下条「已踩过的坑」与工程 README）：`emo.begin()` → `emo.getEncoderMotor(M1/M2)->begin(90)`（**必须**）→ `emo.getMotor(M1/M2)->spin(±占空比)`，占空比映射到 60~100，库调用只在核心 1（`loop()`）做，含 1 s 断连停车。**Windows 编不了 micro_ros_platformio 的 libmicroros**（上游首次构建用 POSIX shell + colcon，报 `'.' is not recognized`）：先在 WSL 跑 `tools/microros_lib_wsl.sh` 编库并拷回工程 `.pio`，之后 Windows 上 `pio run` / `-t upload` 正常（实测 RAM 20.8% / Flash 23.4%）。电机库是官方包的精简子集（`lib/QGP_EVMotor/`，只留 `EMotionPI.h`+`ESP32Encoder.h`+`esp32s3/libqgpmotor.a`，0.86 MB；蓝牙手柄那套 NimBLE 约 4.5 MB 裁掉）。Pi 侧监听节点 `pi/heartbeat_listener.py`（官方原样，用 `pi.py --put` 上传）。下载：`教学webppt/ESP32-S3接入micro-ROS/files/{ESP32-S3-microROS.zip,micro-ROS-official-src.zip}`。
 - 串口波形监控 GUI：`tools/serial_monitor/serial_monitor.py`（tkinter + pyserial；示波器风格、10 通道泳道、悬停游标、点击徽标隐藏通道）。用法 `python tools/serial_monitor/serial_monitor.py --port <COM> --baud 115200 --autostart`（先用 `--list` 确认端口）；无硬件用 `--demo` 看界面、`--names` 改通道名。依赖 `python -m pip install pyserial`（tkinter 随 Python 自带）；通道定义（遥控器 `c0…c9` → `ch1…ch4 / swa-5…swd-8 / vra / vrb`）见其 `README.md`。下载：`教学webppt/ESP32-S3电机驱动板/files/serial_monitor.zip`（随 deck 分发）。
+- 工创赛「智能+」两赛项教程与调研：`培训/工创赛智能救援-限重方案调研/`（救援）与 `培训/工创赛智能搬运-调研包/`（搬运 v1.1；编号 `00`–`07` 为外部包，`08-联网补充与规格核对.md` 是我们按官方原文 + 联网核对的补齐件——规则口径、圆环/区域尺寸、文档分与决赛、视觉与通信参数、电控对标、RDK X5 / ZDT 步进规格都在 `08`）。对应文字版 `docs/智能救援车辆设计.md`、`docs/智能搬运车辆设计.md`，配套 deck `教学webppt/智能救援车辆设计/`、`教学webppt/智能搬运车辆设计/`。搬运的规则原文合订本在 `培训/工创赛智能搬运-调研包/官方原件/搬运-官方原文分节合订.txt`（附件 2-1/2-2 全，含官方圆环尺寸公式与判定口径）。
 - 不入库：`__pycache__` / `*.pyc`、`数据/*/` 内容（只保留 `.gitkeep`）、`node_modules/` 与 `**/presentation/dist/`、`.vscode/`（Live Server 写的端口）、`.pio/`（PlatformIO 构建产物与预编译 `libmicroros`，约 60 MB）、`教学demo/ESP32-S3-microROS/include/secrets.h`（含 Wi-Fi 密码，模板 `secrets.example.h` 入库）。
 - 本节工作流规则的文字版（含完整归档表、不入库清单、下载地址与附件约定）：`docs/工作区结构与协作约定.md`；`AGENTS.md` 与 `docs/` 两处改动需同步。
 
@@ -36,7 +37,8 @@
 - 一个主题一个独立 Vite 工程：`教学webppt/<主题>/presentation/`；交付成品是 `教学webppt/<主题>/index.html`（单文件，可离线双击）。
 - 构建：`cd 教学webppt/<主题>/presentation` → `npm install` → `npm run build`，再把 `presentation/dist/index.html` 复制为上一级 `index.html`。
 - `presentation/index.html` 是**源码壳不是成品**（引用 `/src/main.jsx`，需 Vite）：它内置守卫，在 Live Server / 双击时会自动跳转到 `../index.html`；改源码用 `npm run dev`（默认 5173）。
-- 目录首页：`教学webppt/index.html`。新增 deck 优先**复制一个已有 deck 的 `presentation/`**（保证 `components.jsx` 与各 deck 一致），只改 `src/slides.jsx` 与标题/品牌；`web-slide-deck` 技能里的 `assets/deck-template/` 已落后于本仓库（缺共用组件），直接用会造成组件不一致。
+- 目录首页：`教学webppt/index.html`。新增 deck 优先**复制一个已有 deck 的 `presentation/`**（保证 `components.jsx` 与各 deck 一致），只改 `src/slides.jsx` 与标题/品牌；`web-slide-deck` 技能里的 `assets/deck-template/` 已落后于本仓库（缺共用组件），直接用会造成组件不一致。复制后别忘改 `package.json` 的 `name`/`description` 与 `presentation/index.html` 的 `<title>`（成品标题由它内联）。
+- 复制已有 deck 的 `presentation/` 时，**不要用 Python `shutil.copytree` 连 `node_modules` 一起拷**——会漏文件（实测新目录缺 `vite/dist/node/cli.js`，`npm run build` 报 `ERR_MODULE_NOT_FOUND`，而 `npm install` 还误报 “up to date”）。用 `robocopy <src>\node_modules <dst>\node_modules /MIR`（原生 exe，长路径安全），或在目标目录删掉 `node_modules` 重装。
 - **编写守则**：组织 / 语言 / 顺序按 `教学webppt/编写守则.md`（依据多媒体学习认知理论与教学 PPT 规范）。全局主题顺序「工程与协作 → 环境与设备 → 感知 → 通信 → 执行」；单 deck 页序「封面 → 结论先行 → …… → 收尾」，收尾恒在最后。新增主题插到规定位置并同步 `index.html` 与 `README.md`；改顺序后必须重建成品。
 - **统一导航**：每个 deck 成品顶栏都有固定的「← 目录」链接（源码 `presentation/src/App.jsx` 顶栏的 `<a href="../index.html">`），回到 `教学webppt/index.html`；deck 内的分页侧栏称「大纲」，别和「目录」混称。
 - 各 deck 的 `components.jsx` 完全一致，`App.jsx` 仅品牌文案不同；改导航/交互要**所有 deck** 同步改并全部重建（`npm run build` 后把 `dist/index.html` 覆盖成品），否则成品与源码漂移。构建后不要留下「源码已改、成品未刷新」的状态。
@@ -44,6 +46,7 @@
 - **附件本地化**：deck 的可下载文件（PDF / zip / **本仓库自写的代码**）放 `<主题>/files/`，deck 里用相对链接 `./files/…` 引用，随目录一起分发，**不内联**进单文件；对应 `docs/` 里的下载链接同步改成本地路径。图片放 `presentation/src/assets/` 并用 `import` 引用，构建会内联进单文件（`assetsInlineLimit` 已调大）。相对链接只在**成品目录**下有效，`npm run dev` 下指不到 `files/`。
   已有先例：`教学webppt/ESP32-S3电机驱动板/files/{SCH_EMO_Lite.pdf,SCH_EMO_MAX_3-V1.0_USE.pdf,QGP_EVMotor.zip,serial_monitor.zip}`，下载页在 `slides.jsx` 的 `Downloads`。
 - 验证要求：桌面 1366×860 与手机 390×844 逐页断言 `overflowX === 0` 且首行可见；幻灯片外层用 `min-h-full` 而非 `h-full`（否则高页内容顶部会被顶掉）。
+- 本地/工具验证成品：不能直接开 `file://`（Playwright 工具直接拦），要在 `教学webppt/` 起 `python -m http.server <port>`，再访问 `http://127.0.0.1:<port>/<主题>/index.html?t=<n>#/1`（中文目录名要 URL 编码；加 `?t=` 破缓存）。逐页断言做法：循环设 `location.hash = '#/'+i`、等 React 重渲染后把 `main.scrollTop=0`，量 `main`/`documentElement` 的 `scrollWidth-clientWidth` 与首页元素 `getBoundingClientRect().top`，并统计页数（底部 `x / N`）。
 
 ## 图表约定（全仓库）
 
@@ -122,7 +125,9 @@ python tools/pi.py --put <本地文件> <Pi 上的绝对路径>     # 只上传�
 - **`172.26.188.114` 不是固定地址**，那是旧 Pi wlan0 从手机热点 `Redmi K70`（网关 `172.26.188.48`）DHCP 拿到的租约，热点一断即失效。不要再把 `.114` 当成 Pi 的地址用。
 - **IPv4 与 IPv6 同时不通**时，通常是 Pi 的 NM 因 eth0 反复 DHCP 失败而失活该设备，连链路本地地址一起被清掉（表现为二层完全静默：链路仍 1 Gbps Up 但零入站报文）。解决办法是本机网卡 disable/enable 制造一次链路抖动，或重插网线/重启 Pi。
 - 这条网线是**直连**（笔记本 ↔ Pi），两端任何一侧指望 DHCP 都不会成功。
-- **资料站可直连、Docker Hub 不行**：抓取奇果派（`www.7gp.cn` / `doc.7gp.cn`）的图片与文件可直接 `Invoke-WebRequest`，无需 Clash 代理；GitHub 同样可直连（`raw.githubusercontent.com` 上已推送的文件返回 200）。只有 Docker Hub 才需要走代理（见上）。个别直链会 404（如 `doc.7gp.cn/download/FlashingTool.zip`），先按官网文章页核链接再判失败。
+- **资料站可直连、Docker Hub 不行**：抓取奇果派（`www.7gp.cn` / `doc.7gp.cn`）的图片与文件可直接 `Invoke-WebRequest`，无需 Clash 代理；只有 Docker Hub 才需要走代理（见上）。个别直链会 404（如 `doc.7gp.cn/download/FlashingTool.zip`），先按官网文章页核链接再判失败。
+- **联网抓资料的现状（2026-09 实测，别再逐个试错）**：可直连并可用的有 `www.7gp.cn` / `doc.7gp.cn`、`www.wit-motion.com`、`developer.d-robotics.cc`（RDK X5 规格页）、`api.github.com`。`raw.githubusercontent.com` **不稳定**——多数请求 40 s 超时，重试 1–3 次才偶有 200（`webfetch` 工具对该域名直接 `Transport error`）；抓仓库 README 优先走 `api.github.com`（如 `/repos/<owner>/<repo>/readme`，用 `Accept: application/vnd.github+json`），或对 raw 多次重试，并加 `User-Agent`。`gcxl.edu.cn` HTTPS 证书链不受信任（PowerShell 报「未能为 SSL/TLS 安全通道建立信任关系」）；`www.zdtmotor.com` DNS 解析失败。**Bing RSS（`?format=rss`）返回空 channel，Bing HTML 搜索中文关键词基本全是无关结果**——别拿搜索引擎兜底，直接给已知 URL 或官方页。
+- **写 GitHub 链接前先确认文件已在 `origin/main`**：`raw.githubusercontent.com` 上已推送的文件可直连返回 200（见上，需重试），未推送的 404；不确定就只给仓库内路径或 `files/` 副本。
 - **本机只有一份「学而思编程助手」内嵌的 esptool `3.0-dev`**（`C:\Users\z\AppData\Local\Programs\学而思编程助手\`）。它能打开串口但**不支持 ESP32-S3 的 USB-JTAG**：表现为 `Connecting....` 后 `serial.serialutil.SerialTimeoutException: Write timeout`。要 `chip_id` / `flash_id` 得另装 esptool ≥ 4.x（`python -m pip install esptool`）。
 - **截 GUI 窗口不要用 `CopyFromScreen`**：窗口被别的程序（游戏等）遮挡时会拍到遮挡窗口的画面。按窗口句柄用 `PrintWindow(hwnd, hdc, 2)` 抓最稳；句柄用 `Get-Process <exe> | Where-Object { $_.MainWindowHandle -ne 0 }` 取——`background_process` 返回的 pid 常是外层 powershell，它的 `MainWindowHandle` 为 0。
 - **PlatformIO 下载慢到不可用**：`pio run` 装 `espressif32` 平台/工具链时，registry 会 302 到境外对象存储（实测 `usc1.contabostorage.com`），**单连接约 50 KB/s**（Windows 直接和走 Clash 都慢、不是代理问题）；但该存储支持 HTTP Range，多连接线性叠加（24 连接 ~1 MB/s）。用 `tools/pio_mirror_seed.py` 按 PlatformIO 的缓存命名（`sha1(镜像 Location + X-PIO-Content-SHA256)`）预取到 `~/.platformio/.cache/downloads/` 后，`pio run` 直接命中缓存。另一个坑：PIO 的**平台/工具包可能装不全就中断**（下载 tmp 长期 0 字节），杀掉重跑即可。
