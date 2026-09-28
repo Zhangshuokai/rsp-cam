@@ -43,7 +43,7 @@ const Cover = () => (
     <div className="grid items-center gap-6 lg:grid-cols-[1.2fr_1fr] lg:gap-10">
       <div>
         <span className="mb-4 inline-flex w-fit items-center rounded-full border border-brand-300 bg-paper px-3 py-1 text-[0.72rem] font-semibold tracking-[0.12em] text-brand-700 md:mb-6 md:px-4 md:py-1.5 md:text-[0.82rem]">
-          培训讲义 · 2026-09-28 · v1.1
+          培训讲义 · 2026-09-28 · v1.2
         </span>
         <h1 className="text-[2rem] font-extrabold leading-[1.15] tracking-tight text-ink sm:text-[2.5rem] md:text-[3.5rem]">
           智能搬运车辆设计
@@ -569,7 +569,7 @@ const Localize = () => (
         编码器里程计 + 光流融合；陀螺仪（HWT101 类）角度融合；手眼标定、机器人重定位。
       </Card>
       <Card title="运动解算与 PID" icon={Move} tone="good">
-        麦轮全向运动解算 + 精准校准；分层 PID，参数分区独立整定；断电保护与急停逻辑。
+        麦轮全向运动解算 + 精准校准；正弦加减速过渡 + 边转边直走（省冠实证）；分层 PID，参数分区独立整定；断电保护与急停逻辑。
       </Card>
       <Card title="逆运动学" icon={Crosshair} tone="warn">
         臂的逆运动学解算 + 动态参数；手眼转换把像素坐标映射到车体 / 机械臂坐标。
@@ -670,9 +670,44 @@ const Evidence = () => (
   </Frame>
 );
 
+/* ------------------------------------------------------- 补件3：攻略与省冠 */
+const Supplement3 = () => (
+  <Frame kicker="设计" floor="25" title="补件3：浙工大攻略 + 2025 河北省冠" wide>
+    <Grid cols={2}>
+      <Card title="浙工大非官方攻略（Tuzfucius）" icon={BookOpen} tone="brand">
+        <ul className="space-y-1.5">
+          <li>· 视觉三章齐全：设备选型（OpenMV vs K230）、15 条基础算法 + YOLO、数据集 → 训练 → 部署全流程。</li>
+          <li>· 运动学：麦轮原理与逆运动学模型；机械结构与运动学控制为占位待补。</li>
+          <li>· 外设章基于「2025 失败代码」，只学思路、别照抄参数。</li>
+        </ul>
+      </Card>
+      <Card title="河北冠技术报告（zpclyn/GongXun2025）" icon={ShieldCheck} tone="good">
+        <ul className="space-y-1.5">
+          <li>· 2025 河北省冠，自述 2:34 全一环；STM32F4 裸机 + 定时器 / DMA 驱动全部外设。</li>
+          <li>· 运动学：麦轮逆解 + 正弦加减速 + 漂移（边转边直走）。</li>
+          <li>· 教训：陀螺仪磁干扰失利、高速舵机必须单独供电。</li>
+        </ul>
+      </Card>
+    </Grid>
+    <div className="mt-4">
+      <Steps title="展开：可迁移的两段运动学技巧">
+        <Pre>{`正弦加减速（防速度突变打滑）
+v_i = v1 + (v2 - v1) * [1/2 - 1/2*cos(pi*i/K)]
+
+漂移 / 边转边直走（期望系 -> 车体系，theta 取陀螺仪偏角）
+vx' =  vx*cos(theta) + vy*sin(theta)
+vy' = -vx*sin(theta) + vy*cos(theta)`}</Pre>
+      </Steps>
+    </div>
+    <div className="mt-4">
+      <Quote>细节与代码地图见 <code>培训/工创赛智能搬运-调研包/09-补件3-攻略与省冠技术报告.md</code>。</Quote>
+    </div>
+  </Frame>
+);
+
 /* ------------------------------------------------------- 三阶段路线 */
 const Roadmap = () => (
-  <Frame kicker="落地" floor="25" title="三阶段路线：先闭环，再稳定，后提速" wide>
+  <Frame kicker="落地" floor="26" title="三阶段路线：先闭环，再稳定，后提速" wide>
     <DataTable
       head={["阶段", "目标", "配置要点"]}
       widths={["24%", "30%", "46%"]}
@@ -690,7 +725,7 @@ const Roadmap = () => (
 
 /* ------------------------------------------------------- 训练与自测 */
 const Test = () => (
-  <Frame kicker="落地" floor="26" title="训练与自测清单" wide>
+  <Frame kicker="落地" floor="27" title="训练与自测清单" wide>
     <Grid cols={2}>
       <Card title="运动与抓取" icon={Move} tone="brand">
         <ul className="space-y-1.5">
@@ -712,7 +747,7 @@ const Test = () => (
 
 /* ------------------------------------------------------- 现场工程坑 */
 const Pitfalls = () => (
-  <Frame kicker="落地" floor="27" title="现场工程坑：失败因果图" wide>
+  <Frame kicker="落地" floor="28" title="现场工程坑：失败因果图" wide>
     <Grid cols={2}>
       <Card title="一开始就整机联调" icon={AlertTriangle} tone="warn">
         先分层调试、逐层验收；否则「无法区分系统误差」，一上线就现场翻车。
@@ -738,7 +773,7 @@ const Pitfalls = () => (
 
 /* ------------------------------------------------------- 合规检查表 */
 const Checklist = () => (
-  <Frame kicker="落地" floor="28" title="赛前合规与可靠性自查" wide>
+  <Frame kicker="落地" floor="29" title="赛前合规与可靠性自查" wide>
     <div className="grid gap-3 md:grid-cols-2 md:gap-4">
       <Card title="合规（逐条对照规则）" icon={ShieldCheck} tone="good">
         <ul className="space-y-1.5">
@@ -765,7 +800,7 @@ const Checklist = () => (
 
 /* ------------------------------------------------------- 行动清单 */
 const Actions = () => (
-  <Frame kicker="收尾" floor="29" title="行动清单" wide>
+  <Frame kicker="收尾" floor="30" title="行动清单" wide>
     <DataTable
       head={["优先", "动作", "要点"]}
       widths={["10%", "28%", "62%"]}
@@ -782,16 +817,16 @@ const Actions = () => (
 
 /* ------------------------------------------------------- Closing */
 const Closing = () => (
-  <Frame kicker="收尾" floor="30" title="下载与延伸阅读">
+  <Frame kicker="收尾" floor="31" title="下载与延伸阅读">
     <div className="space-y-5">
       <Quote>
-        本 deck 由本仓库「工创赛智能搬运-调研包 v1.1（2026-09-28）」整理而成；规则口径按官方发布稿原文核对，器件规格联网核对（RDK X5 官方页、ZDT 闭环步进手册），二手项已标注。
+        本 deck 由本仓库「工创赛智能搬运-调研包 v1.2（2026-09-28）」整理而成；规则口径按官方发布稿原文核对，器件规格联网核对（RDK X5 官方页、ZDT 闭环步进手册），二手项已标注。
       </Quote>
       <Grid cols={3}>
         <Card title="调研包（本仓库）" icon={BookOpen} tone="brand">
           完整报告与官方原件：<br />
           <code className="break-all">培训/工创赛智能搬运-调研包/</code><br />
-          先读 <code>README-交付说明.md</code>，主件 <code>00-调研报告（主件）.md</code>，补充见 <code>08-联网补充与规格核对.md</code>。
+          先读 <code>README-交付说明.md</code>，主件 <code>00-调研报告（主件）.md</code>，补充见 <code>08-联网补充与规格核对.md</code> 与补件3 <code>09-补件3-攻略与省冠技术报告.md</code>。
         </Card>
         <Card title="官方依据" icon={ShieldCheck} tone="good">
           发布稿《附件2-1 命题与运行》《附件2-2 评分与规则》、51 页命题解析、服务商通知、2025 获奖名单——均在调研包的 <code>官方原件/</code>。
@@ -833,6 +868,7 @@ export const slides = [
   { nav: "电控对标", group: "设计", el: <EcCtrl /> },
   { nav: "任务状态机", group: "设计", el: <Fsm /> },
   { nav: "2026 广东实证", group: "设计", el: <Evidence /> },
+  { nav: "补件3：攻略与省冠", group: "设计", el: <Supplement3 /> },
   { nav: "三阶段路线", group: "落地", el: <Roadmap /> },
   { nav: "训练与自测", group: "落地", el: <Test /> },
   { nav: "现场工程坑", group: "落地", el: <Pitfalls /> },
