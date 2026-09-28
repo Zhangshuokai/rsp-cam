@@ -881,20 +881,47 @@ const Closing = () => (
       <Quote>
         本 deck 由本仓库「工创赛智能搬运-调研包 v1.2（2026-09-28）」整理而成；规则口径按官方发布稿原文核对，器件规格联网核对（RDK X5 官方页、ZDT 闭环步进手册），二手项已标注。
       </Quote>
-      <Grid cols={3}>
-        <Card title="调研包（本仓库）" icon={BookOpen} tone="brand">
-          完整报告、官方原件与攻略 / 省冠技术报告：<br />
-          <code className="break-all">培训/工创赛智能搬运-调研包/</code>
+      <Grid cols={2}>
+        <Card title="调研包核心文档 + 官方原件（zip）" icon={BookOpen} tone="brand">
+          主件报告与规则 / 选型 / 索引、GitHub 侦察、2026 广东全套资料、联网规格核对、补件3 索引，以及官方发布稿、命题解析、服务商通知与 2025 获奖名单。
+          <br />
+          <a
+            href="./files/工创赛智能搬运-调研包-核心文档与官方原件.zip"
+            className="break-all font-semibold text-brand-700 underline"
+          >
+            下载：工创赛智能搬运-调研包-核心文档与官方原件.zip
+          </a>
         </Card>
-        <Card title="官方依据" icon={ShieldCheck} tone="good">
-          发布稿《附件2-1 命题与运行》《附件2-2 评分与规则》、51 页命题解析、服务商通知、2025 获奖名单——均在调研包的 <code>官方原件/</code>。
+        <Card title="补件3：攻略 + 省冠技术报告（zip）" icon={ShieldCheck} tone="good">
+          浙工大非官方攻略（视觉算法与训练部署、麦轮运动学、外设教学）+ 2025 河北省冠技术报告与 STM32F4 控制 / 视觉代码。
+          <br />
+          <a
+            href="./files/工创赛智能搬运-补件3-攻略与省冠技术报告.zip"
+            className="break-all font-semibold text-brand-700 underline"
+          >
+            下载：工创赛智能搬运-补件3-攻略与省冠技术报告.zip
+          </a>
         </Card>
-        <Card title="公开对标" icon={GitBranch} tone="slate">
-          Thirtynine3939/2025GongChuang_AGV（满环车）｜yuanxiexie531-glitch/gcs-gold-medal（国金第六）｜cheese-shredded-ice/gongchuangsai_MBH（2026 广东）｜Wuyanzu-wuhu/gc-stm32F4-（2025–26 广东）；全量见 <code>GitHub-55仓库总表.csv</code>。
+        <Card title="文字版教程（Markdown）" icon={Package} tone="brand">
+          本 deck 的完整文字版，便于检索与复制。
+          <br />
+          <a
+            href="./files/智能搬运车辆设计-文字版教程.md"
+            className="break-all font-semibold text-brand-700 underline"
+          >
+            下载：智能搬运车辆设计-文字版教程.md
+          </a>
+        </Card>
+        <Card title="公开对标（GitHub）" icon={GitBranch} tone="slate">
+          <a className="font-semibold text-brand-700 underline" href="https://github.com/Thirtynine3939/2025GongChuang_AGV">满环车</a>｜
+          <a className="font-semibold text-brand-700 underline" href="https://github.com/yuanxiexie531-glitch/gcs-gold-medal">国金第六</a>｜
+          <a className="font-semibold text-brand-700 underline" href="https://github.com/cheese-shredded-ice/gongchuangsai_MBH">2026 广东</a>｜
+          <a className="font-semibold text-brand-700 underline" href="https://github.com/zpclyn/GongXun2025">2025 河北省冠</a>；
+          图集与 B 站清单体积大，随仓库目录提供。
         </Card>
       </Grid>
       <p className="text-[0.86rem] text-muted">
-        路径：<code>教学webppt/智能搬运车辆设计/</code>（成品单文件，离线可播）｜配套文字版教程见 <code>docs/</code> 下的《智能搬运车辆设计》
+        路径：<code>教学webppt/智能搬运车辆设计/</code>（成品单文件 + <code>files/</code> 附件，离线可播）
       </p>
     </div>
   </Frame>
