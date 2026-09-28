@@ -670,44 +670,193 @@ const Evidence = () => (
   </Frame>
 );
 
-/* ------------------------------------------------------- 补件3：攻略与省冠 */
-const Supplement3 = () => (
-  <Frame kicker="设计" floor="25" title="补件3：浙工大攻略 + 2025 河北省冠" wide>
+/* ===================================================== 补件3 分项详读 */
+
+/* 25 · 总览 */
+const S3Overview = () => (
+  <Frame kicker="补件3" floor="25" title="补件3：浙工大攻略 + 2025 河北省冠" wide>
     <Grid cols={2}>
       <Card title="浙工大非官方攻略（Tuzfucius）" icon={BookOpen} tone="brand">
         <ul className="space-y-1.5">
           <li>· 视觉三章齐全：设备选型（OpenMV vs K230）、15 条基础算法 + YOLO、数据集 → 训练 → 部署全流程。</li>
-          <li>· 运动学：麦轮原理与逆运动学模型；机械结构与运动学控制为占位待补。</li>
-          <li>· 外设章基于「2025 失败代码」，只学思路、别照抄参数。</li>
+          <li>· 运动学：麦轮正 / 逆运动学与 8 种运动模式。</li>
+          <li>· 外设：步进 / 舵机 / 二维码 / 陀螺仪参数速查（基于「2025 失败代码」，只学思路）。</li>
+          <li>· 机械结构与运动学控制为占位待补。</li>
         </ul>
       </Card>
       <Card title="河北冠技术报告（zpclyn/GongXun2025）" icon={ShieldCheck} tone="good">
         <ul className="space-y-1.5">
           <li>· 2025 河北省冠，自述 2:34 全一环；STM32F4 裸机 + 定时器 / DMA 驱动全部外设。</li>
+          <li>· 整车：麦轮 + 云台抓取 + 随车物料盘；张大头 42 步进 + 多路舵机。</li>
           <li>· 运动学：麦轮逆解 + 正弦加减速 + 漂移（边转边直走）。</li>
           <li>· 教训：陀螺仪磁干扰失利、高速舵机必须单独供电。</li>
         </ul>
       </Card>
     </Grid>
     <div className="mt-4">
-      <Steps title="展开：可迁移的两段运动学技巧">
-        <Pre>{`正弦加减速（防速度突变打滑）
-v_i = v1 + (v2 - v1) * [1/2 - 1/2*cos(pi*i/K)]
+      <Quote>
+        本组把补件3按「视觉 / 运动学与外设 / 省冠整车电控 / 省冠运动学与教训」分类展开；原文与代码地图见
+        <code className="ml-1">培训/工创赛智能搬运-调研包/09-补件3-攻略与省冠技术报告.md</code>。
+      </Quote>
+    </div>
+  </Frame>
+);
 
-漂移 / 边转边直走（期望系 -> 车体系，theta 取陀螺仪偏角）
-vx' =  vx*cos(theta) + vy*sin(theta)
-vy' = -vx*sin(theta) + vy*cos(theta)`}</Pre>
+/* 26 · 攻略：视觉 ~ 训练部署 */
+const S3Vision = () => (
+  <Frame kicker="补件3" floor="26" title="攻略·视觉：选型、算法与端侧部署" wide>
+    <DataTable
+      head={["维度", "OpenMV（H7 Plus）", "K230（CanMV）"]}
+      widths={["18%", "40%", "42%"]}
+      rows={[
+        ["运算单元", "ARM Cortex-M7 单核", "双核 RISC-V + KPU（INT8/INT16）"],
+        ["主频 / 内存", "约 480 MHz / 32 MB", "1.6 GHz 大核 / 512 MB LPDDR3"],
+        ["操作系统", "裸机 / RTOS 微内核", "大核 Linux + 小核 RT-Smart"],
+        ["帧率", "色块追踪 60fps+", "YOLO 推理 30fps+"],
+        ["部署生态", "TFLite Micro / Edge Impulse", "PyTorch / ONNX → nncase → kmodel"],
+      ]}
+    />
+    <div className="mt-4 grid gap-3 lg:grid-cols-2 lg:gap-4">
+      <Steps title="展开：15 条竞赛视觉算法（分类）">
+        <Pre>{`预处理（快速剔除干扰）
+ 1 HSV / LAB 颜色空间   2 二值化（Otsu）   3 ROI 裁剪
+ 4 腐蚀 / 膨胀          5 透视变换 IPM      6 直方图均衡
+识别与状态估计
+ 7 Canny / Sobel 边缘   8 连通域 Blob       9 霍夫变换
+10 最小二乘巡线        11 帧差 / 背景减除  12 模板匹配
+13 ORB / FAST 特征     14 AprilTag 码解析  15 卡尔曼滤波
+高级：YOLO 目标检测（语义泛化、堆叠物料）`}</Pre>
+      </Steps>
+      <Steps title="展开：YOLO 训练与部署全流程">
+        <Pre>{`1 采集/标注 -> 生成数据集（assets/创建数据集.py、批量生成.py）
+2 环境：Anaconda 新建环境 + PyTorch(CUDA) + ultralytics
+3 配置 dataset.yaml，YOLOv8n 训练 / 验证
+4 导出 ONNX（assets/导出onnx.py）
+5 K230：Windows 装 dotnet-7 + nncase/nncase-kpu 离线 whl
+  -> 转 kmodel
+6 端侧 MicroPython 加载 kmodel 推理`}</Pre>
       </Steps>
     </div>
     <div className="mt-4">
-      <Quote>细节与代码地图见 <code>培训/工创赛智能搬运-调研包/09-补件3-攻略与省冠技术报告.md</code>。</Quote>
+      <Quote>选型结论：场地特征明确、巡线与色块 → OpenMV 更稳更省事；复杂语义 / 堆叠物料 → K230 上 YOLO。</Quote>
     </div>
+  </Frame>
+);
+
+/* 27 · 攻略：运动学与外设 */
+const S3Motion = () => (
+  <Frame kicker="补件3" floor="27" title="攻略·运动学与外设：公式与参数速查" wide>
+    <DataTable
+      head={["运动", "左前", "右前", "左后", "右后", "车体"]}
+      widths={["20%", "16%", "16%", "16%", "16%", "16%"]}
+      rows={[
+        ["前进", "正转", "正转", "正转", "正转", "向前"],
+        ["后退", "反转", "反转", "反转", "反转", "向后"],
+        ["左平移", "反转", "正转", "正转", "反转", "向左横移"],
+        ["右平移", "正转", "反转", "反转", "正转", "向右横移"],
+        ["左旋转", "反转", "正转", "反转", "正转", "原地左转"],
+        ["右旋转", "正转", "反转", "正转", "反转", "原地右转"],
+        ["左斜前", "停止", "正转", "正转", "停止", "左前斜行"],
+        ["右斜前", "正转", "停止", "停止", "正转", "右前斜行"],
+      ]}
+    />
+    <div className="mt-4 grid gap-3 lg:grid-cols-2 lg:gap-4">
+      <Card title="麦轮正 / 逆运动学" icon={Move} tone="brand">
+        <ul className="space-y-1.5">
+          <li>· 逆解：由 (vx, vy, ω) 算四轮角速度，1/r 乘系数矩阵。</li>
+          <li>· 正解：由四轮转速反推车体运动，用于编码器里程计。</li>
+          <li>· 轮距参数 L =（长 + 宽）/ 2；方向按实际安装标定。</li>
+        </ul>
+      </Card>
+      <Steps title="展开：外设参数速查">
+        <Pre>{`步进 / 直流 + 编码器
+ PWM 1kHz；控制 100Hz（TIM6 10ms 中断）；编码器 500 线 ×4 倍频；增量式 PID
+舵机
+ PWM 50Hz / 20ms / 0.5-2.5ms（0-180°）
+ 串口舵机 115200 8N1；位置 0-4095（12 位）
+陀螺仪 HWT101（仅用 Yaw）
+ 0x52 角速度 raw/32768×2000 = °/s
+ 0x53 角度   raw/32768×180  = °
+ 启动 ZeroYaw() 校零，注意角度归一化与零偏补偿
+二维码
+ OpenMV / 模块串口 + DMA + 空闲中断接收`}</Pre>
+      </Steps>
+    </div>
+    <div className="mt-4">
+      <Quote>外设章源自「2025 失败作品代码」，只学通信协议与设计思路，参数以自测为准。</Quote>
+    </div>
+  </Frame>
+);
+
+/* 28 · 省冠：整车与电控 */
+const S3Elec = () => (
+  <Frame kicker="补件3" floor="28" title="省冠·整车与电控：STM32F4 裸机 + DMA" wide>
+    <div className="grid items-start gap-4 lg:grid-cols-2 lg:gap-6">
+      <DataTable
+        head={["部位", "选型"]}
+        widths={["34%", "66%"]}
+        rows={[
+          ["底盘", "麦轮（型号未知）＋ 张大头 42 步进及驱动器"],
+          ["定位", "HWT101CT（纯陀螺仪；OPS9 数据不回传，弃用）"],
+          ["视觉", "MaixCam（报告未展开，指向 Gitee 视觉仓库）"],
+          ["识别", "GM865 二维码模块"],
+          ["云台抓取", "Yaw 鑫辉 10kg 高速；夹爪 南古 10kg 高速"],
+          ["料盘 / 升降", "料盘舵机 鑫辉 25kg 标速；升降 42 步进"],
+          ["电源", "格式 5300mAh（作者称 2400mAh 已足够）"],
+        ]}
+      />
+      <Card title="控制代码模块" icon={Cpu} tone="brand">
+        <ul className="space-y-1.5">
+          <li>· <b>System</b>：Delay 延时。</li>
+          <li>· <b>Hardware</b>：Camera（DMA+双缓冲）、HWT101、Key、OLED（任务码字模）、QR、Steer、StepMotor。</li>
+          <li>· <b>Control</b>：PID。</li>
+          <li>· <b>CarBody</b>：Arm（爪臂枚举）、Gimbal（云台抓放）、Chassis / Chassis_PID / Chassis_Path、Mecanum。</li>
+          <li>· <b>User</b>：main、isr、Data、zpc_zxc（主流程与集中参数）。</li>
+        </ul>
+      </Card>
+    </div>
+    <div className="mt-4">
+      <Quote>架构：STM32F4 裸机 + 定时器 / DMA 驱动全部外设；预编译指令切策略，待调参数集中成文件。报告与代码见 <code>河北冠-技术报告与代码/</code>。</Quote>
+    </div>
+  </Frame>
+);
+
+/* 29 · 省冠：运动学与教训 */
+const S3Lessons = () => (
+  <Frame kicker="补件3" floor="29" title="省冠·运动学技巧与现场教训" wide>
+    <Grid cols={2}>
+      <Card title="正弦加减速（防突变打滑）" icon={TrendingUp} tone="brand">
+        速度段之间用余弦过渡：<br />
+        <code className="break-all">v_i = v1 + (v2 − v1)·[1/2 − 1/2·cos(π·i/K)]</code><br />
+        K 为加减速周期数，i 为第 i 个周期。
+      </Card>
+      <Card title="漂移 / 边转边直走" icon={Compass} tone="good">
+        期望系速度旋转变换到车体系（θ 取陀螺仪偏角）：<br />
+        <code className="break-all">vx′ = vx·cosθ + vy·sinθ</code><br />
+        <code className="break-all">vy′ = −vx·sinθ + vy·cosθ</code>
+      </Card>
+      <Card title="定位与底盘" icon={Crosshair} tone="warn">
+        <ul className="space-y-1.5">
+          <li>· 纯陀螺仪移动 + 视觉定位实现全局移动；忽略逆解中的 (rx+ry) 系数。</li>
+          <li>· 四轮着地难：重量偏置导致左前轮悬空，配重效果一般。</li>
+          <li>· 云台单自由度升降上限有限，建议加前伸自由度以任意位置抓取。</li>
+        </ul>
+      </Card>
+      <Card title="现场教训（血泪）" icon={AlertTriangle} tone="bad">
+        <ul className="space-y-1.5">
+          <li>· <b>陀螺仪磁干扰</b>：2024 用无屏蔽六轴，赛场强磁致数据紊乱而失利——关键器件要屏蔽。</li>
+          <li>· <b>舵机供电</b>：两只 10kg 高速舵机堵转电流 &gt;1A，必须单独供电，否则电压骤降、设备重启。</li>
+          <li>· <b>器件稳定性</b>：OPS9 常不回传，最终回归纯陀螺仪。</li>
+          <li>· <b>视觉平台</b>：MaixCam 够用，追求稳定可上 miniPC + OpenCV。</li>
+        </ul>
+      </Card>
+    </Grid>
   </Frame>
 );
 
 /* ------------------------------------------------------- 三阶段路线 */
 const Roadmap = () => (
-  <Frame kicker="落地" floor="26" title="三阶段路线：先闭环，再稳定，后提速" wide>
+  <Frame kicker="落地" floor="30" title="三阶段路线：先闭环，再稳定，后提速" wide>
     <DataTable
       head={["阶段", "目标", "配置要点"]}
       widths={["24%", "30%", "46%"]}
@@ -725,7 +874,7 @@ const Roadmap = () => (
 
 /* ------------------------------------------------------- 训练与自测 */
 const Test = () => (
-  <Frame kicker="落地" floor="27" title="训练与自测清单" wide>
+  <Frame kicker="落地" floor="31" title="训练与自测清单" wide>
     <Grid cols={2}>
       <Card title="运动与抓取" icon={Move} tone="brand">
         <ul className="space-y-1.5">
@@ -747,7 +896,7 @@ const Test = () => (
 
 /* ------------------------------------------------------- 现场工程坑 */
 const Pitfalls = () => (
-  <Frame kicker="落地" floor="28" title="现场工程坑：失败因果图" wide>
+  <Frame kicker="落地" floor="32" title="现场工程坑：失败因果图" wide>
     <Grid cols={2}>
       <Card title="一开始就整机联调" icon={AlertTriangle} tone="warn">
         先分层调试、逐层验收；否则「无法区分系统误差」，一上线就现场翻车。
@@ -773,7 +922,7 @@ const Pitfalls = () => (
 
 /* ------------------------------------------------------- 合规检查表 */
 const Checklist = () => (
-  <Frame kicker="落地" floor="29" title="赛前合规与可靠性自查" wide>
+  <Frame kicker="落地" floor="33" title="赛前合规与可靠性自查" wide>
     <div className="grid gap-3 md:grid-cols-2 md:gap-4">
       <Card title="合规（逐条对照规则）" icon={ShieldCheck} tone="good">
         <ul className="space-y-1.5">
@@ -800,7 +949,7 @@ const Checklist = () => (
 
 /* ------------------------------------------------------- 行动清单 */
 const Actions = () => (
-  <Frame kicker="收尾" floor="30" title="行动清单" wide>
+  <Frame kicker="收尾" floor="34" title="行动清单" wide>
     <DataTable
       head={["优先", "动作", "要点"]}
       widths={["10%", "28%", "62%"]}
@@ -817,7 +966,7 @@ const Actions = () => (
 
 /* ------------------------------------------------------- Closing */
 const Closing = () => (
-  <Frame kicker="收尾" floor="31" title="下载与延伸阅读">
+  <Frame kicker="收尾" floor="35" title="下载与延伸阅读">
     <div className="space-y-5">
       <Quote>
         本 deck 由本仓库「工创赛智能搬运-调研包 v1.2（2026-09-28）」整理而成；规则口径按官方发布稿原文核对，器件规格联网核对（RDK X5 官方页、ZDT 闭环步进手册），二手项已标注。
@@ -868,7 +1017,11 @@ export const slides = [
   { nav: "电控对标", group: "设计", el: <EcCtrl /> },
   { nav: "任务状态机", group: "设计", el: <Fsm /> },
   { nav: "2026 广东实证", group: "设计", el: <Evidence /> },
-  { nav: "补件3：攻略与省冠", group: "设计", el: <Supplement3 /> },
+  { nav: "补件3 · 总览", group: "补件3", el: <S3Overview /> },
+  { nav: "攻略 · 视觉与部署", group: "补件3", el: <S3Vision /> },
+  { nav: "攻略 · 运动学与外设", group: "补件3", el: <S3Motion /> },
+  { nav: "省冠 · 整车与电控", group: "补件3", el: <S3Elec /> },
+  { nav: "省冠 · 运动学与教训", group: "补件3", el: <S3Lessons /> },
   { nav: "三阶段路线", group: "落地", el: <Roadmap /> },
   { nav: "训练与自测", group: "落地", el: <Test /> },
   { nav: "现场工程坑", group: "落地", el: <Pitfalls /> },
