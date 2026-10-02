@@ -43,6 +43,8 @@ import realTianzhi from "./assets/real-tianzhi.jpg";
 import realTracks from "./assets/real-tracks.jpg";
 import realCad from "./assets/real-cad.jpg";
 import qrProvince from "./assets/qr-province.png";
+import daoliuPrinciple from "./assets/daoliu-principle.png";
+import daoliuLive from "./assets/daoliu-live.jpg";
 
 /* ------------------------------------------------------------ Cover */
 const Cover = () => (
@@ -50,7 +52,7 @@ const Cover = () => (
     <div className="grid items-center gap-6 lg:grid-cols-[1.2fr_1fr] lg:gap-10">
       <div>
         <span className="mb-4 inline-flex w-fit items-center rounded-full border border-brand-300 bg-paper px-3 py-1 text-[0.72rem] font-semibold tracking-[0.12em] text-brand-700 md:mb-6 md:px-4 md:py-1.5 md:text-[0.82rem]">
-          培训讲义 · 2026-09-28 · v1.0
+          培训讲义 · 2026-09-29 · v1.1
         </span>
         <h1 className="text-[2rem] font-extrabold leading-[1.15] tracking-tight text-ink sm:text-[2.5rem] md:text-[3.5rem]">
           智能救援车辆设计
@@ -368,9 +370,75 @@ const Mechanism = () => (
   </Frame>
 );
 
+/* --------------------------------------------- 判读四问（2026-09-29 增补） */
+const Adjudication = () => (
+  <Frame kicker="方案" floor="12" title="判读四问：显示 / 危险目标 / 黏附 / 导流" wide>
+    <Grid cols={2}>
+      <DataTable
+        head={["高频争议", "结论与依据"]}
+        widths={["23%"]}
+        rows={[
+          ["需要显示装置吗", <><strong>不需要，也没有尺寸要求。</strong>《附件2-1》救援整章 0 处提「显示」，4 份高校副本交叉核对 0 处 × 4；评分无相关条款，检录只查重量与尺寸。装屏不加分，还占 1.5kg 与 300×300×200mm 的预算。</>],
+          ["浅蓝危险目标能碰吗", <><strong>执行上一律「绝对不碰、直接绕行」。</strong>条文无「禁止触碰」字样，但罚则看结果：把危险目标移入安全区（含围栏上、不分红蓝方）或移出场地 → 本队本轮比赛结束；全篇无「不小心」免责条款。</>],
+          ["可以黏附物品吗", <><strong>不要做。</strong>全系列文件检索「粘 / 黏 / 吸 / 胶 / 磁 / 附着」= 0 处；「抓取」官方无定义，判读标准是行为实质（是否捕获并保持目标），大概率触发死条款（本轮结束）；公开赛例零黏附方案。</>],
+          ["导流是什么方式", <><strong>贯穿式自适应通道（地面导流式）。</strong>不夹持、不抬离：目标贴地沿车体内一条贯穿通道滑行，通道壁约束走向，末端用可控闸门极低速释放——「推 / 拨」同族动作的进阶版。</>],
+        ]}
+      />
+      <div className="space-y-3 md:space-y-4">
+        <Card title="四问的共同逻辑" icon={ShieldCheck} tone="brand">
+          救援赛项判读的通用姿势：<strong>条文没写 ≠ 可以做</strong>。官方无条款时，按行为实质判读，且一律从严；一切涉及「捕获 / 保持 / 抬离」的设计都先假设会触发死条款，赛前书面报裁判确认。
+        </Card>
+        <Card title="设计上的落地" icon={Wrench} tone="good">
+          状态机把浅蓝设「只识别、不交互」——<strong>遇危险目标不降铲、直接绕行</strong>；合规得分动作用<strong>推、拨、铲、框架约束、导流</strong>；不要设计「推开腾路 / 推给对面」战术（不分红蓝方，连祸水东引的空间都没有）。
+        </Card>
+        <Card title="别踩的误读" icon={Ban} tone="bad">
+          培训版写「不能采用机械臂抓取」易误导——正式文件并无「机械臂」限定，按严版读；比赛期间（含调试）不能更换任何零部件，装屏、加件都是一次性决策。
+        </Card>
+      </div>
+    </Grid>
+  </Frame>
+);
+
+/* --------------------------------------------------- 导流机构：贯穿式通道 */
+const FlowChannel = () => (
+  <Frame kicker="方案" floor="13" title="导流机构：贯穿式自适应通道（进阶）" wide>
+    <div className="grid gap-4 lg:grid-cols-[1.05fr_1fr] lg:gap-6">
+      <div className="space-y-3 md:space-y-4">
+        <DataTable
+          head={["段", "实现", "重量"]}
+          widths={["16%", "", "18%"]}
+          rows={[
+            ["前段 导向铲", "入口 100mm；微型被动滚轮 / 橡皮筋套筒", "约 30g"],
+            ["中段 波纹壁", "柔性铰链 / 摩擦带；自适应 25–85mm；约束三棱锥棱边", "约 25g"],
+            ["后段 可控闸门", "舵机驱动；投放 <0.03m/s；光电门出货确认", "约 18g"],
+          ]}
+        />
+        <Card title="合规逻辑（为什么这样设计）" icon={ShieldCheck} tone="brand">
+          目标重量全程在地面 → 不算「载运」；不捕获 → 不算「抓取」；同时解决分区投放（错区 −10 分）、三棱锥等异形转运与残胶风险。铲口默认抬起，视觉 + 状态机确认才降铲。
+        </Card>
+        <Card title="机构对比（直播原话）" icon={Workflow} tone="slate">
+          夹爪式 ≈80g（低成本备选）｜<strong>贯穿式通道 ≈115g（★建议总成，约 115g）</strong>｜旋转扫臂（不推荐）。公开赛例暂无完整「通道式」整机，最接近的实机流派是履带 + 大弧面推铲（大弧面 = 「导向面」雏形）。
+        </Card>
+      </div>
+      <div className="space-y-3 md:space-y-4">
+        <Figure
+          src={daoliuPrinciple}
+          alt="贯穿式通道导流原理图（俯视 + 侧视）"
+          caption="机制原理（自绘整理）：入口导向铲 → 中段波纹壁自适应约束 → 末端可控闸门低速释放"
+        />
+        <Figure
+          src={daoliuLive}
+          alt="2027 智能救援专项直播：模块三·转运机构"
+          caption="出处原页：工创汇「2027 智能救援专项直播」模块三·转运机构（B 站 BV1WXLv6UEBj，32:25–32:45）"
+        />
+      </div>
+    </div>
+  </Frame>
+);
+
 /* ------------------------------------------------------- 感知与电源 */
 const Sense = () => (
-  <Frame kicker="方案" floor="12" title="感知与电源：做减法" wide>
+  <Frame kicker="方案" floor="14" title="感知与电源：做减法" wide>
     <div className="grid gap-3 md:grid-cols-2 md:gap-4">
       <Card title="感知：够用即可" icon={Eye} tone="brand">
         <ul className="space-y-1.5">
@@ -397,7 +465,7 @@ const Sense = () => (
 
 /* ------------------------------------------------------- 机械布局 */
 const Layout = () => (
-  <Frame kicker="设计" floor="13" title="机械布局：低重心、能越障、可维修" wide>
+  <Frame kicker="设计" floor="15" title="机械布局：低重心、能越障、可维修" wide>
     <Focus
       no="01"
       title="一张底板上的取舍"
@@ -428,7 +496,7 @@ const Layout = () => (
 
 /* ------------------------------------------------------- 拨具设计 */
 const Gripper = () => (
-  <Frame kicker="设计" floor="14" title="框式拨具：两个舵机做四件事" wide>
+  <Frame kicker="设计" floor="16" title="框式拨具：两个舵机做四件事" wide>
     <div className="grid items-start gap-5 md:gap-6 lg:grid-cols-[1fr_1fr] lg:gap-8">
       <div className="grid gap-3 md:grid-cols-2">
         <Card title="张开 / 闭合" icon={Boxes} tone="brand">
@@ -464,7 +532,7 @@ const Gripper = () => (
 
 /* ------------------------------------------------------- 电气 */
 const Electric = () => (
-  <Frame kicker="设计" floor="15" title="电气与安全：故障即 0 分" wide>
+  <Frame kicker="设计" floor="17" title="电气与安全：故障即 0 分" wide>
     <Grid cols={3}>
       <Card title="供电树" icon={Zap} tone="brand">
         单电池 → 分路：电机（大电流）、舵机、主控与传感器各自稳压；避免堵转拉低母线电压。
@@ -515,7 +583,7 @@ const ArchSvg = () => (
 );
 
 const Software = () => (
-  <Frame kicker="设计" floor="16" title="软件架构：分层、解耦、可降级" wide>
+  <Frame kicker="设计" floor="18" title="软件架构：分层、解耦、可降级" wide>
     <div className="grid items-start gap-5 md:gap-6 lg:grid-cols-[1.05fr_1fr] lg:gap-8">
       <div className="surface p-3 md:p-4">
         <ArchSvg />
@@ -538,7 +606,7 @@ const Software = () => (
 
 /* ------------------------------------------------------- 视觉 */
 const Vision = () => (
-  <Frame kicker="设计" floor="17" title="视觉流水线：350 张图就能起步" wide>
+  <Frame kicker="设计" floor="19" title="视觉流水线：350 张图就能起步" wide>
     <div className="grid gap-3 md:grid-cols-4">
       <Card title="采集与标注" icon={Eye} tone="slate">
         采集并标注约 350 张；按 300/50 划分训练 / 验证。
@@ -588,7 +656,7 @@ const FsmSvg = () => (
 );
 
 const Fsm = () => (
-  <Frame kicker="设计" floor="18" title="任务状态机：顺序不能错" wide>
+  <Frame kicker="设计" floor="20" title="任务状态机：顺序不能错" wide>
     <div className="surface p-3 md:p-4">
       <FsmSvg />
     </div>
@@ -608,7 +676,7 @@ const Fsm = () => (
 
 /* ------------------------------------------------------- 定位 */
 const Localize = () => (
-  <Frame kicker="设计" floor="19" title="定位与对位：精度与重量的三角" wide>
+  <Frame kicker="设计" floor="21" title="定位与对位：精度与重量的三角" wide>
     <DataTable
       head={["方案", "精度", "重量", "成本", "适用"]}
       widths={["30%", "16%", "16%", "18%", "20%"]}
@@ -631,7 +699,7 @@ const Localize = () => (
 
 /* ------------------------------------------------------- 三阶段 */
 const Roadmap = () => (
-  <Frame kicker="落地" floor="20" title="三阶段路线：每阶段都能独立上场" wide>
+  <Frame kicker="落地" floor="22" title="三阶段路线：每阶段都能独立上场" wide>
     <DataTable
       head={["阶段", "目标", "配置要点", "预估重量"]}
       widths={["16%", "22%", "48%", "14%"]}
@@ -664,7 +732,7 @@ const Roadmap = () => (
 
 /* ------------------------------------------------------- 自测 */
 const Test = () => (
-  <Frame kicker="落地" floor="21" title="训练与自测清单：按红线逐项回归" wide>
+  <Frame kicker="落地" floor="23" title="训练与自测清单：按红线逐项回归" wide>
     <Grid cols={2}>
       <Card title="通行" icon={Truck} tone="brand">
         减速带 ×3 连续通过率 ≥95%；不同路面的直行与转向偏差在容忍范围内。
@@ -694,7 +762,7 @@ const Test = () => (
 
 /* ------------------------------------------------------- 现场坑 */
 const Pitfalls = () => (
-  <Frame kicker="落地" floor="22" title="现场工程坑：都是失分点" wide>
+  <Frame kicker="落地" floor="24" title="现场工程坑：都是失分点" wide>
     <Grid cols={2}>
       <Card title="开机自启准备不足" icon={AlertTriangle} tone="bad">
         现场曾因自启文件不完整，小车无法自动进入运行态。提前验证，赛前多次断电重启；带键鼠与备用启动方案。
@@ -717,7 +785,7 @@ const Pitfalls = () => (
 
 /* ------------------------------------------------------- 检查表 */
 const Checklist = () => (
-  <Frame kicker="落地" floor="23" title="出图前检查表" wide>
+  <Frame kicker="落地" floor="25" title="出图前检查表" wide>
     <div className="grid gap-3 md:grid-cols-2 md:gap-4">
       <Card title="重量与尺寸" icon={Scale} tone="brand">
         <ul className="space-y-1.5">
@@ -751,7 +819,7 @@ JGB37-520 ×4            576–800 g  顶格方案要慎重
 
 /* ------------------------------------------------------- 行动 */
 const Actions = () => (
-  <Frame kicker="收尾" floor="24" title="行动清单：先打三个电话" wide>
+  <Frame kicker="收尾" floor="26" title="行动清单：先打三个电话" wide>
     <DataTable
       head={["优先", "动作", "找谁 / 要点"]}
       widths={["10%", "30%", "60%"]}
@@ -774,10 +842,10 @@ const Actions = () => (
 
 /* ------------------------------------------------------- Closing */
 const Closing = () => (
-  <Frame kicker="收尾" floor="25" title="下载与延伸阅读">
+  <Frame kicker="收尾" floor="27" title="下载与延伸阅读">
     <div className="space-y-5">
       <Quote>
-        本 deck 由本仓库「工创赛智能救援-限重方案调研包 v1.0（2026-09-28）」整理而成；克重与直播数据为二手参考，正式 BOM 前请自测。
+        本 deck 由本仓库「工创赛智能救援-限重方案调研包 v1.0（2026-09-28）」整理而成；克重与直播数据为二手参考，正式 BOM 前请自测。v1.1（2026-09-29）新增「判读四问」与「导流机构」两页（来源：2026-09-29 材料整合包 01 件）。
       </Quote>
       <Grid cols={2}>
         <Card title="调研包核心文档 + 官方原件（zip）" icon={BookOpen} tone="brand">
@@ -788,6 +856,16 @@ const Closing = () => (
             className="break-all font-semibold text-brand-700 underline"
           >
             下载：工创赛智能救援-调研包-核心文档与官方原件.zip
+          </a>
+        </Card>
+        <Card title="判读四问与导流机制（zip）" icon={Workflow} tone="warn">
+          四问要点（Markdown + PDF）+ 三张图：显示装置 / 危险目标 / 黏附的条款依据，以及贯穿式通道三段机构（导向铲 / 波纹壁 / 可控闸门）与出处原页。
+          <br />
+          <a
+            href="./files/工创赛智能救援-判读四问与导流机制-20260929.zip"
+            className="break-all font-semibold text-brand-700 underline"
+          >
+            下载：工创赛智能救援-判读四问与导流机制-20260929.zip
           </a>
         </Card>
         <Card title="文字版教程（Markdown）" icon={Package} tone="brand">
@@ -827,6 +905,8 @@ export const slides = [
   { nav: "底盘选型", group: "方案", el: <Chassis /> },
   { nav: "算力选型", group: "方案", el: <Compute /> },
   { nav: "转运机构", group: "方案", el: <Mechanism /> },
+  { nav: "判读四问", group: "方案", el: <Adjudication /> },
+  { nav: "导流机构", group: "方案", el: <FlowChannel /> },
   { nav: "感知与电源", group: "方案", el: <Sense /> },
   { nav: "机械布局", group: "设计", el: <Layout /> },
   { nav: "框式拨具", group: "设计", el: <Gripper /> },

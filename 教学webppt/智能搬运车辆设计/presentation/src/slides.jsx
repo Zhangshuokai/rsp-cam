@@ -29,6 +29,7 @@ import {
 import { Frame, Card, DataTable, Grid, Quote, Focus, Steps, Pre, Figure } from "./components.jsx";
 
 import chassisImg from "./assets/chassis-290.jpg";
+import chassisSelectImg from "./assets/chassis-select.png";
 import gripperImg from "./assets/gripper-j60.jpg";
 import turntableImg from "./assets/turntable.jpg";
 import turntableSolveImg from "./assets/turntable-solve.jpg";
@@ -43,7 +44,7 @@ const Cover = () => (
     <div className="grid items-center gap-6 lg:grid-cols-[1.2fr_1fr] lg:gap-10">
       <div>
         <span className="mb-4 inline-flex w-fit items-center rounded-full border border-brand-300 bg-paper px-3 py-1 text-[0.72rem] font-semibold tracking-[0.12em] text-brand-700 md:mb-6 md:px-4 md:py-1.5 md:text-[0.82rem]">
-          培训讲义 · 2026-09-28 · v1.2
+          培训讲义 · 2026-09-29 · v1.3
         </span>
         <h1 className="text-[2rem] font-extrabold leading-[1.15] tracking-tight text-ink sm:text-[2.5rem] md:text-[3.5rem]">
           智能搬运车辆设计
@@ -418,9 +419,47 @@ const Chassis = () => (
   </Frame>
 );
 
+/* --------------------------------------------- 底盘选型：麦轮 vs 全向轮 */
+const ChassisSelect = () => (
+  <Frame kicker="方案" floor="14" title="底盘选型：为什么是麦轮，不是全向轮" wide>
+    <div className="space-y-4 md:space-y-5">
+      <Quote>
+        规则<strong>没有禁用全向轮</strong>——这是工程取舍，不是合规问题。公开可查的国奖 / 省冠 / 决赛级案例清一色 4×麦克纳姆轮；全向轮只有个别实验性尝试（如 GC25 的四全向轮 O 形布置），未见「全向轮 + 获奖」。
+        一句话：<strong>全向轮不是输在能力，是输在——多给的用不上，要付的代价实打实。</strong>
+      </Quote>
+      <Grid cols={2}>
+        <DataTable
+          head={["五笔工程账", "要点"]}
+          widths={["26%"]}
+          rows={[
+            ["需求错配", "赛题只需「横移对位 + 原地自转」（转盘抓取对位、码垛对齐、出发区调整），麦轮天然提供；全向轮多出的连续机动能力在本场地换不来成绩。"],
+            ["稳定性（最硬）", "上部是立柱横梁臂 + 载物、重心高，任务又要急起急停：4 麦轮 = 矩形四点支撑，翻倾裕度大；3 全向轮 = 三角支撑，横移 / 斜移易翘脚（「地面稍有凹凸，某轮悬空，运动矢量就乱」）。"],
+            ["打滑与定位", "全向的「全向」来自受控打滑 + 矢量合成，轮式里程计精度天然更低；麦轮横移打滑模型标准、调参经验多、误差可预期可补偿。"],
+            ["成熟度与时间", "麦轮：现成套件、逆运动学一页纸、开源代码遍地、备件便宜且现场可换；全向轮：整车案例少、标定资料少、规格杂、坏了现场难处置。"],
+            ["风险偏好", "决赛名次敏感，跟随「被验证过的路线」＝ 把不确定性留给对手；历届视频 / 教程 / 学长经验全部指向麦轮。"],
+          ]}
+        />
+        <div className="space-y-3 md:space-y-4">
+          <Figure
+            src={chassisSelectImg}
+            alt="底盘选型对比：4 麦轮 vs 3 全向轮"
+            caption="左：4 麦轮＝大矩形支撑，横移 / 斜移 / 自转自由合成；右：3 全向轮＝三角支撑，横移时翻倾裕度小（原理示意，非严格比例）"
+          />
+          <Card title="机理差异" icon={Scale} tone="slate">
+            麦轮辊子与轮毂呈 <strong>45°</strong>、单轮自带斜率分量，<strong>成对使用</strong>即可合成任意方向，4 轮平行（矩形）布置实现全向；全向轮辊子与轮毂呈 <strong>90°</strong>、单轮无法形成合成矢量，须多轮夹角布置（3 轮 120°，或 4 轮特殊布置）才能全向，4 轮还要额外解决受力均衡与标定。
+          </Card>
+        </div>
+      </Grid>
+      <Card title="对本队的建议" icon={Target} tone="good">
+        底盘按主流 4 麦轮推进（见上一页的事实标准架构）；创新点投给<strong>视觉识别、抓取策略、路径与联动</strong>——这些直接得分；全向轮只作非赛时的教学对比实验，可直接参考 GC25 的电控总结与代码。
+      </Card>
+    </div>
+  </Frame>
+);
+
 /* ------------------------------------------------------- 机械臂与夹爪 */
 const Arm = () => (
-  <Frame kicker="方案" floor="14" title="机械臂与夹爪：立柱横梁 + 平行爪" wide>
+  <Frame kicker="方案" floor="15" title="机械臂与夹爪：立柱横梁 + 平行爪" wide>
     <Focus
       no="02"
       title="立柱横梁臂（滚珠丝杆 Z 轴）"
@@ -442,7 +481,7 @@ const Arm = () => (
 
 /* ------------------------------------------------------- 随车转盘 */
 const Turntable = () => (
-  <Frame kicker="方案" floor="15" title="随车转盘：载运合规的关键" wide>
+  <Frame kicker="方案" floor="16" title="随车转盘：载运合规的关键" wide>
     <div className="grid items-start gap-5 md:gap-6 lg:grid-cols-[1fr_1.05fr] lg:gap-8">
       <div>
         <ul className="space-y-2.5">
@@ -474,7 +513,7 @@ const Turntable = () => (
 
 /* ------------------------------------------------------- 视觉 */
 const Vision = () => (
-  <Frame kicker="方案" floor="16" title="视觉：双摄分工 + 模式机状态机" wide>
+  <Frame kicker="方案" floor="17" title="视觉：双摄分工 + 模式机状态机" wide>
     <Grid cols={4}>
       <Card title="① 双摄采集" icon={Eye} tone="brand">
         1080P（大广角）认物料颜色；720P 认二维码；均配补光灯。
@@ -519,7 +558,7 @@ const Vision = () => (
 
 /* ------------------------------------------------------- 视觉参数基线 */
 const VisionParams = () => (
-  <Frame kicker="方案" floor="17" title="视觉参数基线（可直接起步）" wide>
+  <Frame kicker="方案" floor="18" title="视觉参数基线（可直接起步）" wide>
     <DataTable
       head={["任务", "方法", "关键参数"]}
       widths={["20%", "26%", "54%"]}
@@ -553,7 +592,7 @@ const VisionParams = () => (
 
 /* ------------------------------------------------------- 通信协议 */
 const Protocol = () => (
-  <Frame kicker="方案" floor="18" title="通信协议基线：上位机 ↔ 下位机" wide>
+  <Frame kicker="方案" floor="19" title="通信协议基线：上位机 ↔ 下位机" wide>
     <Grid cols={2}>
       <Card title="物理层" icon={Radio} tone="brand">
         串口 9600 8N1；下摄 /dev/video0 扫码，上摄 /dev/video2 定标；依赖 opencv / numpy / pyserial / pyzbar。
@@ -580,7 +619,7 @@ r  重启视觉程序；end 结束本轮`}</Pre>
 
 /* ------------------------------------------------------- 算力与器件 */
 const Compute = () => (
-  <Frame kicker="方案" floor="19" title="算力与器件规格（联网核对）" wide>
+  <Frame kicker="方案" floor="20" title="算力与器件规格（联网核对）" wide>
     <div className="grid items-start gap-4 lg:grid-cols-2 lg:gap-6">
       <Card title="上位机 RDK X5（官方规格）" icon={Cpu} tone="brand">
         <ul className="space-y-1.5">
@@ -632,7 +671,7 @@ const Compute = () => (
 
 /* ------------------------------------------------------- 定位与控制 */
 const Localize = () => (
-  <Frame kicker="设计" floor="20" title="定位与控制：动态抓取是满环关键" wide>
+  <Frame kicker="设计" floor="21" title="定位与控制：动态抓取是满环关键" wide>
     <Grid cols={2}>
       <Card title="融合定位" icon={Compass} tone="brand">
         编码器里程计 + 光流融合；陀螺仪（HWT101 类）角度融合；手眼标定、机器人重定位。
@@ -667,7 +706,7 @@ vy' = -vx*sin(theta) + vy*cos(theta)
 
 /* ------------------------------------------------------- 软件架构 */
 const Software = () => (
-  <Frame kicker="设计" floor="21" title="上下位机架构：感知与执行解耦" wide>
+  <Frame kicker="设计" floor="22" title="上下位机架构：感知与执行解耦" wide>
     <Grid cols={2}>
       <Card title="上位机（RDK X5 / 树莓派 / K230）" icon={Cpu} tone="brand">
         <ul className="space-y-1.5">
@@ -692,7 +731,7 @@ const Software = () => (
 
 /* ------------------------------------------------------- 电控对标 */
 const EcCtrl = () => (
-  <Frame kicker="设计" floor="22" title="电控对标：四种可抄整机" wide>
+  <Frame kicker="设计" floor="23" title="电控对标：四种可抄整机" wide>
     <DataTable
       head={["项", "2026 广东（cheese）", "2025–26 广东（Wuyanzu）", "2025 国银（liaojingwu）", "2025 河北（zpclyn）"]}
       widths={["12%", "22%", "22%", "22%", "22%"]}
@@ -714,7 +753,7 @@ const EcCtrl = () => (
 
 /* ------------------------------------------------------- 任务状态机 */
 const Fsm = () => (
-  <Frame kicker="设计" floor="23" title="任务状态机：一条主链，禁止颠倒" wide>
+  <Frame kicker="设计" floor="24" title="任务状态机：一条主链，禁止颠倒" wide>
     <Grid cols={3}>
       <Card title="① 读码" icon={ScanLine} tone="brand">一键启动 → 到二维码板读码 → 显示任务码。</Card>
       <Card title="② 抓取" icon={Hand} tone="good">原料区按任务码顺序逐色抓取，一次一个放上转盘。</Card>
@@ -731,7 +770,7 @@ const Fsm = () => (
 
 /* ------------------------------------------------------- 广东实证 */
 const Evidence = () => (
-  <Frame kicker="设计" floor="24" title="2026 广东实车实证（可抄的整机）" wide>
+  <Frame kicker="设计" floor="25" title="2026 广东实车实证（可抄的整机）" wide>
     <div className="grid items-start gap-4 lg:grid-cols-[1.15fr_1fr] lg:gap-6">
       <DataTable
         head={["维度", "做法"]}
@@ -754,7 +793,7 @@ const Evidence = () => (
 
 /* ------------------------------------------------------- 三阶段路线 */
 const Roadmap = () => (
-  <Frame kicker="落地" floor="25" title="三阶段路线：先闭环，再稳定，后提速" wide>
+  <Frame kicker="落地" floor="26" title="三阶段路线：先闭环，再稳定，后提速" wide>
     <DataTable
       head={["阶段", "目标", "配置要点"]}
       widths={["24%", "30%", "46%"]}
@@ -772,7 +811,7 @@ const Roadmap = () => (
 
 /* ------------------------------------------------------- 训练与自测 */
 const Test = () => (
-  <Frame kicker="落地" floor="26" title="训练与自测清单" wide>
+  <Frame kicker="落地" floor="27" title="训练与自测清单" wide>
     <Grid cols={2}>
       <Card title="运动与抓取" icon={Move} tone="brand">
         <ul className="space-y-1.5">
@@ -794,7 +833,7 @@ const Test = () => (
 
 /* ------------------------------------------------------- 现场工程坑 */
 const Pitfalls = () => (
-  <Frame kicker="落地" floor="27" title="现场工程坑：失败因果图" wide>
+  <Frame kicker="落地" floor="28" title="现场工程坑：失败因果图" wide>
     <Grid cols={2}>
       <Card title="一开始就整机联调" icon={AlertTriangle} tone="warn">
         先分层调试、逐层验收；否则「无法区分系统误差」，一上线就现场翻车。
@@ -832,7 +871,7 @@ const Pitfalls = () => (
 
 /* ------------------------------------------------------- 合规检查表 */
 const Checklist = () => (
-  <Frame kicker="落地" floor="28" title="赛前合规与可靠性自查" wide>
+  <Frame kicker="落地" floor="29" title="赛前合规与可靠性自查" wide>
     <div className="grid gap-3 md:grid-cols-2 md:gap-4">
       <Card title="合规（逐条对照规则）" icon={ShieldCheck} tone="good">
         <ul className="space-y-1.5">
@@ -859,7 +898,7 @@ const Checklist = () => (
 
 /* ------------------------------------------------------- 行动清单 */
 const Actions = () => (
-  <Frame kicker="收尾" floor="29" title="行动清单" wide>
+  <Frame kicker="收尾" floor="30" title="行动清单" wide>
     <DataTable
       head={["优先", "动作", "要点"]}
       widths={["10%", "28%", "62%"]}
@@ -876,10 +915,10 @@ const Actions = () => (
 
 /* ------------------------------------------------------- Closing */
 const Closing = () => (
-  <Frame kicker="收尾" floor="30" title="下载与延伸阅读">
+  <Frame kicker="收尾" floor="31" title="下载与延伸阅读">
     <div className="space-y-5">
       <Quote>
-        本 deck 由本仓库「工创赛智能搬运-调研包 v1.2（2026-09-28）」整理而成；规则口径按官方发布稿原文核对，器件规格联网核对（RDK X5 官方页、ZDT 闭环步进手册），二手项已标注。
+        本 deck 由本仓库「工创赛智能搬运-调研包 v1.3（2026-09-29）」整理而成；规则口径按官方发布稿原文核对，器件规格联网核对（RDK X5 官方页、ZDT 闭环步进手册），二手项已标注。v1.3 新增「底盘选型对比」页（来源：2026-09-29 材料整合包 02 件）。
       </Quote>
       <Grid cols={2}>
         <Card title="调研包核心文档 + 官方原件（zip）" icon={BookOpen} tone="brand">
@@ -900,6 +939,16 @@ const Closing = () => (
             className="break-all font-semibold text-brand-700 underline"
           >
             下载：工创赛智能搬运-补件3-攻略与省冠技术报告.zip
+          </a>
+        </Card>
+        <Card title="底盘选型分析：麦轮 vs 全向轮（zip）" icon={Scale} tone="warn">
+          分析文档（Markdown + PDF）+ 对比图 + 附图生成脚本：五笔工程账、机理对比表，以及「为什么不用全向轮」的完整论证。
+          <br />
+          <a
+            href="./files/工创赛智能搬运-底盘选型分析-20260929.zip"
+            className="break-all font-semibold text-brand-700 underline"
+          >
+            下载：工创赛智能搬运-底盘选型分析-20260929.zip
           </a>
         </Card>
         <Card title="文字版教程（Markdown）" icon={Package} tone="brand">
@@ -942,6 +991,7 @@ export const slides = [
   { nav: "推荐基线", group: "方案", el: <Baseline /> },
   { nav: "硬件选型表", group: "方案", el: <Bom /> },
   { nav: "底盘与传动", group: "方案", el: <Chassis /> },
+  { nav: "底盘选型对比", group: "方案", el: <ChassisSelect /> },
   { nav: "机械臂与夹爪", group: "方案", el: <Arm /> },
   { nav: "随车转盘", group: "方案", el: <Turntable /> },
   { nav: "视觉流水线", group: "方案", el: <Vision /> },
