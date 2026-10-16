@@ -2,13 +2,14 @@ import React from "react";
 import {
   Activity,
   AlertTriangle,
+  Ban,
   BookOpen,
   Bot,
   Boxes,
   CalendarDays,
   CheckCircle2,
-  CircuitBoard,
   ClipboardList,
+  Compass,
   Cpu,
   Download,
   FolderTree,
@@ -20,9 +21,9 @@ import {
   MonitorSmartphone,
   Network,
   Palette,
-  Puzzle,
   Rocket,
   RotateCcw,
+  Scale,
   Send,
   Server,
   ShieldCheck,
@@ -35,71 +36,103 @@ import {
 } from "lucide-react";
 import { Frame, Card, DataTable, Grid, Quote, Steps, Pre, Pill } from "./components.jsx";
 
-/* 架构示意图：内联 SVG（离线单文件，不用 ASCII / 线框图） */
-const ArchFlow = () => (
+/* 链路全景：开发环境 ↔ 开发板 ↔ ROS 2 系统（内联 SVG，标注工具链与数据流，不用 ASCII / 线框图） */
+const LinkPanorama = () => (
   <div className="surface p-4">
     <svg
-      viewBox="0 0 660 300"
+      viewBox="0 0 1120 440"
       role="img"
-      aria-label="三块板经 Windows 转发器接入 WSL 中 ROS 2 的数据链路"
+      aria-label="开发环境与三层链路全景：顶部开发机工具链经 USB 串口烧录部署板子；板子作 TCP 客户端经 WiFi 连出，tcp_forwarder 把 :6000 转到 WSL :6001，wifi_server 把行转成话题，relay 做板间转发，led_ui 提供 Web 控制台，浏览器经 HTTP :8080 下发指令；底部三层主线：设备层 → 通信层 → 系统层"
       className="h-auto w-full"
     >
       <defs>
-        <marker id="arch-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+        <marker id="lp-teal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
           <path d="M0,0 L10,5 L0,10 z" fill="#0d9488" />
+        </marker>
+        <marker id="lp-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="#1a5cae" />
+        </marker>
+        <marker id="lp-amber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="#b4690e" />
         </marker>
       </defs>
 
-      {/* 板端 */}
-      <rect x="8" y="34" width="150" height="52" rx="10" fill="#f0fdfa" stroke="#5eead4" />
-      <text x="83" y="55" textAnchor="middle" fill="#0f172a" fontSize="13" fontWeight="700">green · ESP32-S3</text>
-      <text x="83" y="73" textAnchor="middle" fill="#475569" fontSize="11">WS2812 @ GPIO48</text>
+      {/* 顶部：开发环境（工具链） */}
+      <rect x="10" y="34" width="1100" height="66" rx="14" fill="#f8fafc" stroke="#cbd5e1" />
+      <text x="26" y="56" fill="#0f172a" fontSize="12.5" fontWeight="700">开发环境 · Windows（工具链）</text>
+      <text x="26" y="76" fill="#475569" fontSize="10.5">
+        esptool / mpremote（烧录固件 · 进 REPL）· tools/deploy.py（一键部署：公共模块 + 板级 main.py）· 代码编辑器
+      </text>
+      <text x="26" y="92" fill="#64748b" fontSize="10">
+        python -m esptool … write-flash -z 0x0 · python -m mpremote connect COMx — 工具作用于板子，不参与运行时数据流
+      </text>
+      <line x1="150" y1="100" x2="150" y2="124" stroke="#b4690e" strokeWidth="2" markerEnd="url(#lp-amber)" />
+      <text x="160" y="118" fill="#b4690e" fontSize="9.5">USB 串口 115200</text>
 
-      <rect x="8" y="122" width="150" height="52" rx="10" fill="#f0fdfa" stroke="#5eead4" />
-      <text x="83" y="143" textAnchor="middle" fill="#0f172a" fontSize="13" fontWeight="700">blue · ESP32-S3</text>
-      <text x="83" y="161" textAnchor="middle" fill="#475569" fontSize="11">WS2812 @ GPIO48</text>
+      {/* ① 板端 */}
+      <rect x="10" y="126" width="270" height="216" rx="14" fill="#f0fdfa" stroke="#5eead4" />
+      <text x="26" y="148" fill="#0f766e" fontSize="12.5" fontWeight="700">开发板 · MicroPython（设备层）</text>
+      <rect x="22" y="160" width="246" height="50" rx="8" fill="#ffffff" stroke="#99f6e4" />
+      <text x="36" y="181" fill="#0f172a" fontSize="11" fontWeight="700">green · ESP32-S3</text>
+      <text x="36" y="197" fill="#475569" fontSize="10">WS2812 @ GPIO48（可寻址 RGB）</text>
+      <rect x="22" y="216" width="246" height="50" rx="8" fill="#ffffff" stroke="#99f6e4" />
+      <text x="36" y="237" fill="#0f172a" fontSize="11" fontWeight="700">blue · ESP32-S3</text>
+      <text x="36" y="253" fill="#475569" fontSize="10">WS2812 @ GPIO48（可寻址 RGB）</text>
+      <rect x="22" y="272" width="246" height="58" rx="8" fill="#ffffff" stroke="#99f6e4" />
+      <text x="36" y="293" fill="#0f172a" fontSize="11" fontWeight="700">xrs · 学而思掌机</text>
+      <text x="36" y="309" fill="#475569" fontSize="10">ST7735S 128×160 虚拟 LED</text>
+      <text x="36" y="324" fill="#64748b" fontSize="9.5">（GD32 桥部署）</text>
 
-      <rect x="8" y="210" width="150" height="60" rx="10" fill="#f0fdfa" stroke="#5eead4" />
-      <text x="83" y="231" textAnchor="middle" fill="#0f172a" fontSize="13" fontWeight="700">xrs · 学而思掌机</text>
-      <text x="83" y="248" textAnchor="middle" fill="#475569" fontSize="11">ST7735S 虚拟 LED</text>
-      <text x="83" y="263" textAnchor="middle" fill="#64748b" fontSize="10">（GD32 桥部署）</text>
+      {/* ② 开发机 · Windows 转发 */}
+      <rect x="320" y="126" width="240" height="216" rx="14" fill="#f8fafc" stroke="#cbd5e1" />
+      <text x="336" y="148" fill="#0f172a" fontSize="12.5" fontWeight="700">开发机 · Windows（转发）</text>
+      <rect x="332" y="160" width="216" height="92" rx="8" fill="#ffffff" stroke="#e2e8f0" />
+      <text x="346" y="182" fill="#0f172a" fontSize="11" fontWeight="700">tcp_forwarder.py</text>
+      <text x="346" y="200" fill="#475569" fontSize="10">监听 0.0.0.0:6000</text>
+      <text x="346" y="216" fill="#475569" fontSize="10">转发到 WSL 127.0.0.1:6001</text>
+      <text x="346" y="236" fill="#64748b" fontSize="9.5">WSL 镜像网络拦 LAN 入站，靠它打通</text>
+      <text x="336" y="276" fill="#64748b" fontSize="10">SERVER_IP = 本机局域网 IP（不是 WSL）</text>
+      <text x="336" y="296" fill="#64748b" fontSize="10">板子主动连出，天然绕开 NAT</text>
+      <text x="336" y="322" fill="#1a5cae" fontSize="10" fontWeight="700">先起转发器，再插板</text>
 
-      {/* 板 → 转发器 */}
-      <line x1="158" y1="60" x2="224" y2="130" stroke="#0d9488" strokeWidth="2" markerEnd="url(#arch-arrow)" />
-      <line x1="158" y1="148" x2="224" y2="148" stroke="#0d9488" strokeWidth="2" markerEnd="url(#arch-arrow)" />
-      <line x1="158" y1="238" x2="224" y2="166" stroke="#0d9488" strokeWidth="2" markerEnd="url(#arch-arrow)" />
-      <text x="191" y="141" textAnchor="middle" fill="#0f766e" fontSize="11">WiFi / TCP</text>
+      {/* ③ ROS 2 系统 */}
+      <rect x="600" y="126" width="260" height="216" rx="14" fill="#eff8ff" stroke="#93cdfb" />
+      <text x="616" y="148" fill="#1a5cae" fontSize="12.5" fontWeight="700">ROS 2 系统 · WSL2 Jazzy</text>
+      <text x="616" y="164" fill="#64748b" fontSize="9.5">colcon 构建 · ros2 launch board_bridge</text>
+      <rect x="612" y="172" width="236" height="48" rx="8" fill="#ffffff" stroke="#bfe1fd" />
+      <text x="626" y="192" fill="#0f172a" fontSize="11" fontWeight="700">wifi_server</text>
+      <text x="626" y="208" fill="#64748b" fontSize="9.5">TCP 行 ↔ 话题 /board/&lt;板名&gt;/rx · /tx</text>
+      <rect x="612" y="226" width="236" height="48" rx="8" fill="#ffffff" stroke="#bfe1fd" />
+      <text x="626" y="246" fill="#0f172a" fontSize="11" fontWeight="700">relay</text>
+      <text x="626" y="262" fill="#64748b" fontSize="9.5">DATA→FROM · KEY→EVENT（板间转发）</text>
+      <rect x="612" y="280" width="236" height="48" rx="8" fill="#ffffff" stroke="#bfe1fd" />
+      <text x="626" y="300" fill="#0f172a" fontSize="11" fontWeight="700">led_ui</text>
+      <text x="626" y="316" fill="#64748b" fontSize="9.5">Web 控制台 :8080（样式 · 轮播 · 混合）</text>
 
-      {/* 转发器 */}
-      <rect x="228" y="100" width="136" height="96" rx="10" fill="#f8fafc" stroke="#cbd5e1" />
-      <text x="296" y="126" textAnchor="middle" fill="#0f172a" fontSize="13" fontWeight="700">Windows</text>
-      <text x="296" y="146" textAnchor="middle" fill="#475569" fontSize="11">tcp_forwarder.py</text>
-      <text x="296" y="163" textAnchor="middle" fill="#475569" fontSize="11">LAN :6000</text>
-      <text x="296" y="180" textAnchor="middle" fill="#475569" fontSize="11">→ WSL :6001</text>
+      {/* ④ 浏览器 */}
+      <rect x="900" y="180" width="210" height="70" rx="14" fill="#f8fafc" stroke="#cbd5e1" />
+      <text x="916" y="204" fill="#0f172a" fontSize="12" fontWeight="700">浏览器（人机界面）</text>
+      <text x="916" y="222" fill="#475569" fontSize="10">下发指令 · 显示每块板在线状态</text>
+      <text x="916" y="240" fill="#64748b" fontSize="9.5">超时 10 s 判离线</text>
 
-      {/* 转发器 → WSL */}
-      <line x1="364" y1="148" x2="428" y2="148" stroke="#0d9488" strokeWidth="2" markerEnd="url(#arch-arrow)" />
+      {/* 数据流箭头 */}
+      <line x1="280" y1="206" x2="318" y2="206" stroke="#0d9488" strokeWidth="2" markerEnd="url(#lp-teal)" />
+      <text x="299" y="188" textAnchor="middle" fill="#0f766e" fontSize="8.5">WiFi/TCP</text>
+      <text x="299" y="198" textAnchor="middle" fill="#0f766e" fontSize="8.5">:6000 行协议</text>
+      <line x1="560" y1="206" x2="598" y2="206" stroke="#0d9488" strokeWidth="2" markerEnd="url(#lp-teal)" />
+      <text x="579" y="188" textAnchor="middle" fill="#0f766e" fontSize="8.5">WSL</text>
+      <text x="579" y="198" textAnchor="middle" fill="#0f766e" fontSize="8.5">:6001</text>
+      <line x1="860" y1="206" x2="898" y2="206" stroke="#0d9488" strokeWidth="2" markerEnd="url(#lp-teal)" />
+      <text x="879" y="188" textAnchor="middle" fill="#0f766e" fontSize="8.5">HTTP</text>
+      <text x="879" y="198" textAnchor="middle" fill="#0f766e" fontSize="8.5">:8080</text>
 
-      {/* WSL ROS 2 */}
-      <rect x="432" y="34" width="150" height="236" rx="12" fill="#eff8ff" stroke="#93cdfb" />
-      <text x="507" y="60" textAnchor="middle" fill="#0f172a" fontSize="13" fontWeight="700">WSL2 · ROS 2</text>
-      <text x="507" y="77" textAnchor="middle" fill="#475569" fontSize="11">Jazzy · board_bridge</text>
-      <rect x="444" y="92" width="126" height="44" rx="8" fill="#ffffff" stroke="#bfe1fd" />
-      <text x="507" y="110" textAnchor="middle" fill="#0f172a" fontSize="11" fontWeight="700">wifi_server</text>
-      <text x="507" y="127" textAnchor="middle" fill="#64748b" fontSize="10">行 ↔ 话题</text>
-      <rect x="444" y="146" width="126" height="44" rx="8" fill="#ffffff" stroke="#bfe1fd" />
-      <text x="507" y="164" textAnchor="middle" fill="#0f172a" fontSize="11" fontWeight="700">relay</text>
-      <text x="507" y="181" textAnchor="middle" fill="#64748b" fontSize="10">DATA→FROM · KEY→EVENT</text>
-      <rect x="444" y="200" width="126" height="44" rx="8" fill="#ffffff" stroke="#bfe1fd" />
-      <text x="507" y="218" textAnchor="middle" fill="#0f172a" fontSize="11" fontWeight="700">led_ui</text>
-      <text x="507" y="235" textAnchor="middle" fill="#64748b" fontSize="10">Web 控制台 :8080</text>
-      <text x="507" y="258" textAnchor="middle" fill="#1a5cae" fontSize="10">/board/板名/rx · /tx</text>
-
-      {/* ROS → 浏览器 */}
-      <line x1="582" y1="222" x2="622" y2="222" stroke="#0d9488" strokeWidth="2" markerEnd="url(#arch-arrow)" />
-      <rect x="560" y="250" width="92" height="40" rx="10" fill="#f8fafc" stroke="#cbd5e1" />
-      <text x="606" y="275" textAnchor="middle" fill="#0f172a" fontSize="12" fontWeight="700">浏览器</text>
-      <text x="604" y="214" textAnchor="middle" fill="#0f766e" fontSize="10">HTTP</text>
+      {/* 底部：三层主线 */}
+      <rect x="10" y="356" width="1100" height="72" rx="14" fill="#f8fafc" stroke="#cbd5e1" />
+      <text x="26" y="380" fill="#0f172a" fontSize="11.5" fontWeight="700">三层链路（全课主线）</text>
+      <text x="26" y="402" fill="#475569" fontSize="10.5">
+        设备层（GPIO / WS2812 · MicroPython）→ 通信层（WiFi / TCP / 行协议 / 心跳）→ 系统层（ROS 2 节点 / 话题 / 桥接 / 页面）
+      </text>
+      <text x="26" y="418" fill="#64748b" fontSize="10">教学顺序 = 数据流方向：板子先会跑、消息再会通、最后接进系统。</text>
     </svg>
   </div>
 );
@@ -115,48 +148,83 @@ const Cover = () => (
       <span className="text-brand-600">从点亮一颗灯，到接入 ROS 2</span>
     </h1>
     <p className="mt-5 max-w-4xl border-l-4 border-brand-500 pl-4 text-[1rem] leading-relaxed text-slateink md:mt-8 md:pl-5 md:text-[1.15rem]">
-      职业本科 48 学时软硬件入门课程：三块板（绿/蓝 ESP32-S3 + 学而思掌机）经 WiFi/TCP
+      职业本科 48 学时软硬件入门课程：三块板（绿 / 蓝 ESP32-S3 + 学而思掌机）经 WiFi/TCP
       接入 WSL 里的 ROS 2，用 Web 控制台管理灯效——设备层 → 通信层 → 系统层一条主线走通；
       另备短平快版：1 天集中教学 + 3–4 天自学（约 30 学时），随附学生学习手册与 AI 辅助开发方法。
     </p>
     <p className="mt-4 text-[0.86rem] text-muted md:text-[0.92rem]">
-      每页默认只留要点；点「展开完整步骤」可看该步的全量命令与更多细节。
+      每页默认只留要点；点「展开：…」看完整命令与全量清单，深度材料见收尾下载。
     </p>
   </div>
 );
 
+const Tldr = () => (
+  <Frame
+    kicker="概览"
+    floor="01"
+    title="结论先行：一门课把「点灯 → 联网 → 接入 ROS 2」走成一条链"
+    lead="这门课不是讲原理，是带你从头搭出一条能演示的真实链路；知识点全部挂在这条链上。"
+  >
+    <Grid cols={3}>
+      <Card title="为什么值得" icon={Target} tone="good">
+        三个层次一次打通：设备层会编程、通信层会联网、系统层会接入 ROS 2——嵌入式与机器人框架的关系亲手走一遍。
+      </Card>
+      <Card title="怎么学" icon={Wrench}>
+        现象先行、任务驱动：每次课先看到「灯亮了 / 消息通了 / 页面动起来了」，再讲背后的原理。
+      </Card>
+      <Card title="两套上法" icon={Scale}>
+        系统学期版（16 周 / 48 学时）与短平快版（1 天 + 3–4 天自学，约 30 学时）——按人群与学时选，见「对比决策」。
+      </Card>
+    </Grid>
+    <div className="mt-4">
+      <Grid cols={3}>
+        <Card title="课程尺码" icon={CalendarDays}>
+          3 学分 / 48 学时 / 16 周 / 11 个实验 / 1 个小组作品。
+        </Card>
+        <Card title="主线项目" icon={Lightbulb}>
+          LED 协同控制系统：三块板 + ROS 2 桥接 + Web 控制台，所有知识点围绕它推进。
+        </Card>
+        <Card title="链路三层" icon={Layers}>
+          设备层 → 通信层 → 系统层，一层一个可验收的能力。
+        </Card>
+      </Grid>
+    </div>
+    <div className="mt-6">
+      <Quote>终点很清楚：你能独立走通 ROS 2 应用流程，并在教师监督下用 AI 工具完成一次真实的算法改造。</Quote>
+    </div>
+  </Frame>
+);
+
 const Position = () => (
-  <Frame kicker="概览" floor="01" title="一句话：16 周做出一条真实的软硬件链路">
+  <Frame kicker="概览" floor="02" title="课程定位：面向大一新手，重动手、不追底层理论">
     <Grid cols={3}>
       <Card title="给谁" icon={GraduationCap}>
         职业本科一年级：电子信息、物联网、机器人、智能制造、计算机等专业；先修计算机应用基础。
       </Card>
       <Card title="体量" icon={CalendarDays}>
-        3 学分 / 48 学时（16 周 × 3 学时）；每周建议 45 分钟讲解演示 + 90 分钟动手实践；
-        另有短平快版：1 天集中教学 + 3–4 天自学，约 30 学时（见后文）。
-      </Card>
-      <Card title="主线项目" icon={Lightbulb}>
-        LED 协同控制系统：三块板 + ROS 2 桥接 + Web 控制台，所有知识点都围绕它推进。
-      </Card>
-      <Card title="三个层次" icon={Layers}>
-        设备层（GPIO / WS2812 / 串口）→ 通信层（TCP / 行协议 / 心跳重连）→
-        系统层（ROS 2 节点 / 话题 / 桥接 / 人机界面）。
+        3 学分 / 48 学时（16 周 × 3 学时）；每周建议 45 分钟讲解演示 + 90 分钟动手实践。
       </Card>
       <Card title="学习目标" icon={Target}>
-        会装、会写、会连、会调、会做；不追求芯片底层与算法理论的深度。
+        会装、会写、会连、会调、会做；五个动词一个个当堂验收。
       </Card>
       <Card title="产出" icon={CheckCircle2} tone="good">
-        小组作品（板端样式 + ROS 2 话题 + 控制台），现场演示 + 答辩，可作竞赛原型。
+        小组作品（板端样式 + ROS 2 话题 + 控制台），现场演示 + 答辩，可直接作竞赛原型。
+      </Card>
+      <Card title="门槛" icon={Wrench}>
+        有基础 Python（能读代码、改参数）即可；不需要 C 语言或电路基础。
+      </Card>
+      <Card title="不做什么" icon={Ban} tone="warn">
+        不追求芯片底层与算法理论的深度——把「能跑通一条完整链路」放在第一位。
       </Card>
     </Grid>
     <div className="mt-6">
-      <Quote>现象先行、任务驱动：每次课先看到"灯亮了 / 消息通了 / 页面动起来了"，再讲原理。</Quote>
+      <Quote>定位一句话：不培养芯片专家，培养能把设备接进机器人系统、并让它稳定跑起来的人。</Quote>
     </div>
   </Frame>
 );
 
 const Roadmap = () => (
-  <Frame kicker="概览" floor="02" title="16 周路线：四个阶段，一条链" wide>
+  <Frame kicker="概览" floor="03" title="16 周只做一件事：把一条链从底层搭到系统层" wide>
     <Grid cols={2}>
       <Card title="基础（1–5 周）" icon={Wrench}>
         <div className="mb-2"><Pill tone="brand">环境与固件 → 点灯 → 工程化 → 串口</Pill></div>
@@ -166,11 +234,11 @@ const Roadmap = () => (
       <Card title="网络（6–7 周）" icon={Wifi}>
         <div className="mb-2"><Pill tone="brand">WiFi / TCP / 排障</Pill></div>
         STA 联网、TCP 客户端、<code>HELLO</code> 注册；用 Windows 转发器打通 LAN → WSL，
-        按"物理 → 网络 → 端口 → 应用"分层排障。
+        按「物理 → 网络 → 端口 → 应用」分层排障。
       </Card>
       <Card title="ROS 2（8–14 周）" icon={Server}>
         <div className="mb-2"><Pill tone="brand">节点 / 话题 / 桥接 / 界面</Pill></div>
-        节点、话题、消息、<code>colcon</code> 入门；桥接节点开发；样式 CRUD、轮播与并行混合；
+        节点、话题、消息与 <code>colcon</code> 工作空间入门；桥接节点开发；样式 CRUD、轮播与并行混合；
         Web 控制台联调。
       </Card>
       <Card title="项目（15–16 周）" icon={Rocket}>
@@ -186,7 +254,7 @@ const Roadmap = () => (
 );
 
 const Hardware = () => (
-  <Frame kicker="概览" floor="03" title="三块板 + 一块驱动桥：角色分工" wide>
+  <Frame kicker="概览" floor="04" title="三块板 + 一块驱动桥：硬件与角色各不相同" wide>
     <DataTable
       head={["板", "硬件", "固件 / 烧录", "角色"]}
       rows={[
@@ -200,18 +268,18 @@ const Hardware = () => (
           <b key="x">xrs 掌机</b>,
           "ESP32-WROVER-B + ST7735S 128×160 屏，无 WS2812",
           "MicroPython 烧 0x1000（经典 ESP32 偏移）",
-          "屏上显示“虚拟 LED”；6 个按键（上/下/左/右/A/B）可本地或网络操作",
+          "屏上显示「虚拟 LED」；6 个按键（上 / 下 / 左 / 右 / A / B）可本地或网络操作",
         ],
         [
           <b key="d">GD32 桥（1 drvboard）</b>,
-          "USB 串口桥，VID 28E9（设备名“USB 串行设备”）",
+          "USB 串口桥，VID 28E9（设备名「USB 串行设备」）",
           "无固件可烧，只作通道",
           "掌机的部署与调试通道；deploy.py 自动识别并改走友好 REPL",
         ],
       ]}
     />
     <div className="mt-4">
-      <Quote>S3 板烧 0x0、掌机烧 0x1000——这是课程第 1 周的第一个坑，烧错偏移板子不启动。</Quote>
+      <Quote>第 1 周的第一个坑：S3 板烧 0x0、掌机烧 0x1000，烧错偏移板子不启动。</Quote>
     </div>
   </Frame>
 );
@@ -219,21 +287,21 @@ const Hardware = () => (
 const Architecture = () => (
   <Frame
     kicker="概览"
-    floor="04"
-    title="数据链路：板主动连出，浏览器收口"
-    lead="板子是 TCP 客户端，主动连出（天然穿 NAT）；ROS 2 跑在 WSL 里，用 Windows 转发器解决入站限制。"
+    floor="05"
+    title="链路全景：开发环境 ↔ 开发板 ↔ ROS 2 系统，板子主动连出"
+    lead="两层关系要看区分开：工具链经 USB 串口作用于板子（开发期），板子经 WiFi/TCP 主动连出接进 ROS 2（运行期）。"
     wide
   >
     <div className="space-y-4">
-      <div className="mx-auto w-full max-w-[52rem]">
-        <ArchFlow />
+      <div className="mx-auto w-full max-w-[62rem]">
+        <LinkPanorama />
       </div>
       <div className="grid gap-x-8 gap-y-2.5 md:grid-cols-2">
         {[
-          ["板 → Windows", "WiFi/TCP :6000，连接即 HELLO 注册，DATA 心跳每 4 秒一次。"],
+          ["开发期：工具链烧录", "esptool 写固件、mpremote 进 REPL、deploy.py 上传公共模块与板级 main.py，再复位。"],
+          ["板 → Windows", "板子是 TCP 客户端，主动连 WiFi/TCP :6000；连接即 HELLO 注册，DATA 心跳每 4 秒一次。"],
           ["Windows → WSL", "tcp_forwarder 把 :6000 转到 WSL :6001，绕开 Hyper-V 的入站拦截。"],
-          ["WSL ROS 2", "wifi_server 把行转成话题；relay 做板间转发；led_ui 提供页面。"],
-          ["浏览器 → led_ui :8080", "HTTP 页面下发指令，并用心跳显示每块板的在线状态。"],
+          ["WSL ROS 2 → 浏览器", "wifi_server 把行转成话题、relay 做板间转发、led_ui 提供页面；浏览器经 HTTP 下发指令并看在线状态。"],
         ].map(([t, d], i) => (
           <div key={i} className="flex gap-3 text-[0.9rem] leading-relaxed text-slateink md:text-[0.95rem]">
             <span className="mt-[0.15rem] grid h-6 w-6 flex-none place-items-center rounded-full bg-brand-50 text-[0.72rem] font-bold text-brand-700">
@@ -245,44 +313,67 @@ const Architecture = () => (
           </div>
         ))}
       </div>
+      <Steps title="展开：四段链路的完整工具与参数">
+        <ol className="list-decimal space-y-2 pl-5">
+          <li>
+            烧录与部署（USB 串口）：<code>esptool</code> 写固件（S3 烧 <code>0x0</code>、掌机烧{" "}
+            <code>0x1000</code>），<code>deploy.py</code> 上传公共模块 + WiFi 配置 + 板级{" "}
+            <code>main.py</code>，再单独复位。
+          </li>
+          <li>
+            联网与注册（WiFi / TCP）：板子作 TCP 客户端主动连 <code>SERVER_IP:6000</code>；连接即发{" "}
+            <code>HELLO</code> 注册，每 4 s 发 <code>DATA</code> 心跳（序号递增）。
+          </li>
+          <li>
+            转发与桥接（WSL）：<code>tcp_forwarder</code> 把 <code>:6000</code> 转到 WSL{" "}
+            <code>:6001</code>；<code>wifi_server</code> 把行转成话题{" "}
+            <code>/board/&lt;板名&gt;/rx</code> 与 <code>/tx</code>，<code>relay</code> 做板间转发。
+          </li>
+          <li>
+            系统与人机界面（HTTP）：<code>led_ui</code> 提供 Web 控制台 <code>:8080</code>，
+            下发指令并按心跳显示在线状态（超时 10 s 判离线）。
+          </li>
+        </ol>
+      </Steps>
     </div>
   </Frame>
 );
 
 const ThreeLayers = () => (
-  <Frame kicker="课程内容" floor="05" title="教学主线：设备层 → 通信层 → 系统层">
+  <Frame kicker="教学主线" floor="06" title="教学主线：设备层 → 通信层 → 系统层，一层一个能力">
     <Grid cols={3}>
       <Card title="设备层（1–4 周）" icon={Cpu}>
-        微控制器怎么跑程序、控硬件：GPIO 数字输出、WS2812 可寻址 RGB、MicroPython
-        （固件 / REPL / <code>boot.py</code> / <code>main.py</code>）与一键部署脚本。
+        微控制器（MCU）怎么跑程序、控硬件：通用输入输出（GPIO）数字输出、
+        可寻址 RGB 灯带（WS2812）、MicroPython（固件 / REPL / <code>boot.py</code> / <code>main.py</code>）
+        与一键部署脚本。
       </Card>
       <Card title="通信层（5–7 周）" icon={Network}>
         设备怎么组网换数据：串口作为调试通道、行协议设计、心跳与断线重连、
         TCP 客户端—服务器模型、分层排障方法。
       </Card>
       <Card title="系统层（8–14 周）" icon={Boxes}>
-        怎么融入机器人软件框架：ROS 2 节点 / 话题 / 消息、<code>colcon</code> 工作空间、
-        桥接节点、样式算法（轮播 / 混合）与 Web 人机界面。
+        怎么融入机器人软件框架：ROS 2 节点（node）/ 话题（topic）/ 消息、
+        <code>colcon</code> 工作空间（workspace）、桥接节点（bridge node）、样式算法（轮播 / 混合）与 Web 人机界面。
       </Card>
     </Grid>
     <div className="mt-6 space-y-3">
-      <Quote>"一颗灯能否同时播放多种样式？"——从物理限制到时间复用，学生走一遍完整的工程思维链。</Quote>
+      <Quote>「一颗灯能否同时播放多种样式？」——从物理限制到时间复用，学生走一遍完整的工程思维链。</Quote>
       <p className="text-[0.88rem] leading-relaxed text-muted md:text-[0.95rem]">
-        每层都落到可验收的小任务；每个实验设"基础验收 + 拓展任务"，快慢学生各有目标。
+        每层都落到可验收的小任务；每个实验设「基础验收 + 拓展任务」，快慢学生各有目标。
       </p>
     </div>
   </Frame>
 );
 
 const Protocol = () => (
-  <Frame kicker="课程内容" floor="06" title="协议：一行一条消息，全是人话" wide>
+  <Frame kicker="教学主线" floor="07" title="行协议（line protocol）：一行一条消息，全是人话" wide>
     <div className="space-y-4">
       <DataTable
         head={["方向", "示例", "说明"]}
         rows={[
           ["板 → 服务器", <code key="h">HELLO GREEN</code>, "连接即注册；板名就是身份（green / blue / xrs）"],
-          ["板 → 服务器", <code key="d">DATA GREEN 42</code>, "每 4 秒心跳，序号递增；页面按超时 10 秒判在线"],
-          ["服务器 → 板", <code key="s">STYLE SET red 255 0 0 120 blink</code>, "保存样式（不改当前闪烁）"],
+          ["板 → 服务器", <code key="d">DATA GREEN 42</code>, "每 4 秒心跳（heartbeat），序号递增；页面按超时 10 秒判在线"],
+          ["服务器 → 板", <code key="s">STYLE SET red 255 0 0 120 blink</code>, "只保存样式，不改当前闪烁"],
           ["服务器 → 板", <code key="p">PLAY red blue</code> / <code key="m">MIX red blue</code>, "顺序轮播 / 并行混合"],
           ["服务器 → 板", <code key="c">COLOR 255 0 0</code> / <code key="r">RESET</code>, "快捷改色 / 恢复默认闪烁"],
         ]}
@@ -293,22 +384,46 @@ const Protocol = () => (
           教学阶段比二进制协议更容易建立直觉。
         </Card>
         <Card title="断线自愈是标配" icon={RotateCcw}>
-          发送/接收出错就丢弃连接，每 4 秒重连一次；服务器重启后板子约 12 秒内自动恢复，
+          发送 / 接收出错就丢弃连接，每 4 秒重连一次；服务器重启后板子约 12 秒内自动恢复，
           不需要人工复位。
         </Card>
       </Grid>
+      <Steps title="展开：完整指令集与语义">
+        <DataTable
+          head={["指令", "语义"]}
+          widths={["46%", "54%"]}
+          rows={[
+            [
+              <code key="a">STYLE SET &lt;name&gt; &lt;R&gt; &lt;G&gt; &lt;B&gt; &lt;PERIOD_MS&gt; [solid|blink]</code>,
+              "只保存不改当前；default 受保护，不可覆盖 / 删除",
+            ],
+            [
+              <code key="b">STYLE USE / DEL / LIST &lt;name&gt;</code>,
+              "应用 / 删除 / 查询——查询回包以 STYLE-END &lt;n&gt; 结束",
+            ],
+            [<code key="c">PLAY &lt;name&gt; … / PLAY STOP</code>, "顺序轮播，每样式 4 个周期"],
+            [
+              <code key="d">MIX &lt;name&gt; … / MIX STOP</code>,
+              "并行混合：20 ms 采样，亮灭取 OR、颜色通道相加截断",
+            ],
+            [<code key="e">LED / COLOR / PERIOD / PATTERN …</code>, "快捷编辑当前样式（不新建）"],
+            [<code key="f">RESET</code>, "回本板默认闪烁，保留自定义样式"],
+          ]}
+        />
+        <p>样式存 RAM，重启清空；default 永远健在，所以原始绿 / 蓝闪烁不会丢。</p>
+      </Steps>
     </div>
   </Frame>
 );
 
 const StyleAndMix = () => (
-  <Frame kicker="课程内容" floor="07" title="两个设计问题，就是两节算法课" wide>
+  <Frame kicker="教学主线" floor="08" title="两个设计问题，就是两节算法课" wide>
     <Grid cols={2}>
       <Card title="保存与应用分离" icon={Palette}>
         <ul className="mt-1 list-disc space-y-1.5 pl-5">
           <li><code>STYLE SET</code> 只保存，<code>STYLE USE</code> 才切换；</li>
           <li><code>default</code> 不可删除、不可覆盖——原始闪烁永不丢；</li>
-          <li>来源：真实用户反馈"加样式后原来的闪烁没了"（其实是保存即切换）。</li>
+          <li>来源：真实用户反馈「加样式后原来的闪烁没了」（其实是保存即切换）。</li>
         </ul>
       </Card>
       <Card title="单灯怎么同时播放多样式" icon={Gauge}>
@@ -328,7 +443,7 @@ mix   = min(255, Σ 亮着的样式 RGB)   # 合成：OR 取亮灭，RGB 相加�
 );
 
 const RosBridge = () => (
-  <Frame kicker="课程内容" floor="08" title="ROS 2 侧：三个节点各司其职" wide>
+  <Frame kicker="教学主线" floor="09" title="ROS 2 侧：三个节点（node）各司其职" wide>
     <div className="space-y-4">
       <Grid cols={3}>
         <Card title="wifi_server" icon={Server}>
@@ -349,11 +464,11 @@ ros2 topic pub --once /board/green/tx std_msgs/String "{data: 'COLOR 255 0 0'}"
 ros2 topic echo /board/green/rx        # 心跳 DATA GREEN … 与 STYLE-OK / STYLE-ERR 应答`}</Pre>
       <Steps title="展开：led_ui 页面操作清单（完整）">
         <ol className="list-decimal space-y-2 pl-5">
-          <li>看两块板的在线状态徽标；拔掉一块板 10 秒后应显示"离线"。</li>
-          <li>新建样式（名字 + RGB + 周期 + solid/blink）→ 点"保存样式"→ 确认当前闪烁未变。</li>
-          <li>点该样式的"应用"→ 灯切换；点"恢复默认"→ 回到原始绿/蓝闪烁。</li>
-          <li>勾选 2–3 条样式 →"轮播所选"→"停止轮播"。</li>
-          <li>勾选 2 条 →"混合所选"→"停止混合"，观察合成颜色。</li>
+          <li>看两块板的在线状态徽标；拔掉一块板 10 秒后应显示「离线」。</li>
+          <li>新建样式（名字 + RGB + 周期 + solid/blink）→ 点「保存样式」→ 确认当前闪烁未变。</li>
+          <li>点该样式的「应用」→ 灯切换；点「恢复默认」→ 回到原始绿 / 蓝闪烁。</li>
+          <li>勾选 2–3 条样式 →「轮播所选」→「停止轮播」。</li>
+          <li>勾选 2 条 →「混合所选」→「停止混合」，观察合成颜色。</li>
           <li>开发者工具 Network 面板可见响应头 <code>Cache-Control: no-store</code>（缓存坑的修复）。</li>
         </ol>
       </Steps>
@@ -362,20 +477,20 @@ ros2 topic echo /board/green/rx        # 心跳 DATA GREEN … 与 STYLE-OK / ST
 );
 
 const Method = () => (
-  <Frame kicker="课程内容" floor="09" title="怎么教：现象先行 + 故障驱动">
+  <Frame kicker="教学方法" floor="10" title="怎么教：现象先行 + 故障驱动">
     <Grid cols={2}>
       <Card title="现象先行" icon={Lightbulb}>
-        每节课的第一次演示一定是"能看 / 能玩"的结果，原理放在现象之后；单次连续讲授不超过 15 分钟。
+        每节课的第一次演示一定是「能看 / 能玩」的结果，原理放在现象之后；单次连续讲授不超过 15 分钟。
       </Card>
       <Card title="结对编程" icon={Users}>
-        两人一组，每 20–30 分钟轮换"操作者 / 记录者"；每个实验设基础验收与拓展任务。
+        两人一组，每 20–30 分钟轮换「操作者 / 记录者」；每个实验设基础验收与拓展任务。
       </Card>
       <Card title="故障驱动" icon={AlertTriangle} tone="warn">
         有意制造安全的小故障（拔网线、杀服务器、写错端口），让学生按分层法定位；报错就是教学素材。
       </Card>
       <Card title="真实案例库" icon={BookOpen}>
-        9 个来自开发日志的案例：板子"没有 Python"、<code>mpremote</code> 首次必失败、
-        服务器重启板子掉线、页面"每刷新一次多一条样式"、保存覆盖闪烁……
+        9 个来自开发日志的案例：板子「没有 Python」、<code>mpremote</code> 首次必失败、
+        服务器重启板子掉线、页面「每刷新一次多一条样式」、保存覆盖闪烁……
       </Card>
     </Grid>
     <div className="mt-6">
@@ -385,7 +500,7 @@ const Method = () => (
 );
 
 const Labs = () => (
-  <Frame kicker="课程内容" floor="10" title="11 个实验，全部当堂验收" wide>
+  <Frame kicker="教学方法" floor="11" title="11 个实验，全部当堂验收" wide>
     <DataTable
       head={["实验", "周次", "核心能力"]}
       widths={["44%", "14%", "42%"]}
@@ -407,7 +522,7 @@ const Labs = () => (
 );
 
 const TeacherPrep = () => (
-  <Frame kicker="实施" floor="11" title="开课前：清单化准备">
+  <Frame kicker="开课准备" floor="12" title="开课前：清单化准备，一项都不能漏">
     <Grid cols={2}>
       <Card title="环境镜像（提前一周）" icon={Wrench}>
         Windows 10/11 + Python 3.10+（<code>esptool</code> / <code>mpremote</code>）、
@@ -430,7 +545,7 @@ const TeacherPrep = () => (
 );
 
 const FirstLab = () => (
-  <Frame kicker="实施" floor="12" title="实验一：从探测到 REPL，一条命令都不能错" wide>
+  <Frame kicker="开课准备" floor="13" title="实验一：从探测到 REPL，一条命令都不能错" wide>
     <div className="space-y-4">
       <Pre>{`python -m pip install esptool mpremote            # 每台电脑一次
 
@@ -443,7 +558,7 @@ python -m mpremote connect COM13                  # 进入 REPL：print("hello e
       <Steps title="展开：实验一完整步骤与常见问题">
         <ol className="list-decimal space-y-2 pl-5">
           <li>装工具：<code>python -m pip install esptool mpremote</code>，<code>python -m esptool version</code> 验证。</li>
-          <li>插板，设备管理器找 "CH343" 对应端口（或用 <code>python -m mpremote devs</code>）。</li>
+          <li>插板，设备管理器找「CH343」对应端口（或用 <code>python -m mpremote devs</code>）。</li>
           <li><code>flash-id</code> 读芯片：应看到 ESP32-S3、16MB Flash、MAC。</li>
           <li>观察出厂固件：串口 115200 每 1.5 秒一行 <code>example: log -&gt; UART</code>，Ctrl-C 无 REPL。</li>
           <li>烧录三步：擦除 → <code>write-flash -z 0x0 &lt;厂商完整镜像&gt;</code> → 复位进 REPL。</li>
@@ -468,12 +583,12 @@ python -m mpremote connect COM13                  # 进入 REPL：print("hello e
 );
 
 const Assessment = () => (
-  <Frame kicker="实施" floor="13" title="考核：能力本位，不设期末闭卷" wide>
+  <Frame kicker="开课准备" floor="14" title="考核：能力本位，不设期末闭卷" wide>
     <div className="space-y-4">
       <DataTable
         head={["考核项目", "比例", "说明"]}
         rows={[
-          ["平时表现", "20%", "考勤 5% + 课堂任务（⭐ 验收点累计）10% + 团队协作 5%"],
+          ["平时表现", "20%", "考勤 5% + 课堂任务（验收点累计）10% + 团队协作 5%"],
           ["实验考核", "40%", "11 次实验当堂验收 + 实验记录；每次功能 2.5 分 + 记录问答 1.5 分，可加分"],
           ["综合项目", "40%", "方案 10% + 功能演示 20%（教师 70% + 组间互评 30%）+ 答辩与报告 10%"],
         ]}
@@ -493,12 +608,48 @@ const Assessment = () => (
   </Frame>
 );
 
+const Decision = () => (
+  <Frame
+    kicker="对比决策"
+    floor="15"
+    title="两套上法怎么选：系统学期版 vs 短平快版"
+    lead="同一门课有两种上法：16 周系统课打底，或 1 天集中 + 3–4 天自学速通。先看清取舍，再定上法。"
+    wide
+  >
+    <div className="space-y-4">
+      <DataTable
+        head={["维度", "系统学期版（16 周 / 48 学时）", "短平快版（1 天 + 3–4 天 / 约 30 学时）"]}
+        widths={["14%", "43%", "43%"]}
+        rows={[
+          ["适合人群", "职业本科一年级正课、有完整学期排课；要体系、要带班", "小学期、实训周、竞赛集训前快速入门；有基础 Python 即可"],
+          ["内容纵深", "设备 → 通信 → 系统逐层展开，含 git 与固件内部结构", "保链路、减纵深：点灯编程压为「读懂 + 改参数」，删 git 与固件内部"],
+          ["核心目标", "会装 / 会写 / 会连 / 会调 / 会做，覆盖全部知识点", "走通最小闭环 + 在教师监督下用 AI 做一次算法改造"],
+          ["考核方式", "平时 20% + 实验 40% + 综合项目 40%", "验收清单 + 结课演示 + AI 使用记录核查"],
+          ["主要产出", "11 个实验记录 + 1 个小组作品（现场演示 + 答辩）", "五个学习单元证据包 + 三个算法任务（至少完成一、二）"],
+          ["主要风险", "周期长，需整学期排课与实验室机位", "学时不宽裕、删减多，自学自律要求高"],
+        ]}
+      />
+      <Grid cols={2}>
+        <Card title="什么时候选系统版" icon={Compass} tone="brand">
+          要体系、要带班、要覆盖全部知识点，且有整学期排课与机位——选 48 学时正课，别压缩。
+        </Card>
+        <Card title="什么时候选短平快版" icon={Ban} tone="warn">
+          只有几天、基础 Python 已会、目标就是走通闭环并改一次算法——选短平快版，别硬排 16 周。
+        </Card>
+      </Grid>
+      <Quote>
+        引导问题：你的场景是「整学期系统培养」，还是「几天内把闭环跑通并改一次算法」？先回答它，再决定上哪一套。
+      </Quote>
+    </div>
+  </Frame>
+);
+
 const Intensive = () => (
   <Frame
-    kicker="短平快"
-    floor="14"
-    title="短平快版：1 天集中教学 + 3–4 天自学"
-    lead="把 48 学时改造成『最小闭环走通 + AI 监督下改算法』：教师用 06-短平快课程方案，学生用 07-学生学习手册（标记图例、知识讲解、验收清单与记录表都在手册里）。"
+    kicker="短课模式"
+    floor="16"
+    title="短平快版：1 天集中教学 + 3–4 天自学，约 30 学时"
+    lead="把 48 学时改造成「最小闭环走通 + AI 监督下改算法」：教师用 06-短平快课程方案，学生用 07-学生学习手册（标记图例、知识讲解、验收清单与记录表都在手册里）。"
     wide
   >
     <Grid cols={3}>
@@ -521,7 +672,7 @@ const Intensive = () => (
 );
 
 const DayOne = () => (
-  <Frame kicker="短平快" floor="15" title="第 1 天：集中教学日程（8 学时）" wide>
+  <Frame kicker="短课模式" floor="17" title="第 1 天：8 学时把全链路集中走一遍" wide>
     <DataTable
       head={["时段（示例）", "环节", "内容", "验收点"]}
       widths={["15%", "17%", "42%", "26%"]}
@@ -552,7 +703,7 @@ const DayOne = () => (
           "16:05–16:40",
           "环节六 · 任务发布与示范",
           <span key="s6">
-            教师现场小改造（轮播"每样式 4 个周期"改 2 个）；发布三个任务与自学安排
+            教师现场小改造（轮播「每样式 4 个周期」改 2 个）；发布三个任务与自学安排
           </span>,
           "能说出四步工作法与三条红线",
         ],
@@ -565,7 +716,7 @@ const DayOne = () => (
 );
 
 const SelfStudy = () => (
-  <Frame kicker="短平快" floor="16" title="自学 3–4 天：任务与抽查点（每天 6–7 小时）" wide>
+  <Frame kicker="短课模式" floor="18" title="自学 3–4 天：每天一个任务，抽查证据" wide>
     <DataTable
       head={["时间", "主题", "学生完成", "教师抽查"]}
       widths={["14%", "24%", "42%", "20%"]}
@@ -603,7 +754,7 @@ const SelfStudy = () => (
 );
 
 const AiWorkflow = () => (
-  <Frame kicker="短平快" floor="17" title="AI 监督开发：四步工作法 + 红线" wide>
+  <Frame kicker="短课模式" floor="19" title="AI 监督开发：读 → 讲 → 改 → 验，红线不能碰" wide>
     <div className="space-y-4">
       <Grid cols={2}>
         <Card title="读 → 讲 → 改 → 验" icon={Bot}>
@@ -632,13 +783,13 @@ const AiWorkflow = () => (
           AI 使用日志（提示词要点 / 建议摘要 / 采纳与否 / 验证证据）+ 至少 1 条「被推翻的 AI 建议」——这是加分项。
         </Card>
       </Grid>
-      <Quote>监督 = 限定范围 + 强行验证 + 留痕；十个提示词模板与 AI 使用记录表见 07-学生学习手册.md §三。</Quote>
+      <Quote>监督 = 限定范围 + 强行验证 + 留痕；十个提示词模板与 AI 使用记录表见 07-学生学习手册.md 第三节。</Quote>
     </div>
   </Frame>
 );
 
 const TaskCards = () => (
-  <Frame kicker="短平快" floor="18" title="算法任务：改的是真算法，验的是真观感" wide>
+  <Frame kicker="短课模式" floor="20" title="四个算法任务：难度递进，改的是真算法" wide>
     <DataTable
       head={["任务", "难度", "内容", "验收（摘要）"]}
       widths={["24%", "10%", "38%", "28%"]}
@@ -669,95 +820,111 @@ const TaskCards = () => (
   </Frame>
 );
 
-const Downloads = () => (
-  <Frame kicker="收尾" floor="19" title="材料下载与位置" wide>
-    <Grid cols={2}>
-      <Card title="一键下载：课程包 + 代码 + 固件" icon={Download}>
-        <p>
-          随本 deck 附{" "}
-          <a className="underline break-all" href="./files/ESP32与ROS2课程包与代码.zip">
-            files/ESP32与ROS2课程包与代码.zip
-          </a>
-        </p>
-        <p className="mt-2 text-muted">
-          含课程标准 / 16 周单元设计 / 11 个实验指导 / 考核方案 / 教师手册 /
-          短平快课程方案 / 学生学习手册；
-          <code>common</code>、<code>green</code>、<code>blue</code>、<code>xrs</code>、
-          <code>tools</code>、<code>ros2_ws</code> 与两块板的 MicroPython 固件。
-        </p>
-      </Card>
-      <Card title="工作区内的位置" icon={FolderTree}>
-        <ul className="mt-1 list-disc space-y-1.5 pl-5">
-          <li>课程包：<code>培训/ESP32与ROS2开发基础课程包/</code></li>
-          <li>短平快版：同目录 <code>06-短平快课程方案.md</code>、<code>07-学生学习手册.md</code></li>
-          <li>工程代码：<code>教学demo/ESP32-ROS2-LED协同系统/</code></li>
-          <li>文字版（架构 / 协议 / 排障）：<code>docs/ESP32与ROS2开发基础.md</code></li>
+const Actions = () => (
+  <Frame kicker="收尾" floor="21" title="行动清单：按周推进，一步步验收" wide>
+    <DataTable
+      head={["优先", "动作", "入口 / 预算"]}
+      widths={["10%", "48%", "42%"]}
+      rows={[
+        ["1", "装环境：Windows + Python 3.10+（esptool / mpremote）、WSL2 + ROS 2 Jazzy", "提前一周（教师机先跑通 colcon build）"],
+        ["2", "按 16 周路线逐周推进，每周完成对应实验并当堂验收", "11 个实验，见「实验一览」"],
+        ["3", "第 8 周前确认 colcon build 与 ros2 launch 在本机可跑", "第 8 周门槛"],
+        ["4", "第 15–16 周选题与作品开发，现场演示 + 答辩", "综合项目 40%"],
+        ["5", "短平快场景：1 天集中 + 3–4 天自学 + 结课验收", "约 30 学时"],
+      ]}
+    />
+    <div className="mt-4 grid gap-3 md:grid-cols-2 md:gap-4">
+      <Card title="三条纪律" icon={ListChecks} tone="brand">
+        <ul className="space-y-1.5">
+          <li>· 现象先行：每次演示先给能看 / 能玩的结果，再讲原理。</li>
+          <li>· 逐层推进：设备层没通不跳通信层，通信层没通不接系统层。</li>
+          <li>· 一次一坑：故障驱动教学，报错当素材，当场定位。</li>
         </ul>
       </Card>
-      <Card title="相关讲义" icon={BookOpen}>
-        本 deck 可直接双击播放；相邻主题：<code>ESP32-S3电机驱动板</code>、
-        <code>ESP32-S3接入micro-ROS</code>（机器人控车路线）、
-        <code>ROS2与micro-ROS选型</code>（WSL 跨机验证）。
+      <Card title="验收口径" icon={ShieldCheck} tone="good">
+        每层都有可验收的小任务；每个实验设基础验收 + 拓展任务；综合项目必须含板端样式 + ROS 2 话题并有一个自扩展点。
       </Card>
-      <Card title="安全提示：密钥不随包" icon={ShieldCheck} tone="warn">
-        <code>wifi_config.py</code> 含真实 WiFi 密码，不随包分发；下载包里用{" "}
-        <code>common/wifi_config.example.py</code> 模板复制后填写。
-      </Card>
-    </Grid>
+    </div>
   </Frame>
 );
 
-const Wrap = () => (
-  <Frame kicker="收尾" floor="20" title="记住这三层，然后往哪走">
+const Closing = () => (
+  <Frame kicker="收尾" floor="22" title="下载与延伸：材料齐全，按实验指导即可复现" wide>
     <div className="space-y-5">
-      <Quote>板子会编程、消息会跑通、系统会搭起来——这门课把"嵌入式设备接入机器人框架"完整走了一遍。</Quote>
-      <Grid cols={3}>
-        <Card title="三个层次" icon={Layers}>
-          设备层 → 通信层 → 系统层；走到系统层，才真正理解嵌入式与 ROS 2 的关系。
+      <Quote>
+        板子会编程、消息会跑通、系统会搭起来——这门课把「嵌入式设备接入机器人框架」完整走了一遍。
+      </Quote>
+      <Grid cols={2}>
+        <Card title="一键下载：课程包 + 代码 + 固件" icon={Download}>
+          <p>
+            随本 deck 附{" "}
+            <a className="underline break-all font-semibold text-brand-700" href="./files/ESP32与ROS2课程包与代码.zip">
+              files/ESP32与ROS2课程包与代码.zip
+            </a>
+          </p>
+          <p className="mt-2 text-muted">
+            含课程标准 / 16 周单元设计 / 11 个实验指导 / 考核方案 / 教师手册 /
+            短平快课程方案（<code>06</code>）/ 学生学习手册（<code>07</code>）；
+            <code>common</code>、<code>green</code>、<code>blue</code>、<code>xrs</code>、
+            <code>tools</code>、<code>ros2_ws</code> 与两块板的 MicroPython 固件。
+          </p>
         </Card>
-        <Card title="课程落地" icon={Rocket}>
-          48 学时 / 16 周 / 11 实验 / 1 个小组作品；另有短平快版（1 天 + 3–4 天）；
-          材料齐全，按实验指导可完整复现。
+        <Card title="工作区内的位置" icon={FolderTree}>
+          <ul className="mt-1 list-disc space-y-1.5 pl-5">
+            <li>课程包：<code>培训/ESP32与ROS2开发基础课程包/</code></li>
+            <li>短平快版：同目录 <code>06-短平快课程方案.md</code>、<code>07-学生学习手册.md</code></li>
+            <li>工程代码：<code>教学demo/ESP32-ROS2-LED协同系统/</code></li>
+            <li>文字版（架构 / 协议 / 排障）：<code>docs/ESP32与ROS2开发基础.md</code></li>
+          </ul>
         </Card>
-        <Card title="延续一：传感器" icon={Activity}>
-          DHT11 / 超声波 / 光敏 → 把物理量映射为颜色或频率（I2C / ADC 入门）。
+        <Card title="延伸一：传感器与 ROS 2 深入" icon={Activity}>
+          加传感器（DHT11 / 超声波 / 光敏），把物理量映射为颜色或频率；系统侧再学自定义消息、
+          服务 / 动作、<code>rqt</code> 可视化与 Nav2 入门。
         </Card>
-        <Card title="延续二：ROS 2 深入" icon={Server}>
-          自定义消息、服务 / 动作、<code>rqt</code> 可视化、Nav2 入门。
+        <Card title="延伸二：竞赛与继续练" icon={Trophy}>
+          嵌入式设计竞赛、机器人大赛、物联网创新赛——本课作品可直接作参赛原型；
+          继续练：把 <code>MIX</code> 合成规则改成「平均」或「取最大」，给 <code>led_ui</code> 加「一键灯效」按钮。
         </Card>
-        <Card title="延续三：竞赛" icon={Trophy}>
-          嵌入式设计竞赛、机器人大赛、物联网创新赛——本课作品可直接作为参赛原型。
+        <Card title="相关讲义" icon={BookOpen}>
+          相邻主题：<code>ESP32-S3电机驱动板</code>、<code>ESP32-S3接入micro-ROS</code>（机器人控车路线）、
+          <code>ROS2与micro-ROS选型</code>（WSL 跨机验证）。
         </Card>
-        <Card title="继续练" icon={Puzzle}>
-          把 <code>MIX</code> 的合成规则改成"平均"或"取最大"；给 <code>led_ui</code> 加"一键灯效"按钮。
+        <Card title="安全提示：密钥不随包" icon={ShieldCheck} tone="warn">
+          <code>wifi_config.py</code> 含真实 WiFi 密码，不随包分发；下载包里用{" "}
+          <code>common/wifi_config.example.py</code> 模板复制后填写。
         </Card>
       </Grid>
+      <p className="text-[0.86rem] text-muted">
+        路径：<code>教学webppt/ESP32与ROS2开发基础/</code>（成品单文件 + <code>files/</code> 附件，离线可播）
+      </p>
     </div>
   </Frame>
 );
 
 export const slides = [
   { nav: "封面", group: "概览", el: <Cover /> },
+  { nav: "结论先行", group: "概览", el: <Tldr /> },
   { nav: "课程定位", group: "概览", el: <Position /> },
   { nav: "课程主线", group: "概览", el: <Roadmap /> },
   { nav: "硬件与角色", group: "概览", el: <Hardware /> },
-  { nav: "系统架构", group: "概览", el: <Architecture /> },
-  { nav: "三层教学", group: "课程内容", el: <ThreeLayers /> },
-  { nav: "通信协议", group: "课程内容", el: <Protocol /> },
-  { nav: "样式与混合", group: "课程内容", el: <StyleAndMix /> },
-  { nav: "ROS 2 桥接", group: "课程内容", el: <RosBridge /> },
-  { nav: "教学方法", group: "课程内容", el: <Method /> },
-  { nav: "实验一览", group: "课程内容", el: <Labs /> },
-  { nav: "教师准备", group: "实施", el: <TeacherPrep /> },
-  { nav: "第一次上机", group: "实施", el: <FirstLab /> },
-  { nav: "考核方案", group: "实施", el: <Assessment /> },
-  { nav: "短平快总览", group: "短平快", el: <Intensive /> },
-  { nav: "第 1 天日程", group: "短平快", el: <DayOne /> },
-  { nav: "自学 3–4 天", group: "短平快", el: <SelfStudy /> },
-  { nav: "AI 四步工作法", group: "短平快", el: <AiWorkflow /> },
-  { nav: "算法任务", group: "短平快", el: <TaskCards /> },
-  { nav: "下载与材料", group: "收尾", el: <Downloads /> },
-  { nav: "小结与下一步", group: "收尾", el: <Wrap /> },
+  { nav: "链路全景", group: "概览", el: <Architecture /> },
+  { nav: "三层教学", group: "教学主线", el: <ThreeLayers /> },
+  { nav: "通信协议", group: "教学主线", el: <Protocol /> },
+  { nav: "样式与混合", group: "教学主线", el: <StyleAndMix /> },
+  { nav: "ROS 2 桥接", group: "教学主线", el: <RosBridge /> },
+  { nav: "教学方法", group: "教学方法", el: <Method /> },
+  { nav: "实验一览", group: "教学方法", el: <Labs /> },
+  { nav: "教师准备", group: "开课准备", el: <TeacherPrep /> },
+  { nav: "第一次上机", group: "开课准备", el: <FirstLab /> },
+  { nav: "考核方案", group: "开课准备", el: <Assessment /> },
+  { nav: "对比决策", group: "对比决策", el: <Decision /> },
+  { nav: "短课总览", group: "短课模式", el: <Intensive /> },
+  { nav: "第 1 天日程", group: "短课模式", el: <DayOne /> },
+  { nav: "自学 3–4 天", group: "短课模式", el: <SelfStudy /> },
+  { nav: "AI 四步工作法", group: "短课模式", el: <AiWorkflow /> },
+  { nav: "算法任务", group: "短课模式", el: <TaskCards /> },
+  { nav: "行动清单", group: "收尾", el: <Actions /> },
+  { nav: "下载与延伸", group: "收尾", el: <Closing /> },
 ];
 
 export default slides;
