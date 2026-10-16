@@ -23,3 +23,6 @@ node_modules/
 
 # ESP32-S3 固件的本机私密配置（Wi-Fi 密码等；模板见同目录 secrets.example.h）
 教学demo/ESP32-S3-microROS/include/secrets.h
+
+# ESP32-ROS2-LED协同系统 的本机私密配置（WiFi 密码；模板见同目录 wifi_config.example.py）
+教学demo/ESP32-ROS2-LED协同系统/common/wifi_config.py
