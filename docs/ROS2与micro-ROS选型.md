@@ -32,6 +32,29 @@ micro-ROS 的架构是"**MCU 客户端 → Agent → ROS 2 图**"。Agent 本身
 | Pi 做上位机 + Pico/STM32/ESP32 做实时底层 | **两边都要**：Pi 装 ROS 2，MCU 装 micro-ROS，中间起 micro-ROS Agent |
 | 只有 Pi，且只是 OpenCV 取图/算法验证 | ROS 2 可用可不用；直接用 Python/OpenCV 更省事 |
 
+同一套判定画成决策树：
+
+```mermaid
+flowchart TD
+    Q{系统里有 MCU 做实时底层吗？} -->|没有，Pi 做视觉 / 主控| A["只装 ROS 2<br/>Docker + ros:jazzy-ros-base"]
+    Q -->|有，需要硬实时或底层 I/O| B["两边都要<br/>Pi 装 ROS 2 + micro-ROS Agent<br/>MCU 装 micro-ROS client"]
+    Q -->|只有 Pi，仅取图 / 算法验证| C["ROS 2 可用可不用<br/>直接 Python / OpenCV 更省事"]
+```
+
+### 对比决策（算力 / 实时性 / 生态 / 维护）
+
+对比对象：在 Linux 主机上直接跑原生 ROS 2，还是把控制与采集下沉到 MCU、用 micro-ROS 接入。
+
+| 维度 | 原生 ROS 2 直跑（Linux） | micro-ROS 上微控制器 |
+| --- | --- | --- |
+| 算力 | 数百 MB 内存、多核；视觉 / 规划 / 多节点无压力 | 几十 KB RAM、单核；只够跑控制与采集 |
+| 实时性 | Linux 非硬实时，调度抖动在毫秒级 | RTOS 硬实时，周期稳定在微秒级 |
+| 生态 | rclcpp / rclpy 全量 API，导航 / 感知生态完整 | 只有 rcl + rclc（C，静态内存），生态小得多 |
+| 维护 | 一套系统，apt / Docker 升级即可 | 多一套固件与 Agent，跨平台工具链更麻烦 |
+| 适用 | 视觉、规划、决策、多节点编排 | 电机闭环、IMU、PWM / CAN 就地驱动 |
+
+> 辩证一问：「什么情况下反而该选另一边？」——只有 MCU、没有 Linux 主机，又要做多节点通信时，才轮到在一块强一点的 MCU 上直接跑 micro-ROS；反过来，系统里根本没有硬实时任务时，就不该为它多养一套固件与 Agent。
+
 ## 三、树莓派上的 ROS 2 部署方案对比
 
 关键约束：**ROS 2 的 apt 二进制包只支持 Ubuntu。** 按 REP-2000，arm64 的 Tier 1 是 Ubuntu；Raspberry Pi OS / Debian 属于 Tier 3，需要源码编译。官方 Raspberry Pi 安装指南给的也是"Docker 或 Ubuntu"两条路。
