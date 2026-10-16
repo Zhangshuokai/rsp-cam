@@ -38,6 +38,38 @@ flowchart LR
 屏幕显示虚拟 LED），其"1 drvboard"= GD32 USB 串口桥（VID 28E9），`tools/deploy.py` 自动识别
 并改用友好 REPL + base64 上传。
 
+### 开发环境与三层链路全景
+
+要区分两层关系：**工具链经 USB 串口作用于板子（开发期）**，**板子经 WiFi/TCP 主动连出接进 ROS 2（运行期）**。
+
+```mermaid
+flowchart LR
+  subgraph DEV["开发环境 · Windows（工具链，开发期）"]
+    T["esptool / mpremote<br/>烧录固件 · 进 REPL"]
+    D["tools/deploy.py<br/>一键部署：公共模块 + 板级 main.py"]
+  end
+  subgraph BOARD["开发板 · MicroPython（设备层）"]
+    G["green · ESP32-S3<br/>WS2812 @ GPIO48"]
+    B["blue · ESP32-S3<br/>WS2812 @ GPIO48"]
+    X["xrs · 学而思掌机<br/>ST7735S 虚拟 LED"]
+  end
+  subgraph ROS["ROS 2 系统 · WSL2 Jazzy（系统层）"]
+    S["wifi_server<br/>TCP 行 ↔ 话题"]
+    R["relay<br/>DATA→FROM · KEY→EVENT"]
+    U["led_ui<br/>Web 控制台 :8080"]
+  end
+  T -->|"USB 串口 115200"| BOARD
+  D -->|"USB 串口 115200"| BOARD
+  BOARD -->|"WiFi / TCP :6000（行协议 + 心跳）"| F["tcp_forwarder.py<br/>LAN :6000 → WSL :6001"]
+  F -->|"WSL :6001"| S
+  S --> R
+  U -->|"tx：页面指令"| S
+  BR["浏览器"] -->|"HTTP :8080"| U
+```
+
+数据流即教学顺序，也是全课主线：设备层（GPIO / WS2812 · MicroPython）→ 通信层（WiFi / TCP /
+行协议 / 心跳）→ 系统层（ROS 2 节点 / 话题 / 桥接 / 人机界面）。
+
 ## 二、硬件与烧录
 
 | 板 | 固件 | 烧录偏移 | 串口 |
@@ -127,3 +159,21 @@ UI_HOST=0.0.0.0 ros2 launch board_bridge wifi.launch.py   # 页面 http://<WSL_I
 - 讲义 deck：`教学webppt/ESP32与ROS2开发基础/`。
 - 一键下载（课程包 + 代码 + 固件 zip）：
   [`../教学webppt/ESP32与ROS2开发基础/files/ESP32与ROS2课程包与代码.zip`](../教学webppt/ESP32与ROS2开发基础/files/ESP32与ROS2课程包与代码.zip)
+
+## 七、两套上法：系统学期版 vs 短平快版
+
+同一门课两种上法，按人群与学时选；对照表如下（deck「对比决策」页同源）。
+
+| 维度 | 系统学期版（16 周 / 48 学时） | 短平快版（1 天 + 3–4 天 / 约 30 学时） |
+| --- | --- | --- |
+| 适合人群 | 职业本科一年级正课、有完整学期排课；要体系、要带班 | 小学期、实训周、竞赛集训前快速入门；有基础 Python 即可 |
+| 内容纵深 | 设备 → 通信 → 系统逐层展开，含 git 与固件内部结构 | 保链路、减纵深：点灯编程压为「读懂 + 改参数」，删 git 与固件内部 |
+| 核心目标 | 会装 / 会写 / 会连 / 会调 / 会做，覆盖全部知识点 | 走通最小闭环 + 在教师监督下用 AI 做一次算法改造 |
+| 考核方式 | 平时 20% + 实验 40% + 综合项目 40% | 验收清单 + 结课演示 + AI 使用记录核查 |
+| 主要产出 | 11 个实验记录 + 1 个小组作品（现场演示 + 答辩） | 五个学习单元证据包 + 三个算法任务（至少完成一、二） |
+| 主要风险 | 周期长，需整学期排课与实验室机位 | 学时不宽裕、删减多，自学自律要求高 |
+
+引导问题：场景是「整学期系统培养」，还是「几天内把闭环跑通并改一次算法」？先回答它，再决定上哪一套。
+
+- 要体系、要带班、要覆盖全部知识点、有整学期排课与机位 → 选 **系统学期版**，别压缩。
+- 只有几天、基础 Python 已会、目标就是走通闭环并改一次算法 → 选 **短平快版**，别硬排 16 周。
