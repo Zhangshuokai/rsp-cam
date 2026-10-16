@@ -1,18 +1,13 @@
 import React from "react";
 import {
   CircuitBoard,
-  Layers,
-  Cable,
   Wrench,
   Terminal,
   Download,
   AlertTriangle,
-  ListChecks,
   Rocket,
   Boxes,
   Wifi,
-  CheckCircle2,
-  BookOpen,
   Gauge,
   Gamepad2,
   Smartphone,
@@ -21,8 +16,8 @@ import {
   Battery,
   Usb,
   Radio,
-  Server,
   Network,
+  ArrowLeftRight,
 } from "lucide-react";
 import { Frame, Card, DataTable, Grid, Quote, Focus, Stat, Pill, Steps, Pre, Figure } from "./components.jsx";
 
@@ -54,6 +49,163 @@ const A = ({ href, children }) => (
   </a>
 );
 
+/* 板载资源与接口分布：内联 SVG（离线单文件，不用 ASCII 字符画 / 线框图） */
+const BoardResources = () => (
+  <div className="surface p-4">
+    <svg
+      viewBox="0 0 900 460"
+      role="img"
+      aria-label="奇果派 S3 机器人控制板板载资源分布：左上为 ESP32-S3-WROOM-1-N8R8 模组，左下为四路电机驱动 M1 到 M4；中列为编码器接口四路与两个 I2C；右列为舵机 PWM 四路（引脚 5、6、7、15）与 OLED、IMU、电压检测接口；底部说明 Type-C 供电下载口与 6 到 24 伏电源输入"
+      className="h-auto w-full"
+    >
+      <text x="16" y="24" fill="#0f172a" fontSize="12" fontWeight="700">
+        板载资源与接口一览（算 · 驱 · 感 · 接口各就各位）
+      </text>
+      <rect x="16" y="40" width="868" height="352" rx="16" fill="#f8fafc" stroke="#cbd5e1" />
+      <text x="32" y="62" fill="#94a3b8" fontSize="9">
+        控制板电源输入 6–24 V（按版本）· Type-C 供电 / 下载 · 额外 4 路 PWM
+      </text>
+
+      <rect x="36" y="74" width="250" height="118" rx="12" fill="#eff8ff" stroke="#93cdfb" />
+      <text x="52" y="98" fill="#1a5cae" fontSize="12" fontWeight="700">ESP32-S3 模组</text>
+      <text x="52" y="120" fill="#0f172a" fontSize="10">ESP32-S3-WROOM-1-N8R8</text>
+      <text x="52" y="140" fill="#475569" fontSize="10">LX7 双核 240 MHz</text>
+      <text x="52" y="160" fill="#475569" fontSize="10">8 MB Flash · Wi-Fi + BLE</text>
+      <text x="52" y="180" fill="#475569" fontSize="10">硬实时底层：控电机 / 舵机</text>
+
+      <rect x="36" y="204" width="250" height="168" rx="12" fill="#fffbeb" stroke="#fbbf24" />
+      <text x="52" y="228" fill="#b4690e" fontSize="12" fontWeight="700">四路电机驱动 M1–M4</text>
+      <text x="52" y="250" fill="#0f172a" fontSize="10">12V 版：2.2 A/路（峰值 3.6 A）</text>
+      <text x="52" y="270" fill="#0f172a" fontSize="10">24V 版：BTN8982，10 A/路</text>
+      <text x="52" y="292" fill="#475569" fontSize="10">4 路直流，或 2 路步进（12V 版）</text>
+      <text x="52" y="314" fill="#475569" fontSize="10">直流电机不分正负极，插反只倒转</text>
+      <text x="52" y="338" fill="#b4690e" fontSize="10" fontWeight="700">占空比 60–100 才转得动（实测）</text>
+      <text x="52" y="358" fill="#475569" fontSize="10">无编码器也要先 begin(90)</text>
+
+      <rect x="306" y="74" width="250" height="118" rx="12" fill="#f0fdfa" stroke="#5eead4" />
+      <text x="322" y="98" fill="#0f766e" fontSize="12" fontWeight="700">编码器接口 ×4</text>
+      <text x="322" y="120" fill="#0f172a" fontSize="10">M1–M4 各一路：VCC / GND / 信号</text>
+      <text x="322" y="140" fill="#475569" fontSize="10">每个编码器占 2 个引脚</text>
+      <text x="322" y="160" fill="#475569" fontSize="10">用满 4 路占正面 8 个引脚</text>
+      <text x="322" y="180" fill="#b4690e" fontSize="10" fontWeight="700">板背有标识，VCC/GND 反接会烧</text>
+
+      <rect x="306" y="204" width="250" height="118" rx="12" fill="#f0fdfa" stroke="#5eead4" />
+      <text x="322" y="228" fill="#0f766e" fontSize="12" fontWeight="700">I2C ×2</text>
+      <text x="322" y="250" fill="#0f172a" fontSize="10">OLED 显示屏接一路</text>
+      <text x="322" y="270" fill="#0f172a" fontSize="10">IMU 陀螺仪接一路</text>
+      <text x="322" y="292" fill="#475569" fontSize="10">均不占用其它 I2C 设备</text>
+      <text x="322" y="312" fill="#475569" fontSize="10">另带电压检测模块</text>
+
+      <rect x="576" y="74" width="292" height="118" rx="12" fill="#eff8ff" stroke="#93cdfb" />
+      <text x="592" y="98" fill="#1a5cae" fontSize="12" fontWeight="700">舵机 / PWM ×4</text>
+      <text x="592" y="120" fill="#0f172a" fontSize="10">官方示例引脚 5 · 6 · 7 · 15</text>
+      <text x="592" y="140" fill="#475569" fontSize="10">每排三列：IO / 5 V / GND</text>
+      <text x="592" y="160" fill="#475569" fontSize="10">官方示例支持 4 个舵机</text>
+      <text x="592" y="180" fill="#b4690e" fontSize="10" fontWeight="700">三色线插反则舵机不动</text>
+
+      <rect x="576" y="204" width="292" height="168" rx="12" fill="#f8fafc" stroke="#cbd5e1" />
+      <text x="592" y="228" fill="#0f172a" fontSize="12" fontWeight="700">显示 / 姿态 / 电压检测</text>
+      <text x="592" y="250" fill="#475569" fontSize="10">OLED 显示屏接口</text>
+      <text x="592" y="270" fill="#475569" fontSize="10">IMU 陀螺仪（惯性测量单元）接口</text>
+      <text x="592" y="290" fill="#475569" fontSize="10">电压检测模块</text>
+      <text x="592" y="314" fill="#0f172a" fontSize="10">Type-C 供电 / 下载</text>
+      <text x="592" y="334" fill="#475569" fontSize="10">固件控制台在 UART0 / 115200</text>
+      <text x="592" y="358" fill="#b4690e" fontSize="10" fontWeight="700">USB 只够逻辑，带不动电机</text>
+
+      <text x="32" y="416" fill="#475569" fontSize="10">
+        算：ESP32-S3 跑实时底层；驱：四路 H 桥带 M1–M4；感：编码器 / IMU / 电压；接口：I2C ×2、舵机 PWM ×4、OLED。
+      </text>
+      <text x="32" y="438" fill="#b4690e" fontSize="10">
+        供电：电机必须接 6–24 V 动力电池，逻辑由板载稳压单独取电——两条链路见下一页。
+      </text>
+    </svg>
+  </div>
+);
+
+/* 供电与控制链路：内联 SVG（离线单文件，不用 ASCII 字符画 / 线框图） */
+const PowerChain = () => (
+  <div className="surface p-4">
+    <svg
+      viewBox="0 0 900 440"
+      role="img"
+      aria-label="供电与控制两条链路：动力电池 6 到 24 伏直接喂四路 H 桥驱动，并经板载稳压 5 伏 3.3 伏给 ESP32-S3 核心；ESP32-S3 用 PWM 与方向信号控制驱动级，驱动级输出到电机 M1 到 M4；编码器与 IMU 反馈回 ESP32-S3；ESP32-S3 经 Wi-Fi 与 micro-ROS 上行树莓派 5 的 ROS 2，Pi 下发 cmd_vel 指令"
+      className="h-auto w-full"
+    >
+      <defs>
+        <marker id="pc-amp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="#b4690e" />
+        </marker>
+        <marker id="pc-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="#1a5cae" />
+        </marker>
+        <marker id="pc-teal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="#0d9488" />
+        </marker>
+      </defs>
+
+      <text x="16" y="24" fill="#0f172a" fontSize="12" fontWeight="700">
+        供电与控制两条链路：电池 → 驱动 → 电机；ESP32-S3 → PWM → 驱动，Wi-Fi 上行 Pi
+      </text>
+
+      <rect x="16" y="40" width="262" height="300" rx="14" fill="#fffbeb" stroke="#fbbf24" />
+      <text x="32" y="64" fill="#b4690e" fontSize="12" fontWeight="700">① 电源域</text>
+      <text x="32" y="88" fill="#0f172a" fontSize="11" fontWeight="700">动力电池 6–24 V</text>
+      <text x="32" y="106" fill="#475569" fontSize="10">电压按电机与版本匹配</text>
+      <text x="32" y="130" fill="#0f172a" fontSize="11" fontWeight="700">板载稳压 → 5 V / 3.3 V</text>
+      <text x="32" y="148" fill="#475569" fontSize="10">只给逻辑与传感器取电</text>
+      <text x="32" y="172" fill="#0f172a" fontSize="11" fontWeight="700">Type-C：供电 / 下载</text>
+      <text x="32" y="190" fill="#b4690e" fontSize="10" fontWeight="700">USB 供电带不动电机</text>
+      <text x="32" y="214" fill="#0f172a" fontSize="11" fontWeight="700">推荐动力型电池</text>
+      <text x="32" y="232" fill="#475569" fontSize="10">大放电电流，换向瞬间扛得住</text>
+      <text x="32" y="262" fill="#475569" fontSize="10">12V 版：6–12 V，最大 3 A</text>
+      <text x="32" y="282" fill="#475569" fontSize="10">24V 版：6–24 V，最大 10 A</text>
+      <text x="32" y="312" fill="#475569" fontSize="10">供电不足 → 系统工作不稳</text>
+
+      <rect x="316" y="40" width="232" height="300" rx="14" fill="#eff8ff" stroke="#93cdfb" />
+      <text x="332" y="64" fill="#1a5cae" fontSize="12" fontWeight="700">② 驱动与执行</text>
+      <text x="332" y="88" fill="#0f172a" fontSize="11" fontWeight="700">四路 H 桥驱动</text>
+      <text x="332" y="106" fill="#475569" fontSize="10">12V 版高性能芯片</text>
+      <text x="332" y="124" fill="#475569" fontSize="10">24V 版 BTN8982</text>
+      <text x="332" y="148" fill="#0f172a" fontSize="11" fontWeight="700">输出 M1–M4</text>
+      <text x="332" y="166" fill="#475569" fontSize="10">4 路直流或 2 路步进</text>
+      <text x="332" y="190" fill="#0f172a" fontSize="11" fontWeight="700">驱动信号</text>
+      <text x="332" y="208" fill="#475569" fontSize="10">PWM 调速 + 方向</text>
+      <text x="332" y="226" fill="#475569" fontSize="10">run / spin / brake</text>
+      <text x="332" y="250" fill="#b4690e" fontSize="10" fontWeight="700">占空比 60–100 才转</text>
+      <text x="332" y="270" fill="#475569" fontSize="10">40–50 低于静摩擦阈值不动</text>
+      <text x="332" y="294" fill="#475569" fontSize="10">及时 spin(0) 做安全保护</text>
+
+      <rect x="606" y="40" width="278" height="300" rx="14" fill="#f0fdfa" stroke="#5eead4" />
+      <text x="622" y="64" fill="#0f766e" fontSize="12" fontWeight="700">③ 控制与上级</text>
+      <text x="622" y="88" fill="#0f172a" fontSize="11" fontWeight="700">ESP32-S3 核心</text>
+      <text x="622" y="106" fill="#475569" fontSize="10">生成 PWM、读传感器</text>
+      <text x="622" y="130" fill="#0f172a" fontSize="11" fontWeight="700">传感器回读</text>
+      <text x="622" y="148" fill="#475569" fontSize="10">编码器 ×4 · IMU · 电压</text>
+      <text x="622" y="172" fill="#0f172a" fontSize="11" fontWeight="700">上行通路</text>
+      <text x="622" y="190" fill="#475569" fontSize="10">Wi-Fi → micro-ROS → Pi 5</text>
+      <text x="622" y="208" fill="#475569" fontSize="10">节点名 esp32_car</text>
+      <text x="622" y="232" fill="#0f172a" fontSize="11" fontWeight="700">指令通路</text>
+      <text x="622" y="250" fill="#475569" fontSize="10">Pi 发 /cmd_vel → 板子控车</text>
+      <text x="622" y="274" fill="#0f172a" fontSize="11" fontWeight="700">调试通路</text>
+      <text x="622" y="292" fill="#475569" fontSize="10">USB-C → UART0 / 115200</text>
+      <text x="622" y="316" fill="#475569" fontSize="10">库调用只在核心 1</text>
+
+      <line x1="278" y1="100" x2="312" y2="100" stroke="#b4690e" strokeWidth="2" markerEnd="url(#pc-amp)" />
+      <text x="297" y="92" textAnchor="middle" fill="#b4690e" fontSize="9">电机功率</text>
+      <line x1="548" y1="150" x2="602" y2="150" stroke="#0d9488" strokeWidth="2" markerEnd="url(#pc-teal)" />
+      <text x="575" y="142" textAnchor="middle" fill="#0f766e" fontSize="9">编码器 / IMU</text>
+      <line x1="606" y1="196" x2="552" y2="196" stroke="#1a5cae" strokeWidth="2" markerEnd="url(#pc-blue)" />
+      <text x="579" y="188" textAnchor="middle" fill="#1a5cae" fontSize="9">PWM / 方向</text>
+
+      <rect x="16" y="360" width="868" height="66" rx="12" fill="#f8fafc" stroke="#cbd5e1" />
+      <text x="32" y="384" fill="#0f172a" fontSize="10">供电原则：电池直接喂驱动级（大电流），逻辑由板载稳压单独取电；USB 供电只能跑逻辑、不能带电机。</text>
+      <text x="32" y="404" fill="#475569" fontSize="10">
+        安全提醒：加「N ms 无指令就 spin(0)」保护；长时间跑用动力型电池，避免换向压降把逻辑拖复位。
+      </text>
+    </svg>
+  </div>
+);
+
 const Cover = () => (
   <div className="mx-auto flex w-full max-w-[80rem] flex-1 flex-col justify-center">
     <span className="mb-4 inline-flex w-fit items-center rounded-full border border-brand-300 bg-paper px-3 py-1 text-[0.72rem] font-semibold tracking-[0.12em] text-brand-700 md:mb-6 md:px-4 md:py-1.5 md:text-[0.82rem]">
@@ -65,36 +217,90 @@ const Cover = () => (
       <span className="text-brand-600">奇果派 S3 机器人控制板</span>
     </h1>
     <p className="mt-5 max-w-4xl border-l-4 border-brand-500 pl-4 text-[1rem] leading-relaxed text-slateink md:mt-8 md:pl-5 md:text-[1.15rem]">
-      一块 ESP32-S3 + 四路电机驱动的集成板：<b>Pi 跑 ROS 2</b> 做视觉与规划，
-      <b>ESP32-S3 做实时底层</b>，直接驱动电机、舵机、编码器与 IMU。
+      结论先行：这块板就是「<b>Pi 算 + MCU 控</b>」里的执行层——树莓派 5 跑 ROS 2 做视觉与规划，
+      ESP32-S3（乐鑫微控制器，Microcontroller Unit）做硬实时底层，直接驱动电机、舵机、编码器与 IMU。
+    </p>
+    <p className="mt-4 text-[0.86rem] text-muted md:text-[0.92rem]">
+      每页默认只留要点；点「展开：…」可看完整步骤与命令，完整资料见 <code>docs/ESP32-S3电机驱动板资料.md</code>。
     </p>
   </div>
 );
 
-const Position = () => (
-  <Frame kicker="概览" floor="01" title="在「Pi 算 + MCU 控」里的位置">
+const Conclusion = () => (
+  <Frame
+    kicker="概览"
+    floor="01"
+    title="Pi 算 + MCU 控：这块板是实时执行层，不是主控"
+    lead="定位先说清：ESP32-S3 负责硬实时与底层 I/O，树莓派 5 负责视觉与规划；板子经 micro-ROS 接入 ROS 2 图，成为一等节点。"
+  >
     <Grid cols={2}>
       <Card title="它是什么" icon={CircuitBoard}>
-        ESP32-S3-WROOM-1-N8R8 模组 + 四路电机驱动 + 传感器/扩展接口的集成驱动板，官方定位"智能小车的完美解决方案"。
+        ESP32-S3-WROOM-1-N8R8 模组 + 四路电机驱动 + 编码器 / I2C / 舵机等接口的集成板，官方定位「智能小车解决方案」。
       </Card>
-      <Card title="算控分离" icon={Layers}>
-        Pi 5 跑 ROS 2 做视觉/规划；ESP32-S3 跑硬实时底层，直接驱动电机、舵机、编码器、IMU。
+      <Card title="为什么让 MCU 控" icon={Zap}>
+        电机闭环、舵机时序要硬实时；Linux 调度有毫秒抖动，放 MCU 上最稳。
       </Card>
-      <Card title="什么时候用它" icon={Zap}>
-        需要硬实时闭环（PID、舵机时序）、大量 GPIO/PWM/CAN，或高频采集不想占用主控 CPU。
+      <Card title="怎么接进 ROS 2" icon={Network}>
+        板子走 micro-ROS 进 ROS 2 图：Pi 发 <code>/cmd_vel</code>，板子发 <code>/esp32/heartbeat</code>。
       </Card>
-      <Card title="怎么接进来" icon={Network}>
-        MCU 当 ROS 2 的一等节点，走 micro-ROS 进入 ROS 2 图——官方有双向通讯示例。
+      <Card title="不要搞反边" icon={AlertTriangle} tone="warn">
+        别指望它跑视觉或规划——8 MB Flash、无操作系统，算力与内存都不够；视觉留给 Pi。
       </Card>
     </Grid>
     <div className="mt-6">
-      <Quote>本项目结构 = 树莓派 5（算）+ ESP32-S3 电机驱动板（控）。</Quote>
+      <Quote>本项目结构 = 树莓派 5（算）+ ESP32-S3 电机驱动板（控），两端用 Wi-Fi 上的 micro-ROS 打通。</Quote>
+    </div>
+  </Frame>
+);
+
+const BoardMap = () => (
+  <Frame
+    kicker="硬件"
+    floor="02"
+    title="板载资源一次看全：算、驱、感、接口各就各位"
+    lead="先把资源认全：算在 ESP32-S3 模组，驱在四路 H 桥，感在编码器与 IMU，接口给 I2C、舵机 PWM 与 OLED。"
+    wide
+  >
+    <div className="space-y-4">
+      <BoardResources />
+      <Quote>引脚与资源明细见下方折叠（与 docs 同源）：舵机 5 · 6 · 7 · 15，编码器每路占 2 个引脚。</Quote>
+      <Steps title="展开：板载资源与接口明细（引脚 / 电流 / 供电）">
+        <DataTable
+          head={["资源", "规格", "备注"]}
+          rows={[
+            ["主控模组", "ESP32-S3-WROOM-1-N8R8：LX7 双核 240 MHz，8 MB Flash", "集成 Wi-Fi + 蓝牙（BLE）"],
+            ["电机驱动", "4 路直流；12V 版 2.2 A/路（峰值 3.6 A），24V 版 BTN8982 10 A/路", "12V 版 2 路可改步进"],
+            ["编码器接口", "4 路，M1–M4 各一路 VCC / GND / 信号", "每个编码器占 2 个引脚；用满 4 路占正面 8 个引脚"],
+            ["舵机 / PWM", "额外 4 路 PWM，官方示例引脚 5 · 6 · 7 · 15", "每排三列 IO / 5 V / GND；插反则舵机不动"],
+            ["I2C", "2 路，接 OLED 显示屏与 IMU 陀螺仪", "不占用其它 I2C 设备"],
+            ["其它", "电压检测模块、Type-C 供电 / 下载", "控制台在 UART0 / 115200"],
+            ["供电", "12V 版 6–12 V 最大 3 A；24V 版 6–24 V 最大 10 A", "务必用动力型电池"],
+          ]}
+        />
+        <Pre>{`# 引脚速记（官方示例口径）
+舵机 S1–S4   ->  5 / 6 / 7 / 15（每排 IO、5V、GND）
+编码器 M1–M4 ->  电源线插蓝色接口，编码器数据线插白色接口
+通道号       ->  M1=0 M2=1 M3=2 M4=3（EMotionPI.h）；getMotor(4) 越界
+
+# 电压量程
+12V 版 EMO_Lite  4.5–13.5 V（推荐输入 6–12 V / 3 A）
+24V 版 EM_MAX    6–24 V（推荐输入匹配电机 / 10 A），芯片最高 30 A 但长期发热大、不建议`}</Pre>
+        <p className="text-[0.84rem] text-muted">
+          完整参数与原理图见 <code>docs/ESP32-S3电机驱动板资料.md</code> 第一节；原理图 PDF 随 deck 分发。
+        </p>
+      </Steps>
     </div>
   </Frame>
 );
 
 const Versions = () => (
-  <Frame kicker="硬件" floor="02" title="两个版本：12V 与 24V" wide>
+  <Frame
+    kicker="硬件"
+    floor="03"
+    title="先按电机电压选版本：12V 版通用，24V 版为大电流"
+    lead="两版模组相同，差别在驱动芯片与电流能力；版本跟着电机电压走，别先看价格。"
+    wide
+  >
     <DataTable
       head={["项", "12V 版（EMO_Lite）", "24V 版（EM_MAX）"]}
       rows={[
@@ -111,46 +317,84 @@ const Versions = () => (
       ]}
     />
     <div className="mt-5">
-      <Quote>原理图已存本地：<A href="./files/SCH_EMO_Lite.pdf">EMO_Lite.pdf</A> / <A href="./files/SCH_EMO_MAX_3-V1.0_USE.pdf">EM_MAX.pdf</A>（随 deck 分发）。</Quote>
+      <Quote>
+        原理图已存本地：<A href="./files/SCH_EMO_Lite.pdf">EMO_Lite.pdf</A> /{" "}
+        <A href="./files/SCH_EMO_MAX_3-V1.0_USE.pdf">EM_MAX.pdf</A>（随 deck 分发）。
+      </Quote>
     </div>
   </Frame>
 );
 
-const Specs = () => (
-  <Frame kicker="硬件" floor="03" title="共同规格与接口" wide>
-    <Grid cols={3}>
-      <Stat value="240" unit="MHz" label="32 位 LX7 双核，集成 Wi-Fi + BLE" />
-      <Stat value="8" unit="MB" label="N8R8 模组 Flash" tone="brand" />
-      <Stat value="4" unit="路" label="额外 PWM，官方示例支持 4 个舵机" tone="good" />
-    </Grid>
-    <div className="mt-5">
-      <Grid cols={2}>
-        <Card title="I2C ×2 / 编码器 ×4" icon={Cable}>
-          集成两个 I2C 与四个编码器电机接口，且不占用其它 I2C 设备。
-        </Card>
-        <Card title="显示 / 姿态 / 电压" icon={Boxes}>
-          OLED 显示屏接口、IMU 陀螺仪接口、电压检测模块一应俱全。
-        </Card>
-        <Card title="三种遥控与联网" icon={Wifi}>
-          支持蓝牙手柄、PS2 手柄与 MQTT 物联网远程控制。
-        </Card>
-        <Card title="供电与下载" icon={Usb}>
-          Type-C 供电/下载；推荐动力型电池，供电不足系统会不稳。
-        </Card>
+const PowerChainPage = () => (
+  <Frame
+    kicker="硬件"
+    floor="04"
+    title="供电与控制分两条：电机走电池，逻辑走稳压"
+    lead="认清两条链路再接线：电池功率直接进驱动级，逻辑由板载稳压单独取电；控制信号从 ESP32-S3 下到驱动级。"
+    wide
+  >
+    <div className="space-y-4">
+      <PowerChain />
+      <Grid cols={3}>
+        <Stat value="6–24" unit="V" label="动力电池供电范围（按版本匹配电机电压）" />
+        <Stat value="4" unit="路" label="H 桥输出 M1–M4，4 路直流或 2 路步进" tone="brand" />
+        <Stat value="60" unit="起" label="占空比阈值：低于 60 因静摩擦不转（实测）" tone="good" />
       </Grid>
     </div>
-    <div className="mt-4">
-      <Figure
-        src={boardFront}
-        alt="奇果派 S3 控制板接口标注"
-        caption="官方接口标注：ESP32-S3 控制板（图源：奇果派工坊）"
+  </Frame>
+);
+
+const PowerDecision = () => (
+  <Frame
+    kicker="硬件"
+    floor="05"
+    title="供电方案怎么选：单电池直驱省事，稳压分路更稳"
+    lead="对比对象：一条动力电池进板、逻辑由板载稳压取电（单电源直驱），还是电机与逻辑分开供电（稳压分路）。"
+    wide
+  >
+    <div className="space-y-4">
+      <DataTable
+        head={["维度", "电池直驱（单电源）", "稳压分路（电机 / 逻辑分开）"]}
+        rows={[
+          ["接线复杂度", "一条电池线进板，最简", "两路输入，需分线或额外稳压模块"],
+          ["电流能力", "电机电源直连驱动级，不受稳压器限流", "电机独立取电，逻辑不被电机压降拖垮"],
+          ["干扰与稳定性", "换向噪声与压降会窜到逻辑侧", "逻辑独立稳压，抗扰与复位更稳"],
+          [
+            "电压匹配",
+            "电池电压须落在板与电机量程内",
+            "可分别匹配逻辑 5 V / 3.3 V 与电机电压",
+          ],
+          ["适用场景", "教学、台架快速验证", "长时间跑、多舵机或大电流电机"],
+        ]}
       />
+      <Quote>
+        辩证一问：什么情况下反而该选另一边？——只接一两个直流电机、只做台架验证，单电源直驱最省事；
+        一旦要长时间跑、带舵机或大电流电机，就该怀疑逻辑被电机拖崩，改为稳压分路。
+      </Quote>
+      <Steps title="展开：供电方案的判断依据与官方口径">
+        <Pre>{`# 官方明确：供电不足会使系统工作不稳定，推荐【动力型】电池（大放电电流）
+# 12V 版  推荐输入 6–12 V，最大 3 A
+# 24V 版  推荐输入 6–24 V（匹配电机），最大 10 A
+# 台架实测：USB 供电能跑逻辑、能烧录，但带电机不可靠——电机功率必须走 6–24 V 动力电池
+
+# 单电源直驱：电池 -> 板载稳压 -> 5V/3.3V 逻辑；电池 -> 驱动级
+# 稳压分路：电机电源独立，逻辑经单独稳压模块；抗换向压降与噪声
+# 判断：长时间跑 / 多舵机 / 大电流 -> 分路；快速验证 -> 直驱`}</Pre>
+        <p className="text-[0.84rem] text-muted">
+          对比表与完整口径已同步 <code>docs/ESP32-S3电机驱动板资料.md</code> 第二节。
+        </p>
+      </Steps>
     </div>
   </Frame>
 );
 
 const Wiring = () => (
-  <Frame kicker="硬件" floor="04" title="接线要点">
+  <Frame
+    kicker="硬件"
+    floor="06"
+    title="接线认准接口：电机不分正负，编码器反接会烧"
+    lead="四类接线各自记住一条：直流电机只看转向、编码器看标识、舵机看颜色顺序、供电看电池。"
+  >
     <Grid cols={2}>
       <Card title="普通有刷直流电机" icon={Wrench}>
         电源线插蓝色电机接口，不分正负极；测试发现转向反了，就对调电机正负极。
@@ -159,10 +403,10 @@ const Wiring = () => (
         电源线插蓝色接口，编码器数据线插对应的白色接口。
       </Card>
       <Card title="第三方编码器" icon={AlertTriangle} tone="warn">
-        板背有引脚标识，VCC/GND 接反会短路烧件；每个编码器占 2 引脚，用满 4 路会占正面 8 个引脚。
+        板背有引脚标识，VCC / GND 接反会短路烧件；每个编码器占 2 引脚，用满 4 路占正面 8 个引脚。
       </Card>
       <Card title="舵机" icon={Radio}>
-        官方示例对应引脚 5 / 6 / 7 / 15，每排 IO / 5V / GND，插反则舵机不动。
+        官方示例对应引脚 5 / 6 / 7 / 15，每排 IO / 5 V / GND；三色线插反则舵机不动。
       </Card>
     </Grid>
     <div className="mt-6">
@@ -170,7 +414,7 @@ const Wiring = () => (
     </div>
     <div className="mt-4">
       <Grid cols={2}>
-        <Figure src={wiringPower} alt="供电接线" caption="供电接线：DC 5.5-2.1 接口或电池接口（6–12V）" />
+        <Figure src={wiringPower} alt="供电接线" caption="供电接线：DC 5.5-2.1 接口或电池接口（6–12 V）" />
         <Figure src={wiringEncoder} alt="编码器接口引脚" caption="编码器接口：M1–M4 的 VCC / GND / 信号" />
       </Grid>
     </div>
@@ -178,18 +422,24 @@ const Wiring = () => (
 );
 
 const DevPaths = () => (
-  <Frame kicker="开发" floor="05" title="四条开发路径" wide>
+  <Frame
+    kicker="开发"
+    floor="07"
+    title="四条开发路径：只想看效果就先烧录，不写代码"
+    lead="同一块板四条路，按上手难度排序；入门与进阶源码可以并存，不冲突。"
+    wide
+  >
     <DataTable
       head={["路径", "适合", "备注"]}
       rows={[
         ["程序烧录工具", "不写代码（仅 Windows）", "刷官方示例；集成板选 ESP32-S3 板型"],
         ["Arduino IDE", "C++ 入门", "导入 QGP_EVMotor 库 + 官方示例"],
         ["Mixly 米思奇", "图形化编程", "已配插件环境，适合教学"],
-        ["VSCode + PlatformIO", "进阶", "出厂/进阶源码，需找客服索取"],
+        ["VSCode + PlatformIO", "进阶", "出厂 / 进阶源码，需找客服索取"],
       ]}
     />
     <div className="mt-5">
-      <Quote>同一块板，按需要选一条即可；入门与进阶源码可并存。</Quote>
+      <Quote>路径只影响「怎么写代码」，不影响接线与供电——前两页的硬件结论与选哪条路无关。</Quote>
     </div>
     <div className="mt-4">
       <Figure
@@ -202,12 +452,18 @@ const DevPaths = () => (
 );
 
 const ArduinoFlow = () => (
-  <Frame kicker="开发" floor="06" title="Arduino IDE：五步烧录" wide>
+  <Frame
+    kicker="开发"
+    floor="08"
+    title="Arduino IDE 五步能跑起示例：装库 → 开发板 → 上传"
+    lead="官方提供 ESP32 示例，覆盖蓝牙手柄、PS2 手柄与直流电机、舵机、编码器、电压、陀螺仪、OLED 的用法。"
+    wide
+  >
     <Focus
       no="05"
       title="从装环境到上传"
       tag="Arduino IDE"
-      goal="官方提供 ESP32 示例代码，覆盖蓝牙手柄、PS2 手柄，以及直流电机、舵机、编码器、电压、陀螺仪、OLED 等设备的用法。"
+      goal="五步走完就能跑通官方示例；示例先另存再改，避免改动污染库目录。"
       points={[
         "装好 Arduino IDE（新手可看官网《安装三板斧》）。",
         "下载库 QGP_EVMotor.zip，用「项目 → 导入库 → 添加 .ZIP 库」导入。",
@@ -268,7 +524,13 @@ void loop() {
 );
 
 const ArduinoApi = () => (
-  <Frame kicker="开发" floor="07" title="Arduino 常用 API" wide>
+  <Frame
+    kicker="开发"
+    floor="09"
+    title="常用 API 就这几组，但无编码器电机也要先 begin(90)"
+    lead="直流电机、舵机、编码器电机各有几个方法；真机实测最关键的初始化不能省——它同时负责打开电机驱动输出。"
+    wide
+  >
     <Code>
       EMotionPI emo;
       <br />
@@ -315,7 +577,8 @@ emo.getMotor(M1)->spin(±pwm);
 # 安全：加「N ms 无指令就 spin(0)」保护
 # 差速映射：左 = x - z，右 = x + z（z>0 左转，本车实测方向正确）`}</Pre>
         <p className="text-[0.84rem] text-muted">
-          真机台架实测（2026-09）结论；完整表格见 <code>docs/ESP32-S3电机驱动板资料.md</code> 第三节第 5 小节，可烧录工程见 <code>教学demo/ESP32-S3-microROS/</code>。
+          真机台架实测（2026-09）结论；完整表格见 <code>docs/ESP32-S3电机驱动板资料.md</code> 第三节第 5 小节，可烧录工程见{" "}
+          <code>教学demo/ESP32-S3-microROS/</code>。
         </p>
       </Steps>
     </div>
@@ -323,7 +586,13 @@ emo.getMotor(M1)->spin(±pwm);
 );
 
 const Mixly = () => (
-  <Frame kicker="开发" floor="08" title="Mixly 米思奇：图形化与两个坑" wide>
+  <Frame
+    kicker="开发"
+    floor="10"
+    title="Mixly 图形化适合教学，记住导入与配对两个坑"
+    lead="插件压缩包不用解压、直接本地导入；蓝牙手柄要按对按键组合才能配对。"
+    wide
+  >
     <Grid cols={2}>
       <Card title="已配插件环境" icon={Download}>
         Windows 下载官方配好插件的 Mixly 3.0；Mac 去 Mixly 官网装最新版。
@@ -369,7 +638,13 @@ const Mixly = () => (
 );
 
 const Controllers = () => (
-  <Frame kicker="遥控与联网" floor="09" title="两种手柄" wide>
+  <Frame
+    kicker="遥控联网"
+    floor="11"
+    title="两种手柄都能控车，按要不要 LCD 与调速习惯选"
+    lead="蓝牙手柄功能键多、有麦轮模式；单手 RC 有 LCD，能直接看信号与板电压。"
+    wide
+  >
     <DataTable
       head={["", "蓝牙遥控器", "单手 RC 遥控器"]}
       rows={[
@@ -392,7 +667,12 @@ const Controllers = () => (
 );
 
 const Iot = () => (
-  <Frame kicker="遥控与联网" floor="10" title="物联网远程控制">
+  <Frame
+    kicker="遥控联网"
+    floor="12"
+    title="远程控制：局域网用 Socket，跨网用 MQTT"
+    lead="先判定控制端和板子是否在同一局域网，再挑协议；两者都靠一个「唯一通讯标识」配对。"
+  >
     <Grid cols={2}>
       <Card title="协议" icon={Cloud}>
         局域网内用 <b>Socket</b>，跨网用 <b>MQTT</b>。
@@ -419,11 +699,6 @@ const Iot = () => (
           <li>带 4G 模块：连 <code>KiKuPi</code> 热点（密码 1234567890），插流量卡跨网遥控。</li>
           <li>不带 4G：长按 boot 待 LED 变红，连 <code>RobotS3</code> 热点，浏览器开 192.168.123.1 配网。</li>
         </ol>
-        <Pre>{`10 字节数据包（可自写控制端）：
-[0] 类型 1=数据 2=心跳    [1] 辅助
-[2] 左摇杆Y   [3] 左摇杆X   [4][5] 右摇杆
-[6..9] 按钮位图（4 字节 = 32 位）
-摇杆默认 127；上/左到 0，下/右到 255`}</Pre>
       </Steps>
     </div>
     <div className="mt-4">
@@ -437,7 +712,13 @@ const Iot = () => (
 );
 
 const Packet = () => (
-  <Frame kicker="遥控与联网" floor="11" title="10 字节数据包（可自写控制端）" wide>
+  <Frame
+    kicker="遥控联网"
+    floor="13"
+    title="10 字节数据包，官方公开了格式，自己也能写控制端"
+    lead="这个长度固定的包是遥控器到板子的二进制数据，不是串口打印的文本行——两者别混。"
+    wide
+  >
     <Focus
       no="10"
       title="数据包结构"
@@ -469,7 +750,13 @@ const Packet = () => (
 );
 
 const Ros2 = () => (
-  <Frame kicker="ROS 2 对接" floor="12" title="micro-ROS：Pi 与 ESP32-S3 双向通讯" wide>
+  <Frame
+    kicker="对接调试"
+    floor="14"
+    title="micro-ROS 让板子成为 ROS 2 里的普通节点"
+    lead="官方示例做了双向通讯：Pi 键盘发控制量控车，板子定时发心跳给 Pi 打印——通道是 Agent 的 UDP 8888。"
+    wide
+  >
     <Focus
       no="12"
       title="官方示例做了什么"
@@ -523,36 +810,51 @@ ros2 run teleop_twist_keyboard teleop_twist_keyboard
 # 4) 看 ESP32 心跳
 python3 heartbeat_listener.py
 ros2 topic echo /esp32/heartbeat`}</Pre>
-        <p className="text-[0.84rem] text-muted">本项目的 Pi 是 Docker 版 ROS 2，复用要点见下一节与 docs。</p>
+        <p className="text-[0.84rem] text-muted">本项目的 Pi 是 Docker 版 ROS 2，复用要点见下一页与 docs 第六节。</p>
       </Steps>
     </div>
   </Frame>
 );
 
 const Integration = () => (
-  <Frame kicker="ROS 2 对接" floor="13" title="在本项目里怎么落地" wide>
+  <Frame
+    kicker="对接调试"
+    floor="15"
+    title="本项目落地：Agent 进容器，客户端别设 ROS_DOMAIN_ID"
+    lead="仓库的 Pi 是 Docker 版 ROS 2，不是示例里的 Ubuntu 原生安装；两处口径必须按本项目改。"
+    wide
+  >
     <Grid cols={2}>
-      <Card title="本项目的 ROS 2 是 Docker 版" icon={Boxes}>
-        仓库的 Pi 是 Debian 13 + Docker `ros:jazzy-ros-base`，不是示例里的 Ubuntu 原生安装。
+      <Card title="本项目 ROS 2 是 Docker 版" icon={Boxes}>
+        仓库的 Pi 是 Debian 13 + Docker <code>ros:jazzy-ros-base</code>，不是 Ubuntu 原生安装。
       </Card>
       <Card title="Agent 跑在容器里" icon={Terminal}>
-        在 ROS 2 容器内安装并运行 micro-ROS Agent。
+        在 ROS 2 容器内安装并运行 micro-ROS Agent，复用已建好的 <code>~/microros_ws</code>。
       </Card>
       <Card title="网络要打通" icon={Network}>
-        容器用 `--network host`，让 Agent 的 UDP 8888 直接落在宿主网络，ESP32 才找得到它。
+        容器用 <code>--network host</code>，让 Agent 的 UDP 8888 直接落在宿主网络，板子才找得到它。
       </Card>
-      <Card title="发现要配置" icon={Layers}>
-        跨机/跨容器统一 `ROS_DOMAIN_ID`，并处理 DDS 发现（参考 ROS2消息通路验证）。
+      <Card title="域口径的坑" icon={AlertTriangle} tone="warn">
+        Agent 固定跑在默认 DDS 域 0，不认 <code>ROS_DOMAIN_ID</code>；Pi 侧客户端设成 42 就连心跳都看不到。
       </Card>
     </Grid>
     <div className="mt-6">
-      <Quote>是否引入 micro-ROS 的决策条件，见 docs/ROS2与micro-ROS选型.md 第六节。</Quote>
+      <Quote>
+        是否引入 micro-ROS 的决策条件见 <code>docs/ROS2与micro-ROS选型.md</code> 第六节；板子固件与 Agent 通路见{" "}
+        <code>教学demo/ESP32-S3-microROS/</code> 与 deck「ESP32-S3接入micro-ROS」。
+      </Quote>
     </div>
   </Frame>
 );
 
 const SerialDebug = () => (
-  <Frame kicker="调试与实测" floor="14" title="串口调试与波形监控" wide>
+  <Frame
+    kicker="对接调试"
+    floor="16"
+    title="串口认准 USB-C 口：另一个 USB 口看不到任何输出"
+    lead="板上两个 USB 口不一样：USB-C 走 CH343 转串口、是烧录与控制台口；原生 USB 口固件不打印，接它只会让板子复位一次。"
+    wide
+  >
     <DataTable
       head={["USB 口", "系统识别", "能不能看到输出"]}
       rows={[
@@ -599,41 +901,29 @@ python tools/serial_monitor/serial_monitor.py --demo`}</Pre>
 );
 
 const Downloads = () => (
-  <Frame kicker="收尾" floor="15" title="下载入口与文档" wide>
+  <Frame kicker="收尾" floor="17" title="下载入口：原理图与库随 deck 分发，离线可取" wide>
     <DataTable
       head={["资源", "入口"]}
       rows={[
-        [
-          "12V 原理图 EMO_Lite",
-          <A href="./files/SCH_EMO_Lite.pdf">SCH_EMO_Lite.pdf（本地）</A>,
-        ],
-        [
-          "24V 原理图 EM_MAX",
-          <A href="./files/SCH_EMO_MAX_3-V1.0_USE.pdf">SCH_EMO_MAX_3-V1.0_USE.pdf（本地）</A>,
-        ],
-        [
-          "Arduino 库 QGP_EVMotor.zip",
-          <A href="./files/QGP_EVMotor.zip">QGP_EVMotor.zip（本地）</A>,
-        ],
-        [
-          "Windows 程序烧录工具",
-          <A href="https://doc.7gp.cn/download/FlashingTool.zip">FlashingTool.zip（官网直链）</A>,
-        ],
-        ["物联网网页控制端", <A href="http://rc.7gp.cn/">rc.7gp.cn</A>],
+        ["12V 原理图 EMO_Lite", <A href="./files/SCH_EMO_Lite.pdf">SCH_EMO_Lite.pdf（本地）</A>],
+        ["24V 原理图 EM_MAX", <A href="./files/SCH_EMO_MAX_3-V1.0_USE.pdf">SCH_EMO_MAX_3-V1.0_USE.pdf（本地）</A>],
+        ["Arduino 库 QGP_EVMotor.zip", <A href="./files/QGP_EVMotor.zip">QGP_EVMotor.zip（本地）</A>],
         [
           "串口波形监控工具（本仓库自写代码）",
           <span>
-            <A href="./files/serial_monitor.zip">serial_monitor.zip（本地下载）</A>
+            <A href="./files/serial_monitor.zip">serial_monitor.zip（本地）</A>
             <br />
             <code className="text-[0.8rem] text-muted">tools/serial_monitor/</code>
           </span>,
         ],
+        ["Windows 程序烧录工具", <code className="text-[0.84rem]">doc.7gp.cn/download/FlashingTool.zip</code>],
+        ["物联网网页控制端", <code className="text-[0.84rem]">rc.7gp.cn</code>],
         ["完整资料整理", "docs/ESP32-S3电机驱动板资料.md"],
       ]}
     />
     <div className="mt-5">
       <Quote>
-        原理图与 Arduino 库已放本地 <code>files/</code>，随 deck 一起分发即可离线打开；烧录工具与 Mixly/ROS 2 源码走官网/百度网盘，见资料文档第八节。本仓库自写的代码（脚本/工具）同样放 <code>files/</code> 供下载，源文件改动后同步刷新该副本。
+        原理图、Arduino 库与本仓库自写工具已放本地 <code>files/</code>，随 deck 一起分发即可离线打开；源文件改动后同步刷新该副本。
       </Quote>
     </div>
     <div className="mt-4">
@@ -668,23 +958,69 @@ Mixly     https://www.7gp.cn/archives/1410   物联网  https://www.7gp.cn/archi
   </Frame>
 );
 
+const Action = () => (
+  <Frame
+    kicker="收尾"
+    floor="18"
+    title="照清单做：先接动力电池，再烧录，最后接 ROS 2"
+    lead="顺序不能反：先把供电与接线做对，再让示例跑起来，最后才谈 ROS 2 对接。"
+    wide
+  >
+    <div className="space-y-5">
+      <Grid cols={3}>
+        <Card title="第一步：供电与接线" icon={Battery} tone="warn">
+          电机接 6–24 V 动力电池（按版本）；编码器看标识，VCC/GND 别接反。
+        </Card>
+        <Card title="第二步：烧录跑通" icon={Rocket} tone="good">
+          用烧录工具或 Arduino IDE 刷官方示例，先确认电机能被遥控器带动。
+        </Card>
+        <Card title="第三步：接 ROS 2" icon={ArrowLeftRight}>
+          板子走 micro-ROS，Pi 侧 Agent 进容器、网络用 host，域口径保持默认。
+        </Card>
+      </Grid>
+      <Quote>判断顺序：电机不动先查供电与 <code>begin(90)</code>，别一上来就怀疑 ROS 2。</Quote>
+      <Steps title="展开：上机清单（2026-09 实测）">
+        <Pre>{`# 1) 供电（12V 版 6–12V / 3A，24V 版 6–24V / 10A），必须动力型电池
+# 2) 接线：电机插蓝色接口（不分正负）；编码器插白色接口、VCC/GND 看板背标识
+# 3) 烧录：烧录工具选 ESP32-S3 板型，或 Arduino IDE 选 ESP32S3 Dev Module 上传
+# 4) 驱动库初始化（无编码器也必须）：
+#    emo.begin(); emo.getEncoderMotor(M1)->begin(90);
+#    再用 emo.getMotor(M1)->spin(±pwm)，pwm 取 60~100 才转得动
+# 5) 串口：USB-C 口（CH343）看 UART0 / 115200 输出；原生 USB 口无输出
+# 6) ROS 2：容器内跑 micro-ROS Agent udp4 --port 8888（--network host）
+#    Pi 侧客户端不要 export ROS_DOMAIN_ID=42（Agent 固定域 0）`}</Pre>
+      </Steps>
+      <Card title="下载与延伸" icon={Download}>
+        下载：
+        <A href="./files/QGP_EVMotor.zip">QGP_EVMotor.zip</A> 与{" "}
+        <A href="./files/serial_monitor.zip">serial_monitor.zip</A>（同样可离线取{" "}
+        <A href="./files/SCH_EMO_Lite.pdf">原理图 PDF</A>）；文字版见 <code>docs/ESP32-S3电机驱动板资料.md</code>，固件与通路见{" "}
+        <code>教学demo/ESP32-S3-microROS/</code>。
+      </Card>
+    </div>
+  </Frame>
+);
+
 export const slides = [
   { nav: "封面", group: "概览", el: <Cover /> },
-  { nav: "板子的位置", group: "概览", el: <Position /> },
+  { nav: "结论先行", group: "概览", el: <Conclusion /> },
+  { nav: "板载资源分布", group: "硬件", el: <BoardMap /> },
   { nav: "12V / 24V 版本", group: "硬件", el: <Versions /> },
-  { nav: "共同规格与接口", group: "硬件", el: <Specs /> },
+  { nav: "供电与控制链路", group: "硬件", el: <PowerChainPage /> },
+  { nav: "对比决策：供电方案", group: "硬件", el: <PowerDecision /> },
   { nav: "接线要点", group: "硬件", el: <Wiring /> },
   { nav: "四条开发路径", group: "开发", el: <DevPaths /> },
   { nav: "Arduino 烧录", group: "开发", el: <ArduinoFlow /> },
-  { nav: "Arduino API", group: "开发", el: <ArduinoApi /> },
+  { nav: "Arduino 常用 API", group: "开发", el: <ArduinoApi /> },
   { nav: "Mixly 与避坑", group: "开发", el: <Mixly /> },
-  { nav: "两种手柄", group: "遥控与联网", el: <Controllers /> },
-  { nav: "物联网远程控制", group: "遥控与联网", el: <Iot /> },
-  { nav: "数据包格式", group: "遥控与联网", el: <Packet /> },
-  { nav: "micro-ROS 通讯", group: "ROS 2 对接", el: <Ros2 /> },
-  { nav: "本项目落地", group: "ROS 2 对接", el: <Integration /> },
-  { nav: "串口调试与波形监控", group: "调试与实测", el: <SerialDebug /> },
+  { nav: "两种手柄", group: "遥控联网", el: <Controllers /> },
+  { nav: "物联网远程控制", group: "遥控联网", el: <Iot /> },
+  { nav: "数据包格式", group: "遥控联网", el: <Packet /> },
+  { nav: "micro-ROS 通讯", group: "对接调试", el: <Ros2 /> },
+  { nav: "本项目落地", group: "对接调试", el: <Integration /> },
+  { nav: "串口调试与波形监控", group: "对接调试", el: <SerialDebug /> },
   { nav: "下载与文档", group: "收尾", el: <Downloads /> },
+  { nav: "行动清单", group: "收尾", el: <Action /> },
 ];
 
 export default slides;
