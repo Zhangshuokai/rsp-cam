@@ -11,7 +11,7 @@
 - 归档去向：培训资料/规则解读 → `培训/`；可运行最小示例 → `教学demo/<名称>/`；技术文档 → `docs/`；算法 → `算法/`；权重与产物 → `模型/`；训练脚本 → `训练/`；数据集 → `数据/`（内容不入库）；脚本工具 → `tools/`；线下教学 deck → `教学webppt/<主题>/`。
 - **本地编写的代码必须给出下载地址**（deck 收尾下载页、`docs/`、最终答复），不能只留仓库路径。离线首选：把文件/zip 放进对应 `教学webppt/<主题>/files/`，deck 里用相对链接 `./files/…`——**下载目标必须在成品目录内可达，不要指向 deck 之外的仓库路径**（否则静态页取不到，本仓库踩过）。在线地址（`origin` = `https://github.com/Zhangshuokai/rsp-cam`）：`…/blob/main/<路径>`，raw 直链 `…/raw.githubusercontent.com/…`（直连不稳、需重试）；**写 GitHub 地址前先确认文件已 push 到 `origin/main`**，未推送是 404，只能给仓库内路径或 `files/` 副本。`files/` 副本与源文件改动后同步刷新，别留两版。
 - **归档/新增内容后自动更新 webppt**：用 `web-slide-deck` 技能生成或更新对应主题，产物放 `教学webppt/<主题>/`，并**执行构建刷新成品**（见下节），不再逐次询问。新 deck 还要同步 `教学webppt/index.html` 目录首页、`教学webppt/README.md`「已有主题」与 `编写守则.md` 的主题顺序表。
-- 提交信息沿用历史风格（`feat(...):` / `docs(...):` / `fix(...):` + 中文描述）；**不主动 push**。
+- 提交信息沿用历史风格（`feat(...):` / `docs(...):` / `fix(...):` + 中文描述）；**不主动 push**（推送与 `/init` 节奏按 `教学webppt/编写守则.md` 第六节）。
 
 ## 目录与入口
 
@@ -42,11 +42,13 @@
 - 新增 deck 优先**复制一个已有 deck 的 `presentation/`**（保证 `components.jsx` 与各 deck 一致），只改 `src/slides.jsx` 与标题/品牌；`web-slide-deck` 技能的 `assets/deck-template/` 已落后本仓库（缺共用组件），直接用会组件不一致。复制后改 `package.json` 的 `name`/`description` 与 `presentation/index.html` 的 `<title>`（成品标题由它内联）。
 - 复制 `presentation/` 时**不要用 Python `shutil.copytree` 连 `node_modules` 一起拷**——会漏文件（实测缺 `vite/dist/node/cli.js`，`npm run build` 报 `ERR_MODULE_NOT_FOUND`，而 `npm install` 还误报 up to date）。用 `robocopy <src>\node_modules <dst>\node_modules /MIR`（长路径安全）复制依赖、整壳复制加 `/E /XD node_modules dist`，或在目标删掉重装。
 - **编写守则**：组织/语言/顺序按 `教学webppt/编写守则.md`。全局主题顺序「工程与协作 → 环境与设备 → 感知 → 通信 → 执行」；单 deck 页序「封面 → 结论先行 → …… → 收尾」，收尾恒在最后；插入后同步 `index.html` 与 `README.md` 并重建成品。
+- **重构批次进展（2026-10）**：五册已按编写守则重构并上线——`项目结构整理` → `树莓派连接与部署` → `摄像头参数与选型` → `摄像头远程显示` → `ROS2与micro-ROS选型`（即主题顺序表第 1–5 序）。统一手法：标题写结论/判断、关键流程用内联 `<svg>`、加「对比决策」页、完整命令收进共用 `Steps`/`Pre` 折叠；折叠里的完整内容同步落到对应 `docs/*.md`（`设计原理流程图.md` / `摄像头参数.md` / `摄像头选型.md` / `树莓派连接与部署.md` / `ROS2与micro-ROS选型.md`），两处一致不删减。其余 deck 仍为旧版式，逐册按同法重构。
+- **推送 / `/init` 节奏（编写守则第六节）**：`编写守则.md` 第六节按**未推送/未刷新提交量**决定——小档（1–2 笔）攒批、不跑 `/init`；中档（3–5 笔）跑一次增量 `/init`（**不得删减既有章节**）并由推送单放行；大档（整批或 ≥8 笔）批末跑一次 `/init`、随批推送。`/init` 更新本文件作为**单独一笔** `docs: /init 刷新 AGENTS.md（…）` 并入当次推送；施工方不主动 push，推送由监工验收后的「推送五步单」执行（fetch → `origin/main..HEAD` 对账 → ancestor 判定 → push → 读回，**禁强推**）；积压红线：未推送 ≥5 笔或距上次推送 >24h 必须清算。
 - **统一导航**：每个成品顶栏固定「← 目录」链接（源码 `presentation/src/App.jsx` 的 `<a href="../index.html">`）回 `教学webppt/index.html`；deck 内分页侧栏称「大纲」，别和「目录」混称。
 - 各 deck 的 `components.jsx` 一致，`App.jsx` 仅品牌文案不同；改导航/交互要**所有 deck** 同步改并全部重建，否则成品与源码漂移。构建后不要留「源码已改、成品未刷新」。
 - **详情默认折叠**：完整步骤/命令放共用 `Steps`（`<details>`，摘要「展开：…」，默认收起）＋ `Pre`（保留换行缩进）；正文只留要点。二者定义在 `components.jsx`，不要在 `slides.jsx` 另写一套。
 - **附件本地化**：可下载文件（PDF / zip / 本仓库自写代码）放 `<主题>/files/`，deck 用相对链接 `./files/…`，随目录分发、**不内联**进单文件；对应 `docs/` 下载链接同步改本地路径。图片放 `presentation/src/assets/` 用 `import`（构建内联进单文件，`assetsInlineLimit` 已调大）。相对链接只在**成品目录**下有效，`npm run dev` 指不到。先例：`教学webppt/ESP32-S3电机驱动板/files/`（原理图 PDF + 库/工具 zip）、`教学webppt/智能搬运车辆设计/files/`（3 个调研 zip + 文字版 md）、`教学webppt/ESP32与ROS2开发基础/files/ESP32与ROS2课程包与代码.zip`。
-- **验证要求**：桌面 1366×860 与手机 390×844 逐页断言 `overflowX === 0` 且首行可见；幻灯片外层用 `min-h-full` 而非 `h-full`（否则高页顶部被顶掉）。不能直接开 `file://`（Playwright 拦），要在 `教学webppt/` 起 `python -m http.server <port>`，访问 `http://127.0.0.1:<port>/<主题>/index.html?t=<n>#/1`（中文目录名 URL 编码，`?t=` 破缓存）。逐页断言做法：循环 `location.hash='#/'+i`、等 React 重渲染后 `main.scrollTop=0`，量 `main`/`documentElement` 的 `scrollWidth-clientWidth` 与首页元素 `getBoundingClientRect().top`，并统计底部 `x / N`；下载页的相对 `./files/…` 链接要确认返回 200。
+- **验证要求**：桌面 1366×860 与手机 390×844 逐页断言 `overflowX === 0` 且首行可见；幻灯片外层用 `min-h-full` 而非 `h-full`（否则高页顶部被顶掉）。不能直接开 `file://`（Playwright 拦），要在 `教学webppt/` 起 `python -m http.server <port>`，访问 `http://127.0.0.1:<port>/<主题>/index.html?t=<n>#/1`（中文目录名 URL 编码，`?t=` 破缓存）。逐页断言做法：循环 `location.hash='#/'+i`、等 React 重渲染后 `main.scrollTop=0`，量 `main`/`documentElement` 的 `scrollWidth-clientWidth` 与首页元素 `getBoundingClientRect().top`，并统计底部 `x / N`。成品须**无外链**：`src`/`href` 一律不得指向 http(s) 外部资源（图片走 `import` 内联、附件走 `./files/…`）；下载页的相对 `./files/…` 链接要确认返回 200。
 
 ## 图表约定（全仓库）
 
