@@ -15,14 +15,14 @@ import {
   Package,
   Crosshair,
   TrendingUp,
-  Percent,
   Radio,
   Scale,
-  ScanLine,
   Repeat,
   Gauge,
   Workflow,
   ShieldCheck,
+  Compass,
+  ListChecks,
 } from "lucide-react";
 import { Frame, Card, DataTable, Grid, Quote, Focus, Steps, Pre, Stat, Figure } from "./components.jsx";
 
@@ -37,7 +37,7 @@ const Cover = () => (
     <div className="grid items-center gap-6 lg:grid-cols-[1.15fr_1fr] lg:gap-10">
       <div>
         <span className="mb-4 inline-flex w-fit items-center rounded-full border border-brand-300 bg-paper px-3 py-1 text-[0.72rem] font-semibold tracking-[0.12em] text-brand-700 md:mb-6 md:px-4 md:py-1.5 md:text-[0.82rem]">
-          培训讲义 · 2026-09-29 · v1.0
+          培训讲义 · 2026-09-29 · v1.1
         </span>
         <h1 className="text-[2rem] font-extrabold leading-[1.15] tracking-tight text-ink sm:text-[2.5rem] md:text-[3.5rem]">
           机器人入门复现路线
@@ -47,6 +47,9 @@ const Cover = () => (
         <p className="mt-5 max-w-4xl border-l-4 border-brand-500 pl-4 text-[1rem] leading-relaxed text-slateink md:mt-8 md:pl-5 md:text-[1.15rem]">
           只选一个入门项目选哪个？这条路线先用 Robotics Toolbox 做 FK/IK 与末端轨迹，再用 Swift 可视化，
           之后迁移 MuJoCo / ROS 2，最终接模仿学习与 VLA——本 deck 的 L1 / L2 已在整理者本机跑通。
+        </p>
+        <p className="mt-4 text-[0.86rem] text-muted md:text-[0.92rem]">
+          每页默认只留要点；点「展开：…」看完整清单，深度材料见收尾下载。
         </p>
       </div>
       <Figure
@@ -78,30 +81,160 @@ const Tldr = () => (
   </Frame>
 );
 
-/* --------------------------------------------------- 四层阶梯 */
+/* ------------------------------------------- 训练阶梯全景（关键 SVG） */
+const LadderSvg = () => {
+  const levels = [
+    {
+      x: 16,
+      y: 150,
+      tag: "L1",
+      name: "Robotics Toolbox",
+      cat: "概念 · FK / IK + 末端轨迹",
+      gate: "门槛：零硬件，两条 pip 命令",
+      got: "实测：50/50 IK，0.236 mm",
+      fill: "#eff8ff",
+      stroke: "#60b0f7",
+      badge: "#dbeafe",
+      name_hex: "#1a5cae",
+    },
+    {
+      x: 182,
+      y: 122,
+      tag: "L2",
+      name: "Swift 2.0",
+      cat: "视觉 · 抓取-放置动画",
+      gate: "门槛：浏览器 3D，无物理引擎",
+      got: "实测：40 循环，7 秒动画",
+      fill: "#eef2ff",
+      stroke: "#818cf8",
+      badge: "#e0e7ff",
+      name_hex: "#4338ca",
+    },
+    {
+      x: 348,
+      y: 94,
+      tag: "L3",
+      name: "MuJoCo",
+      cat: "物理 · 接触 / 摩擦 / 传感器",
+      gate: "门槛：需带 AVX2 的物理机",
+      got: "状态：路径就绪，虚机受限",
+      fill: "#fffbeb",
+      stroke: "#fbbf24",
+      badge: "#fef3c7",
+      name_hex: "#b45309",
+    },
+    {
+      x: 514,
+      y: 66,
+      tag: "L4",
+      name: "LeRobot + SmolVLA",
+      cat: "智能 · 输出动作块",
+      gate: "门槛：单卡 4090 可微调",
+      got: "状态：生态成熟，可微调",
+      fill: "#eefaf8",
+      stroke: "#0ea5a3",
+      badge: "#ccfbf1",
+      name_hex: "#0f766e",
+    },
+  ];
+  return (
+    <div className="surface p-3 md:p-4">
+      <svg
+        viewBox="0 0 680 268"
+        role="img"
+        aria-label="训练阶梯全景：L1 Toolbox 概念、L2 Swift 视觉、L3 MuJoCo 物理、L4 VLA 智能，逐级上升，每级列出要点与门槛"
+        className="h-auto w-full"
+      >
+        <defs>
+          <marker id="ladder-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="#94a3b8" />
+          </marker>
+        </defs>
+        <text x="16" y="22" fontSize="13" fontWeight="700" fill="#0f172a">
+          训练阶梯全景：概念 → 视觉 → 物理 → 智能
+        </text>
+        <text x="16" y="41" fontSize="10.5" fill="#64748b">
+          每一级只依赖上一级，且各自都能独立交付；门槛决定你从哪一级起跑
+        </text>
+
+        {levels.slice(0, 3).map((l, i) => {
+          const next = levels[i + 1];
+          return (
+            <line
+              key={l.tag}
+              x1={l.x + 150}
+              y1={l.y + 80}
+              x2={next.x}
+              y2={next.y + 80}
+              stroke="#94a3b8"
+              strokeWidth="2"
+              markerEnd="url(#ladder-arrow)"
+            />
+          );
+        })}
+
+        {levels.map((l) => (
+          <g key={l.tag}>
+            <rect x={l.x} y={l.y} width="150" height="96" rx="10" fill={l.fill} stroke={l.stroke} strokeWidth="1.5" />
+            <rect x={l.x + 12} y={l.y + 12} width="30" height="18" rx="5" fill={l.badge} stroke={l.stroke} />
+            <text x={l.x + 27} y={l.y + 25} textAnchor="middle" fontSize="9.5" fontWeight="700" fill={l.name_hex}>
+              {l.tag}
+            </text>
+            <text x={l.x + 48} y={l.y + 26} fontSize="10" fontWeight="700" fill="#0f172a">
+              {l.name}
+            </text>
+            <text x={l.x + 12} y={l.y + 48} fontSize="8.8" fill="#334155">
+              {l.cat}
+            </text>
+            <text x={l.x + 12} y={l.y + 66} fontSize="8.5" fill="#64748b">
+              {l.gate}
+            </text>
+            <text x={l.x + 12} y={l.y + 84} fontSize="8.5" fill={l.name_hex}>
+              {l.got}
+            </text>
+          </g>
+        ))}
+
+        <text x="16" y="262" fontSize="10" fill="#475569">
+          起跑点：零基础一律从 L1 起；低配虚机无 AVX2 时 L3 需换物理机（或 CPU 直通）。
+        </text>
+      </svg>
+    </div>
+  );
+};
+
 const Ladder = () => (
-  <Frame kicker="概览" floor="02" title="四层阶梯：每层都能独立交付" wide>
-    <DataTable
-      head={["层", "做什么", "工具", "本机实测"]}
-      widths={["10%", "", "24%", "22%"]}
-      rows={[
-        ["L1", "FK / IK 与末端轨迹（纯计算）", "Robotics Toolbox（Python）", "全过：50/50 IK，0.236 mm"],
-        ["L2", "可视化与动作演示", "Swift 2.0", "全过：40 循环抓取-放置动画"],
-        ["L3", "真实物理接触与传感器", "MuJoCo（Menagerie 模型）", "路径就绪；本机受虚拟化限制"],
-        ["L4", "模仿学习 / VLA 输出动作", "LeRobot + SmolVLA（约 450M）", "生态成熟，单卡 4090 可微调"],
-      ]}
-    />
-    <div className="mt-4">
+  <Frame
+    kicker="概览"
+    floor="02"
+    title="训练阶梯全景：概念→视觉→物理→智能，每级独立可交付"
+    lead="四层台阶每一层都能单独拿出成果，上一层学的概念原样迁到下一层。"
+    wide
+  >
+    <div className="space-y-4">
+      <LadderSvg />
       <Quote>
         这条阶梯的独特卖点：概念（DH/POE、数值 IK、轨迹）→ 视觉（动画）→ 物理（接触）→ 智能（模仿 / VLA），层层递进且<strong>每层独立可交付</strong>。
       </Quote>
+      <Steps title="展开：四层阶梯与本机实测汇总（完整清单）">
+        <DataTable
+          head={["层", "做什么", "工具", "本机实测"]}
+          widths={["10%", "", "24%", "22%"]}
+          rows={[
+            ["L1", "FK / IK 与末端轨迹（纯计算）", "Robotics Toolbox（Python）", "全过：50/50 IK，0.236 mm"],
+            ["L2", "可视化与动作演示", "Swift 2.0", "全过：40 循环抓取-放置动画"],
+            ["L3", "真实物理接触与传感器", "MuJoCo（Menagerie 模型）", "路径就绪；本机受虚拟化限制"],
+            ["L4", "模仿学习 / VLA 输出动作", "LeRobot + SmolVLA（约 450M）", "生态成熟，单卡 4090 可微调"],
+          ]}
+        />
+      </Steps>
     </div>
   </Frame>
 );
 
 /* ------------------------------------------------------- L1 */
 const L1 = () => (
-  <Frame kicker="实测" floor="03" title="L1 · Toolbox FK/IK：数字先跑通" wide>
+  <Frame kicker="阶梯实测" floor="03" title="L1 · Toolbox FK/IK：数字先跑通" wide>
     <Grid cols={2}>
       <div className="space-y-3 md:space-y-4">
         <DataTable
@@ -134,7 +267,7 @@ rtb-venv/bin/python smoke/rtb_smoke.py`}</Pre>
 
 /* ------------------------------------------------------- L2 */
 const L2 = () => (
-  <Frame kicker="实测" floor="04" title="L2 · Swift 可视化：完整抓取-放置动画" wide>
+  <Frame kicker="阶梯实测" floor="04" title="L2 · Swift 可视化：完整抓取-放置动画" wide>
     <div className="space-y-3 md:space-y-4">
       <Grid cols={3}>
         <Card title="服务结构" icon={Radio} tone="slate">
@@ -160,7 +293,7 @@ const L2 = () => (
 
 /* ------------------------------------------------------- L3 */
 const L3 = () => (
-  <Frame kicker="实测" floor="05" title="L3 · MuJoCo：路径就绪，本机栽在虚拟化" wide>
+  <Frame kicker="阶梯实测" floor="05" title="L3 · MuJoCo：路径就绪，本机栽在虚拟化" wide>
     <Grid cols={2}>
       <Card title="现象" icon={AlertTriangle} tone="bad">
         MuJoCo <strong>3.14.0 / 3.2.6 / 3.0.1</strong> 三个版本在本机均 <strong>SIGILL</strong>（非法指令，核心转储）。
@@ -182,7 +315,7 @@ const L3 = () => (
 
 /* ------------------------------------------------------- L4 */
 const L4 = () => (
-  <Frame kicker="实测" floor="06" title="L4 · VLA：生态比预想成熟，单卡可行" wide>
+  <Frame kicker="阶梯实测" floor="06" title="L4 · VLA：生态比预想成熟，单卡可行" wide>
     <Grid cols={2}>
       <div className="space-y-3 md:space-y-4">
         <Card title="目标形态：动作块（action chunk）" icon={Target} tone="brand">
@@ -208,9 +341,45 @@ const L4 = () => (
   </Frame>
 );
 
+/* --------------------------------------------------- 对比决策 */
+const Decision = () => (
+  <Frame
+    kicker="对比决策"
+    floor="07"
+    title="对比决策：逐级推进还是定向跳级"
+    lead="同一条阶梯有两种走法：一级不落地往上走，或跳过前两级直接探边界。先看清取舍，再定起跑点。"
+    wide
+  >
+    <div className="space-y-4">
+      <DataTable
+        head={["维度", "逐级推进（推荐）", "定向跳级（速览）"]}
+        widths={["16%", "42%", "42%"]}
+        rows={[
+          ["前置依赖", "每级只依赖上一级，L1 概念直接迁移到 L3 / L4", "跳过 L1 / L2 直接上 MuJoCo / VLA，得先补 IK、轨迹与数据概念"],
+          ["失败可归因", "出错只可能来自当前一级，排查面窄", "物理 / 数据问题与概念缺口混在一起，难定位"],
+          ["产出节奏", "每 1–2 天一个可见产出（数字 → 图 → 动画）", "首个产出来得晚，容易在中途失去反馈"],
+          ["适合人群", "零基础学生、课程 / 竞赛队统一训练", "已有 ROS / Python 基础、只想快速探边界的人"],
+          ["主要风险", "线性推进，总时长按里程碑叠加", "概念缺口在 L3 / L4 集中爆发，返工成本高"],
+        ]}
+      />
+      <Grid cols={2}>
+        <Card title="什么时候可以跳级" icon={Compass} tone="brand">
+          已有 Python + ROS 基础、且只是「探探 MuJoCo / VLA 长什么样」——跳级看天花板没问题，但别把它当系统入门。
+        </Card>
+        <Card title="什么情况必须补齐" icon={Ban} tone="bad">
+          零基础、要带学生或参赛队：不要跳。L1 的 IK / 轨迹概念是 L3 / L4 的地基，缺口会在物理阶段集中爆发。
+        </Card>
+      </Grid>
+      <Quote>
+        引导问题：你的目标是「两周内交出一份能演示的成果」，还是「先把整条链路摸一遍」？先回答它，再决定从哪一级起跑。
+      </Quote>
+    </div>
+  </Frame>
+);
+
 /* --------------------------------------------------- 横向对比 */
 const Compare = () => (
-  <Frame kicker="评估" floor="07" title="为什么优于其它入门选择" wide>
+  <Frame kicker="对比决策" floor="08" title="为什么优于其它入门选择：用教科书体系换掉前置门槛" wide>
     <DataTable
       head={["备选路线", "相对劣势"]}
       widths={["30%"]}
@@ -231,7 +400,7 @@ const Compare = () => (
 
 /* --------------------------------------------------- 里程碑预算 */
 const Milestones = () => (
-  <Frame kicker="评估" floor="08" title="里程碑与时间预算（学生口径）" wide>
+  <Frame kicker="落地路线" floor="09" title="里程碑与时间预算（学生口径）" wide>
     <DataTable
       head={["里程碑", "内容", "预算"]}
       widths={["12%", "", "18%"]}
@@ -254,7 +423,7 @@ const Milestones = () => (
 
 /* --------------------------------------------------- 坑清单 */
 const Pitfalls = () => (
-  <Frame kicker="落地" floor="09" title="坑清单：Swift 2.0 四个坑（讲义可直接抄）" wide>
+  <Frame kicker="落地路线" floor="10" title="坑清单：Swift 2.0 四个坑（讲义可直接抄）" wide>
     <Grid cols={2}>
       <Card title="① headless 的语义" icon={Ban} tone="bad">
         <code>headless=True</code> 完全不启动前端（纯仿真）；想可视化必须不带 headless。第一次踩会以为「服务起来了但页面空白」。
@@ -274,7 +443,7 @@ const Pitfalls = () => (
 
 /* --------------------------------------------------- 复现指引 */
 const Replay = () => (
-  <Frame kicker="落地" floor="10" title="复现快捷指引（本机实测命令）" wide>
+  <Frame kicker="落地路线" floor="11" title="复现快捷指引（本机实测命令）" wide>
     <div className="grid gap-4 lg:grid-cols-[1.15fr_1fr] lg:gap-6">
       <Steps title="展开：从环境到动画的完整命令（顺序不可换）">
         <Pre>{`# 1) 环境
@@ -305,9 +474,38 @@ ffmpeg -y -framerate 10 -i swift_frames/f_%03d.png -vf "scale=1280:-2" \\
   </Frame>
 );
 
+/* ------------------------------------------------------- 行动清单 */
+const Actions = () => (
+  <Frame kicker="收尾" floor="12" title="行动清单：按里程碑一条条做" wide>
+    <DataTable
+      head={["优先", "动作", "预算 / 入口"]}
+      widths={["10%", "48%", "42%"]}
+      rows={[
+        ["1", "装环境：python 3.12 venv + 两条 pip 命令", "约 1 小时（M0）"],
+        ["2", "跟 RVC3 章节做 FK / IK", "1–2 天（M1）"],
+        ["3", "复现 L2 抓取-放置动画", "1 天（M2），命令见「复现指引」"],
+        ["4", "上物理机装 MuJoCo，接 Menagerie 的 panda XML", "1–2 周（M3）"],
+        ["5", "接 ROS 2 / MoveIt2，再上模仿学习 / VLA", "1–2 周 + 2–4 周（M4 / M5）"],
+      ]}
+    />
+    <div className="mt-4 grid gap-3 md:grid-cols-2 md:gap-4">
+      <Card title="三条纪律" icon={ListChecks} tone="brand">
+        <ul className="space-y-1.5">
+          <li>· 从 L1 起跑，别一上来就补 RL / ROS 概念。</li>
+          <li>· 每级先跑通再往上，产出可见才算过关。</li>
+          <li>· L3 必须在带 AVX2 的物理机上跑。</li>
+        </ul>
+      </Card>
+      <Card title="延伸入口" icon={GitBranch} tone="good">
+        评估报告见 <code>培训/机器人入门-复现路线评估/</code>；L3 之后接本仓库的 ROS 2 选型与树莓派部署 deck；工具锚点见收尾页。
+      </Card>
+    </div>
+  </Frame>
+);
+
 /* ------------------------------------------------------- Closing */
 const Closing = () => (
-  <Frame kicker="收尾" floor="11" title="下载与延伸阅读">
+  <Frame kicker="收尾" floor="13" title="下载与延伸阅读">
     <div className="space-y-5">
       <Quote>
         本 deck 由本仓库「<code>培训/机器人入门-复现路线评估/</code>（2026-09-29）」整理而成；L1 / L2 为整理者本机实测，L3 的 MuJoCo 结论受其虚机环境限制（非路线问题）。
@@ -333,15 +531,22 @@ const Closing = () => (
             下载：机器人入门复现路线评估-20260929.md
           </a>
         </Card>
+        <Card title="文字版教程（Markdown + mermaid）" icon={Workflow} tone="warn">
+          本 deck 的完整文字版，含训练阶梯全景 mermaid 与全部命令、坑清单，便于检索与复制。
+          <br />
+          <a
+            href="./files/机器人入门复现路线-文字版教程.md"
+            className="break-all font-semibold text-brand-700 underline"
+          >
+            下载：机器人入门复现路线-文字版教程.md
+          </a>
+        </Card>
         <Card title="工具与教材锚点" icon={GitBranch} tone="slate">
           <a className="font-semibold text-brand-700 underline" href="https://github.com/petercorke/robotics-toolbox-python">Robotics Toolbox</a>｜
           <a className="font-semibold text-brand-700 underline" href="https://github.com/petercorke/robotics-toolbox-python">Swift</a>｜
           <a className="font-semibold text-brand-700 underline" href="https://github.com/petercorke/rvc3python">RVC3 教材代码</a>；
           <a className="font-semibold text-brand-700 underline" href="https://github.com/google-deepmind/mujoco_menagerie">MuJoCo Menagerie</a>；
           <a className="font-semibold text-brand-700 underline" href="https://github.com/huggingface/lerobot">LeRobot / SmolVLA</a>。
-        </Card>
-        <Card title="仓库内延伸" icon={ClipboardCheck} tone="good">
-          训练与自测清单、坑清单同样落在 <code>培训/机器人入门-复现路线评估/机器人入门复现路线评估-20260929.md</code>；L3 之后可接本仓库的 ROS 2 选型与树莓派部署 deck。
         </Card>
       </Grid>
       <p className="text-[0.86rem] text-muted">
@@ -354,14 +559,16 @@ const Closing = () => (
 export const slides = [
   { nav: "封面", group: "概览", el: <Cover /> },
   { nav: "结论先行", group: "概览", el: <Tldr /> },
-  { nav: "四层阶梯", group: "概览", el: <Ladder /> },
-  { nav: "L1 Toolbox", group: "实测", el: <L1 /> },
-  { nav: "L2 Swift 动画", group: "实测", el: <L2 /> },
-  { nav: "L3 MuJoCo", group: "实测", el: <L3 /> },
-  { nav: "L4 VLA", group: "实测", el: <L4 /> },
-  { nav: "横向对比", group: "评估", el: <Compare /> },
-  { nav: "里程碑预算", group: "评估", el: <Milestones /> },
-  { nav: "坑清单", group: "落地", el: <Pitfalls /> },
-  { nav: "复现指引", group: "落地", el: <Replay /> },
+  { nav: "训练阶梯全景", group: "概览", el: <Ladder /> },
+  { nav: "L1 Toolbox", group: "阶梯实测", el: <L1 /> },
+  { nav: "L2 Swift", group: "阶梯实测", el: <L2 /> },
+  { nav: "L3 MuJoCo", group: "阶梯实测", el: <L3 /> },
+  { nav: "L4 VLA", group: "阶梯实测", el: <L4 /> },
+  { nav: "对比决策", group: "对比决策", el: <Decision /> },
+  { nav: "横向对比", group: "对比决策", el: <Compare /> },
+  { nav: "里程碑预算", group: "落地路线", el: <Milestones /> },
+  { nav: "坑清单", group: "落地路线", el: <Pitfalls /> },
+  { nav: "复现指引", group: "落地路线", el: <Replay /> },
+  { nav: "行动清单", group: "收尾", el: <Actions /> },
   { nav: "下载与延伸阅读", group: "收尾", el: <Closing /> },
 ];
