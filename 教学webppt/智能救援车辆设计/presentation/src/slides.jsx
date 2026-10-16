@@ -63,6 +63,9 @@ const Cover = () => (
           面向 2027 年第十届工创赛「智能+工程创新赛道 · 智能救援」：在 ≤1.5kg、≤300×300×200mm、单电源不可换、全自主的硬约束下，
           把「移动 + 感知 + 越障 + 推拨转运 + 对抗防护」做成一台能稳定得分的小车。
         </p>
+        <p className="mt-4 text-[0.86rem] text-muted md:text-[0.92rem]">
+          每页默认只留要点；点「展开：…」看完整清单，深度材料见收尾下载。
+        </p>
       </div>
       <Figure
         src={realBucea}
@@ -97,7 +100,7 @@ const Tldr = () => (
 
 /* ------------------------------------------------------- 赛项 */
 const Event = () => (
-  <Frame kicker="背景" floor="02" title="这是什么比赛" wide>
+  <Frame kicker="赛项规则" floor="02" title="先认清赛制：三级赛、两队对抗、必须全自主" wide>
     <DataTable
       head={["项", "内容"]}
       widths={["16%", "84%"]}
@@ -106,7 +109,7 @@ const Event = () => (
         ["赛制", "三级：校级初赛 → 省级复赛 → 全国总决赛；省赛须在 2027-05-10 前收口"],
         ["节奏", "校赛 2026 年秋 → 省赛 2027 年春 → 国赛 2027 年 7–8 月"],
         ["形式", "两队各 1 台同场对抗，各 3 分钟 + 3 分钟调试；抽签打 2–3 场取平均"],
-        ["任务", "把救援目标推/拨进本队安全区得分；可干扰、禁止主动进攻；必须全自主"],
+        ["任务", "把救援目标推 / 拨进本队安全区得分；可干扰、禁止主动进攻；必须全自主"],
         ["构成", "总分 = 任务命题文档 A×20% + 作品创意设计 B×10% + 现场初赛 C×70%"],
       ]}
     />
@@ -120,7 +123,7 @@ const Event = () => (
 
 /* ------------------------------------------------------- 红线 */
 const Limits = () => (
-  <Frame kicker="背景" floor="03" title="硬约束：先记住这几条" wide>
+  <Frame kicker="赛项规则" floor="03" title="八条硬约束：任意一条不过就出局" wide>
     <DataTable
       head={["项目", "要求"]}
       widths={["22%", "78%"]}
@@ -140,7 +143,7 @@ const Limits = () => (
 
 /* ------------------------------------------------------- 计分 */
 const Scoring = () => (
-  <Frame kicker="背景" floor="04" title="计分与红线：怎么拿分、怎么出局" wide>
+  <Frame kicker="赛项规则" floor="04" title="计分靠转运，红线直接结束本轮" wide>
     <Grid cols={3}>
       <Stat value="5" unit="分/个" label="普通物资：绿色 40mm 正方体" />
       <Stat value="10" unit="分/个" label="核心物资：黑色 40mm 正四面体" tone="warn" />
@@ -148,18 +151,18 @@ const Scoring = () => (
     </Grid>
     <div className="mt-4 grid gap-4 lg:grid-cols-[1.35fr_1fr] lg:items-start">
       <div>
-      <DataTable
-        head={["规则点", "后果"]}
-        widths={["62%", "38%"]}
-        rows={[
-          ["必须先单独转运 1 个普通物资，之后才可转运核心/伤员", "违反本轮结束"],
-          ["单次转运物资 ≤3 个；伤员必须单独转、一次 1 个", "超出本轮结束"],
-          ["危险目标（浅蓝）移入安全区或移出场地", "本轮结束"],
-          ["机器人进对方安全区（含压围栏）", "−5 分/次"],
-          ["物资 / 伤员放错半区（含围栏、隔板）", "−10 分/个并放回中心"],
-          ["停走 15 秒、失控、一键启动后再次触碰作品", "本轮结束"],
-        ]}
-      />
+        <DataTable
+          head={["规则点", "后果"]}
+          widths={["62%", "38%"]}
+          rows={[
+            ["必须先单独转运 1 个普通物资，之后才可转运核心 / 伤员", "违反本轮结束"],
+            ["单次转运物资 ≤3 个；伤员必须单独转、一次 1 个", "超出本轮结束"],
+            ["危险目标（浅蓝）移入安全区或移出场地", "本轮结束"],
+            ["机器人进对方安全区（含压围栏）", "−5 分/次"],
+            ["物资 / 伤员放错半区（含围栏、隔板）", "−10 分/个并放回中心"],
+            ["停走 15 秒、失控、一键启动后再次触碰作品", "本轮结束"],
+          ]}
+        />
       </div>
       <Figure
         src={targetsImg}
@@ -172,7 +175,7 @@ const Scoring = () => (
 
 /* ------------------------------------------------------- 场地 */
 const Field = () => (
-  <Frame kicker="背景" floor="05" title="场地与目标：几何决定机构" wide>
+  <Frame kicker="赛项规则" floor="05" title="场地几何决定机构：3000×3000，安全区 660×360" wide>
     <div className="grid items-start gap-5 md:gap-6 lg:grid-cols-[1.05fr_1fr] lg:gap-8">
       <div className="space-y-4">
         <Figure
@@ -190,7 +193,7 @@ const Field = () => (
         <Card title="关键尺寸" icon={Ruler} tone="brand">
           <ul className="space-y-1.5">
             <li>· 场地约 3000×3000 mm；出发区 1–4 号，抽签定。</li>
-            <li>· 出发区前 3 根减速带，图解 300×60×10 mm、间隔 50 mm。</li>
+            <li>· 出发区前 3 根减速带（Speed Bump），图解 300×60×10 mm、间隔 50 mm。</li>
             <li>· 安全区外包 660×360 mm、内净 600×300 mm，围栏截面为直角三角。</li>
             <li>· 内部 20 mm 隔板分「物资放置区 / 伤员放置区」各半。</li>
           </ul>
@@ -206,7 +209,7 @@ const Field = () => (
 
 /* ------------------------------------------------------- 变化 */
 const Changes = () => (
-  <Frame kicker="背景" floor="06" title="2027 三大变化：老方案会失效" wide>
+  <Frame kicker="赛项规则" floor="06" title="2027 三项新变化：照搬往届方案会失效" wide>
     <DataTable
       head={["项", "2025 第九届", "2027 第十届（现版）"]}
       widths={["16%", "38%", "46%"]}
@@ -225,38 +228,187 @@ const Changes = () => (
   </Frame>
 );
 
-/* ------------------------------------------------------- 三档 */
-const Tiers = () => (
-  <Frame kicker="方案" floor="07" title="三档配置：推荐「均衡型」" wide>
-    <DataTable
-      head={["档位", "底盘", "算力", "机构", "全机预估", "取舍"]}
-      widths={["12%", "20%", "22%", "22%", "12%", "12%"]}
-      rows={[
-        ["轻快型", "差速 JGB37 系", "STM32 + K230 / MaixCAM", "推铲 + 简化框具", "0.7–1.1kg", "余量足、机动快；算法余量小"],
-        ["均衡型 ★", "差速（65mm 轮 + 辅助轮）", "STM32 + 端侧 NPU", "框式拨具（可抬起）", "1.2–1.4kg", "推荐主线，省一/国一有实证"],
-        ["重装型", "四麦轮 / 履带", "RK3588 / Jetson", "通道式 / 复杂机构", "1.4–1.5kg", "麦轮有超重淘汰先例，慎选"],
-      ]}
-    />
-    <div className="mt-4 grid gap-3 md:grid-cols-2">
-      <Card title="为什么推荐均衡型" icon={Target} tone="good">
-        只比轻快型多花约 200–300g，就把「能把目标挑进正确半区」这件得分必需的事做出来了。
-      </Card>
-      <Card title="为什么慎选重装型" icon={AlertTriangle} tone="bad">
-        重算力与麦轮同时吃预算与机动性；1.5kg 是硬线，逼近上限等于把风险留到检录台。
-      </Card>
+/* ------------------------------------- 整车方案总览（关键 SVG 1） */
+const PlanOverviewSvg = () => {
+  const segs = [
+    { x: 20, w: 186, fill: "#dbeafe", stroke: "#60b0f7" },
+    { x: 206, w: 136, fill: "#e0e7ff", stroke: "#818cf8" },
+    { x: 342, w: 81, fill: "#f1f5f9", stroke: "#94a3b8" },
+    { x: 423, w: 62, fill: "#fef3c7", stroke: "#fbbf24" },
+    { x: 485, w: 62, fill: "#ccfbf1", stroke: "#2dd4bf" },
+    { x: 547, w: 43, fill: "#fce7f3", stroke: "#f472b6" },
+    { x: 590, w: 50, fill: "#ffffff", stroke: "#cbd5e1" },
+  ];
+  const legend = [
+    ["#60b0f7", "动力 25–35%"],
+    ["#818cf8", "结构 15–25%"],
+    ["#94a3b8", "线材+紧固件+杂项 8–15%"],
+    ["#fbbf24", "电池 8–12%"],
+    ["#2dd4bf", "主控+感知 5–15%"],
+    ["#f472b6", "执行机构 5–10%"],
+  ];
+  return (
+    <div className="surface p-3 md:p-4">
+      <svg
+        viewBox="0 0 680 240"
+        role="img"
+        aria-label="整车方案总览：均衡型约 1.4 公斤的重量分账，动力与结构占近一半，1.5 公斤为检录硬线"
+        className="h-auto w-full"
+      >
+        <text x="20" y="22" fontSize="13" fontWeight="700" fill="#0f172a">
+          均衡型整车 ≈1.4 kg 的重量分账（1.5 kg 硬线内）
+        </text>
+        <text x="20" y="41" fontSize="10.5" fill="#64748b">
+          预算法则：先定电池 → 电机 → 算力 → 结构，机械件最后做；每件上秤回填
+        </text>
+
+        <rect x="20" y="60" width="620" height="46" rx="8" fill="#f8fafc" stroke="#cbd5e1" />
+        {segs.map((s, i) => (
+          <rect
+            key={i}
+            x={s.x}
+            y="60"
+            width={s.w}
+            height="46"
+            fill={s.fill}
+            stroke={s.stroke}
+            strokeDasharray={i === 6 ? "4 4" : undefined}
+          />
+        ))}
+        <text x="113" y="88" textAnchor="middle" fontSize="11" fontWeight="700" fill="#1a5cae">动力</text>
+        <text x="274" y="88" textAnchor="middle" fontSize="11" fontWeight="700" fill="#4338ca">结构</text>
+        <text x="615" y="88" textAnchor="middle" fontSize="8.5" fill="#64748b">裕量</text>
+
+        <text x="20" y="124" fontSize="10" fill="#64748b">0 g</text>
+        <text x="640" y="124" textAnchor="end" fontSize="10.5" fontWeight="700" fill="#b91c1c">1500 g 硬线（检录称重）</text>
+
+        {legend.map(([c, label], i) => {
+          const x = 20 + (i % 3) * 212;
+          const y = 150 + Math.floor(i / 3) * 26;
+          return (
+            <g key={label}>
+              <rect x={x} y={y - 10} width="12" height="12" rx="3" fill={c} />
+              <text x={x + 18} y={y} fontSize="10.5" fill="#334155">{label}</text>
+            </g>
+          );
+        })}
+        <text x="20" y="224" fontSize="10.5" fill="#475569">
+          减重先动最大两块（动力与结构）；传感器、小板卡再抠也只有几十克——二八法则。
+        </text>
+      </svg>
+    </div>
+  );
+};
+
+const PlanOverview = () => (
+  <Frame
+    kicker="整车方案"
+    floor="07"
+    title="整车方案总览：动力与结构占近一半，减重先动这两块"
+    lead="限重下的顺序是先定电池、电机、算力，结构最后；现在就把均衡型的组成看清楚。"
+    wide
+  >
+    <div className="space-y-4">
+      <PlanOverviewSvg />
+      <Grid cols={3}>
+        <Card title="底盘：差速最快成车" icon={Cog} tone="brand">
+          四轮差速（Differential Drive）最轻、结构最简单，实车验证能过减速带、推动物块。
+        </Card>
+        <Card title="算力：端侧 NPU 是减重杠杆" icon={Cpu} tone="good">
+          端侧 NPU（Neural Processing Unit）只比 MCU 多几十克，就换来五类目标识别；省一实测 350→900 张图即可训出。
+        </Card>
+        <Card title="机构：可抬起的框式拨具" icon={Wrench} tone="warn">
+          2 个 9g 金属齿舵机 + 3D 打印框，能把目标挑进 20mm 隔板的正确半区，是得分必需动作。
+        </Card>
+      </Grid>
+      <Quote>先成车再升级：差速 + 推铲最快闭环；确认得分动作稳定后，再按剩余重量预算升级。</Quote>
+    </div>
+  </Frame>
+);
+
+/* ------------------------------------- 对比决策：三档配置 */
+const TierDecisionSvg = () => {
+  const cols = [
+    { x: 24, tone: "#f8fafc", stroke: "#cbd5e1", name: "轻快型", weight: "0.7–1.1 kg", a: "余量足、机动快", b: "算法余量小" },
+    { x: 240, tone: "#f0fdfa", stroke: "#5eead4", name: "均衡型 ★", weight: "1.2–1.4 kg", a: "推荐主线", b: "省一 / 国一有实证" },
+    { x: 456, tone: "#fef2f2", stroke: "#fecaca", name: "重装型", weight: "1.4–1.5 kg", a: "逼近硬线", b: "麦轮超重淘汰先例" },
+  ];
+  return (
+    <div className="surface p-3 md:p-4">
+      <svg viewBox="0 0 680 214" role="img" aria-label="三档配置对比：轻快型、均衡型、重装型，均衡型为推荐主线" className="h-auto w-full">
+        <defs>
+          <marker id="tier-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="#0ea5a3" />
+          </marker>
+        </defs>
+        <rect x="250" y="8" width="180" height="46" rx="10" fill="#f8fafc" stroke="#cbd5e1" />
+        <text x="340" y="28" textAnchor="middle" fontSize="12" fontWeight="700" fill="#0f172a">限重 1.5 kg 下选档位</text>
+        <text x="340" y="45" textAnchor="middle" fontSize="10" fill="#475569">先定档位，再谈具体选型</text>
+
+        <line x1="300" y1="54" x2="152" y2="86" stroke="#94a3b8" strokeWidth="1.8" markerEnd="url(#tier-arrow)" />
+        <line x1="340" y1="54" x2="340" y2="86" stroke="#0ea5a3" strokeWidth="2.4" markerEnd="url(#tier-arrow)" />
+        <line x1="380" y1="54" x2="548" y2="86" stroke="#94a3b8" strokeWidth="1.8" markerEnd="url(#tier-arrow)" />
+
+        {cols.map((c) => (
+          <g key={c.name}>
+            <rect x={c.x} y="88" width="200" height="98" rx="10" fill={c.tone} stroke={c.stroke} />
+            <text x={c.x + 16} y="112" fontSize="12" fontWeight="700" fill="#0f172a">{c.name}</text>
+            <text x={c.x + 16} y="132" fontSize="10.5" fill="#334155">全机 {c.weight}</text>
+            <text x={c.x + 16} y="152" fontSize="10.5" fill="#475569">{c.a}</text>
+            <text x={c.x + 16} y="170" fontSize="10.5" fill="#475569">{c.b}</text>
+          </g>
+        ))}
+        <text x="24" y="208" fontSize="10.5" fill="#94a3b8">
+          判定关键：你的目标是「两周内把车推起来」还是「冲省一 / 国一」——答案决定你止步于哪一档。
+        </text>
+      </svg>
+    </div>
+  );
+};
+
+const DecisionBlock = () => (
+  <Frame
+    kicker="整车方案"
+    floor="08"
+    title="对比决策：先选档位，再谈具体选型"
+    lead="同一台车有三条路：只求成车、均衡拿分、还是堆料冲高。先看清取舍，再逐件选型。"
+    wide
+  >
+    <div className="space-y-4">
+      <TierDecisionSvg />
+      <DataTable
+        head={["档位", "底盘", "算力", "机构", "全机预估", "取舍"]}
+        widths={["12%", "20%", "22%", "22%", "12%", "12%"]}
+        rows={[
+          ["轻快型", "差速 JGB37 系", "STM32 + K230 / MaixCAM", "推铲 + 简化框具", "0.7–1.1kg", "余量足、机动快；算法余量小"],
+          ["均衡型 ★", "差速（65mm 轮 + 辅助轮）", "STM32 + 端侧 NPU", "框式拨具（可抬起）", "1.2–1.4kg", "推荐主线，省一/国一有实证"],
+          ["重装型", "四麦轮 / 履带", "RK3588 / Jetson", "通道式 / 复杂机构", "1.4–1.5kg", "麦轮有超重淘汰先例，慎选"],
+        ]}
+      />
+      <Grid cols={2}>
+        <Card title="为什么推荐均衡型" icon={Target} tone="good">
+          只比轻快型多花约 200–300g，就把「能把目标挑进正确半区」这件得分必需的事做出来了。
+        </Card>
+        <Card title="为什么慎选重装型" icon={AlertTriangle} tone="bad">
+          重算力与麦轮同时吃预算与机动性；1.5kg 是硬线，逼近上限等于把风险留到检录台。
+        </Card>
+      </Grid>
+      <Quote>
+        引导问题：你的目标是「最快把车推起来」，还是「冲省一 / 国一」？先回答它，再决定选哪一档。
+      </Quote>
     </div>
   </Frame>
 );
 
 /* ------------------------------------------------------- 重量预算 */
 const Budget = () => (
-  <Frame kicker="方案" floor="08" title="重量预算：先记账，再减重" wide>
+  <Frame kicker="整车方案" floor="09" title="重量预算：先记账，再减重" wide>
     <Grid cols={3}>
       <Card title="预算制" icon={ClipboardCheck} tone="brand">
         任何零件进方案前先写进预算表；每加 10g，都要回答「从哪减 10g」。
       </Card>
       <Card title="二八法则" icon={Percent} tone="warn">
-        减重大头永远在结构件、轮系、电池；传感器/小板卡再抠也只有几十克。
+        减重大头永远在结构件、轮系、电池；传感器 / 小板卡再抠也只有几十克。
       </Card>
       <Card title="称重纪律" icon={Scale} tone="good">
         规格书重量 ≠ 实物；采购后逐一上秤回填，打印件按切片预估 ×1.05。
@@ -290,7 +442,7 @@ const Budget = () => (
 
 /* ------------------------------------------------------- 底盘 */
 const Chassis = () => (
-  <Frame kicker="方案" floor="09" title="底盘：首推四轮差速" wide>
+  <Frame kicker="整车方案" floor="10" title="底盘首推四轮差速：能过减速带、推动物块" wide>
     <DataTable
       head={["方案", "重量", "优势", "风险 / 实证"]}
       widths={["16%", "18%", "34%", "32%"]}
@@ -302,7 +454,7 @@ const Chassis = () => (
     />
     <div className="mt-4 grid gap-3 md:grid-cols-2">
       <Card title="关键证据（高可信）" icon={ShieldCheck} tone="good">
-        公开归档：差速版整车完成实车验证，能越过减速带、推动所有物块；第一版麦轮方案因整车超重被淘汰。
+        公开归档：差速版整车完成实车验证，能越过减速带、推动所有物块；第一版麦轮（Mecanum Wheel）方案因整车超重被淘汰。
       </Card>
       <Card title="轮径与通过性" icon={Cog} tone="brand">
         差速用 Φ65mm 橡胶轮（35–40g/个）+ 后辅助轮 + 万向球；减速带区降速、直线段加速。
@@ -318,7 +470,7 @@ const Chassis = () => (
 
 /* ------------------------------------------------------- 算力 */
 const Compute = () => (
-  <Frame kicker="方案" floor="10" title="算力：端侧 NPU 是最大减重杠杆" wide>
+  <Frame kicker="整车方案" floor="11" title="算力选端侧 NPU：最大的减重杠杆" wide>
     <DataTable
       head={["级别", "型号", "算力", "重量", "功耗", "参考价"]}
       widths={["14%", "26%", "16%", "14%", "12%", "18%"]}
@@ -332,7 +484,7 @@ const Compute = () => (
     />
     <div className="mt-4 grid gap-3 md:grid-cols-2">
       <Card title="首选 MaixCAM Pro / K230" icon={Cpu} tone="good">
-        省一等奖实测：YOLOv8-INT8 量化后 mAP50 96%、链路 29.98 FPS，350→900 张图即可训出；决赛换形状仍稳定识别。
+        省一等奖实测：YOLOv8-INT8 量化（Quantization）后 mAP50 96%、链路 29.98 FPS，350→900 张图即可训出；决赛换形状仍稳定识别。
       </Card>
       <Card title="注意反向证据" icon={AlertTriangle} tone="warn">
         重算力（RK3588 / Jetson）也有获奖先例——它不是错误，只是重量预算更紧。取舍在「惯量对机动性的惩罚 vs 算法余量」。
@@ -341,9 +493,36 @@ const Compute = () => (
   </Frame>
 );
 
-/* ------------------------------------------------------- 机构 */
+/* ------------------------------------------------------- 感知与电源 */
+const Sense = () => (
+  <Frame kicker="整车方案" floor="12" title="感知与电源：够用就好，一次做对" wide>
+    <div className="grid gap-3 md:grid-cols-2 md:gap-4">
+      <Card title="感知：够用即可" icon={Eye} tone="brand">
+        <ul className="space-y-1.5">
+          <li>· 单目相机：五类目标 + 安全区识别（端侧 NPU 推理）。</li>
+          <li>· 单轴陀螺仪（Gyroscope）HWT101：锁定出发点绝对 0° 与安全区方位，无需六轴 / 九轴。</li>
+          <li>· ToF（Time-of-Flight）/ 雷达属辅助：国一队明确「靠近并不需要测距，视觉就够了」。</li>
+          <li>· 深相机 D435i（≈72–90g）与激光雷达（≈47g+）只在确需绝对定位时加。</li>
+        </ul>
+      </Card>
+      <Card title="电源：一次做对" icon={Battery} tone="warn">
+        <ul className="space-y-1.5">
+          <li>· 单电源、随车、赛中（含调试）不可换 → 容量一次配足。</li>
+          <li>· 按「单场 3 分钟 × 平均功耗」+50% 余量估算。</li>
+          <li>· 2S 850mAh ≈48–57g（6.3Wh）；3S 1300mAh ≈99–123g（14.4Wh）。</li>
+          <li>· 主控 / 传感器独立 DCDC 或 LDO，避免电机堵转把主控拉复位。</li>
+        </ul>
+      </Card>
+    </div>
+    <div className="mt-4">
+      <Quote>感知验收口径：危险目标误判 = 0；绿色识别召回 &gt;95%。</Quote>
+    </div>
+  </Frame>
+);
+
+/* ------------------------------------------------------- 转运机构 */
 const Mechanism = () => (
-  <Frame kicker="方案" floor="11" title="转运机构：可抬起的「框式拨具」" wide>
+  <Frame kicker="转运与导流" floor="13" title="转运机构：可抬起的框式拨具最轻合规" wide>
     <Grid cols={3}>
       <Card title="纯固定推板" icon={Boxes} tone="slate">
         最轻、0 执行器；但无法「抬起」，难以应对安全区 20mm 隔板与不规则几何体。
@@ -370,9 +549,9 @@ const Mechanism = () => (
   </Frame>
 );
 
-/* --------------------------------------------- 判读四问（2026-09-29 增补） */
+/* --------------------------------------------- 判读四问 */
 const Adjudication = () => (
-  <Frame kicker="方案" floor="12" title="判读四问：显示 / 危险目标 / 黏附 / 导流" wide>
+  <Frame kicker="转运与导流" floor="14" title="判读四问：条文没写 ≠ 可以做" wide>
     <Grid cols={2}>
       <DataTable
         head={["高频争议", "结论与依据"]}
@@ -399,9 +578,9 @@ const Adjudication = () => (
   </Frame>
 );
 
-/* --------------------------------------------------- 导流机构：贯穿式通道 */
+/* --------------------------------------------------- 导流机构 */
 const FlowChannel = () => (
-  <Frame kicker="方案" floor="13" title="导流机构：贯穿式自适应通道（进阶）" wide>
+  <Frame kicker="转运与导流" floor="15" title="导流机构：贯穿式通道，目标全程贴地" wide>
     <div className="grid gap-4 lg:grid-cols-[1.05fr_1fr] lg:gap-6">
       <div className="space-y-3 md:space-y-4">
         <DataTable
@@ -436,36 +615,9 @@ const FlowChannel = () => (
   </Frame>
 );
 
-/* ------------------------------------------------------- 感知与电源 */
-const Sense = () => (
-  <Frame kicker="方案" floor="14" title="感知与电源：做减法" wide>
-    <div className="grid gap-3 md:grid-cols-2 md:gap-4">
-      <Card title="感知：够用即可" icon={Eye} tone="brand">
-        <ul className="space-y-1.5">
-          <li>· 单目相机：五类目标 + 安全区识别（端侧 NPU 推理）。</li>
-          <li>· 单轴陀螺仪 HWT101：锁定出发点绝对 0° 与安全区方位，无需六轴/九轴。</li>
-          <li>· ToF / 雷达属辅助：国一队明确「靠近并不需要测距，视觉就够了」。</li>
-          <li>· 深相机 D435i（≈72–90g）与激光雷达（≈47g+）只在确需绝对定位时加。</li>
-        </ul>
-      </Card>
-      <Card title="电源：一次做对" icon={Battery} tone="warn">
-        <ul className="space-y-1.5">
-          <li>· 单电源、随车、赛中（含调试）不可换 → 容量一次配足。</li>
-          <li>· 按「单场 3 分钟 × 平均功耗」+50% 余量估算。</li>
-          <li>· 2S 850mAh ≈48–57g（6.3Wh）；3S 1300mAh ≈99–123g（14.4Wh）。</li>
-          <li>· 主控 / 传感器独立 DCDC 或 LDO，避免电机堵转把主控拉复位。</li>
-        </ul>
-      </Card>
-    </div>
-    <div className="mt-4">
-      <Quote>感知验收口径：危险目标误判 = 0；绿色识别召回 &gt;95%。</Quote>
-    </div>
-  </Frame>
-);
-
 /* ------------------------------------------------------- 机械布局 */
 const Layout = () => (
-  <Frame kicker="设计" floor="15" title="机械布局：低重心、能越障、可维修" wide>
+  <Frame kicker="设计实现" floor="16" title="机械布局：低重心、能越障、可维修" wide>
     <Focus
       no="01"
       title="一张底板上的取舍"
@@ -473,7 +625,7 @@ const Layout = () => (
       goal="整机 ≤300×300×200mm（含软线），把电池、电机、算力、机构的重量与位置一次排清，重心落在轮系支撑多边形内。"
       points={[
         "低重心：电池下沉到两轮轴之间 / 底盘最低处，改善越障抗翻与对抗稳定性。",
-        "越障：Φ65mm 橡胶轮 + 前摆臂或斜面导板，机构/底盘预留通过性余量。",
+        "越障：Φ65mm 橡胶轮 + 前摆臂或斜面导板，机构 / 底盘预留通过性余量。",
         "抗撞：框架 + 缓冲角 + TPU 泡棉（10–20g）优先，而不是加厚整壳或配重。",
         "维修：推板 / 铲板、拨具可拆换；方便拆装也是官方明文要求。",
         "走线：线束全收纳在轮廓内——软线计入尺寸检查，也计入重量。",
@@ -496,7 +648,7 @@ const Layout = () => (
 
 /* ------------------------------------------------------- 拨具设计 */
 const Gripper = () => (
-  <Frame kicker="设计" floor="16" title="框式拨具：两个舵机做四件事" wide>
+  <Frame kicker="设计实现" floor="17" title="框式拨具：两个舵机做四件事" wide>
     <div className="grid items-start gap-5 md:gap-6 lg:grid-cols-[1fr_1fr] lg:gap-8">
       <div className="grid gap-3 md:grid-cols-2">
         <Card title="张开 / 闭合" icon={Boxes} tone="brand">
@@ -532,7 +684,7 @@ const Gripper = () => (
 
 /* ------------------------------------------------------- 电气 */
 const Electric = () => (
-  <Frame kicker="设计" floor="17" title="电气与安全：故障即 0 分" wide>
+  <Frame kicker="设计实现" floor="18" title="电气与安全：一次故障就是 0 分" wide>
     <Grid cols={3}>
       <Card title="供电树" icon={Zap} tone="brand">
         单电池 → 分路：电机（大电流）、舵机、主控与传感器各自稳压；避免堵转拉低母线电压。
@@ -561,14 +713,14 @@ const Electric = () => (
 
 /* ------------------------------------------------------- 软件架构 SVG */
 const ArchSvg = () => (
-  <svg viewBox="0 0 420 220" className="h-auto w-full" role="img" aria-label="上下位机软件架构">
+  <svg viewBox="0 0 420 220" className="h-auto w-full" role="img" aria-label="上下位机软件架构：感知层、决策层、执行层">
     <rect x="20" y="16" width="380" height="46" rx="8" fill="#eff8ff" stroke="#60b0f7" strokeWidth="1.5" />
     <text x="34" y="36" fontSize="11" fontWeight="700" fill="#1a5cae">感知层</text>
     <text x="34" y="52" fontSize="10.5" fill="#334155">单目相机 → 目标检测 ｜ 单轴陀螺仪 → 绝对方位 ｜（可选）ToF 测距</text>
 
     <rect x="20" y="76" width="380" height="60" rx="8" fill="#eefaf8" stroke="#0ea5a3" strokeWidth="1.5" />
     <text x="34" y="96" fontSize="11" fontWeight="700" fill="#0f766e">决策层（端侧 NPU / 上位机）</text>
-    <text x="34" y="113" fontSize="10.5" fill="#334155">YOLO 识别 → 目标筛选 → 视觉状态机 → 任务状态机</text>
+    <text x="34" y="113" fontSize="10.5" fill="#334155">YOLO 识别 → 目标筛选 → 视觉状态机 → 任务状态机（State Machine）</text>
     <text x="34" y="129" fontSize="10.5" fill="#64748b">输出：目标类别 / 相对位姿 / 目标动作（去哪个半区）</text>
 
     <rect x="20" y="150" width="380" height="54" rx="8" fill="#f3f6fb" stroke="#93cdfb" strokeWidth="1.5" />
@@ -583,7 +735,7 @@ const ArchSvg = () => (
 );
 
 const Software = () => (
-  <Frame kicker="设计" floor="18" title="软件架构：分层、解耦、可降级" wide>
+  <Frame kicker="设计实现" floor="19" title="软件架构：分层解耦，上位机只发意图" wide>
     <div className="grid items-start gap-5 md:gap-6 lg:grid-cols-[1.05fr_1fr] lg:gap-8">
       <div className="surface p-3 md:p-4">
         <ArchSvg />
@@ -606,7 +758,7 @@ const Software = () => (
 
 /* ------------------------------------------------------- 视觉 */
 const Vision = () => (
-  <Frame kicker="设计" floor="19" title="视觉流水线：350 张图就能起步" wide>
+  <Frame kicker="设计实现" floor="20" title="视觉流水线：350 张图就能起步" wide>
     <div className="grid gap-3 md:grid-cols-4">
       <Card title="采集与标注" icon={Eye} tone="slate">
         采集并标注约 350 张；按 300/50 划分训练 / 验证。
@@ -630,35 +782,54 @@ const Vision = () => (
   </Frame>
 );
 
-/* ------------------------------------------------------- 状态机 SVG */
-const FsmSvg = () => (
-  <svg viewBox="0 0 460 210" className="h-auto w-full" role="img" aria-label="任务状态机">
-    {[
-      { x: 10, label: "一键启动", sub: "离开出发区" },
-      { x: 100, label: "搜索目标", sub: "视觉识别" },
-      { x: 190, label: "首转 1 普通", sub: "先单个" },
-      { x: 280, label: "批量 ≤3", sub: "普通/核心" },
-      { x: 370, label: "伤员 1 个", sub: "单独转运" },
-    ].map((s, i) => (
-      <g key={i}>
-        <rect x={s.x} y="40" width={80} height="44" rx="8" fill="#eff8ff" stroke="#60b0f7" strokeWidth="1.5" />
-        <text x={s.x + 40} y="60" textAnchor="middle" fontSize="10.5" fontWeight="700" fill="#1a5cae">{s.label}</text>
-        <text x={s.x + 40} y="75" textAnchor="middle" fontSize="9.5" fill="#64748b">{s.sub}</text>
-        {i < 4 && <line x1={s.x + 80} y1="62" x2={s.x + 90} y2="62" stroke="#94a3b8" strokeWidth="1.8" />}
-      </g>
-    ))}
-    <rect x="150" y="130" width="160" height="42" rx="8" fill="#fdeceb" stroke="#d23f3f" strokeWidth="1.5" />
-    <text x="230" y="149" textAnchor="middle" fontSize="10.5" fontWeight="700" fill="#b3261e">遇危险目标 → 绕行</text>
-    <text x="230" y="164" textAnchor="middle" fontSize="9.5" fill="#64748b">不降铲、不接触、本轮不结束</text>
-    <line x1="140" y1="84" x2="200" y2="130" stroke="#d23f3f" strokeWidth="1.4" strokeDasharray="5 4" />
-    <text x="10" y="100" fontSize="9.5" fill="#64748b">顺序不可颠倒；任一红线触发即本轮结束</text>
-  </svg>
-);
+/* ------------------------------------- 任务与得分链路（关键 SVG 2） */
+const ScoreChainSvg = () => {
+  const nodes = [
+    { x: 16, t: "一键启动", s: "离开出发区" },
+    { x: 126, t: "搜索目标", s: "视觉识别" },
+    { x: 236, t: "首转 1 普通", s: "必做 · 5 分" },
+    { x: 346, t: "批量 ≤3", s: "5 / 10 分" },
+    { x: 456, t: "伤员单独 1", s: "15 分" },
+    { x: 566, t: "分区投放", s: "错区 −10 分" },
+  ];
+  return (
+    <div className="surface p-3 md:p-4">
+      <svg viewBox="0 0 680 224" role="img" aria-label="任务顺序与得分链路：一键启动、搜索目标、首转一个普通物资、批量不超过三个、伤员单独一个、分区投放，顺序不可颠倒" className="h-auto w-full">
+        <text x="16" y="22" fontSize="12.5" fontWeight="700" fill="#0f172a">任务顺序与得分链路（顺序不可颠倒）</text>
+        {nodes.map((n, i) => (
+          <g key={i}>
+            <rect
+              x={n.x}
+              y="38"
+              width="98"
+              height="52"
+              rx="9"
+              fill={i === 2 || i === 4 ? "#eefaf8" : "#eff8ff"}
+              stroke={i === 2 || i === 4 ? "#0ea5a3" : "#60b0f7"}
+              strokeWidth="1.5"
+            />
+            <text x={n.x + 49} y="60" textAnchor="middle" fontSize="10.5" fontWeight="700" fill="#0f172a">{n.t}</text>
+            <text x={n.x + 49} y="77" textAnchor="middle" fontSize="9" fill="#475569">{n.s}</text>
+            {i < nodes.length - 1 && (
+              <line x1={n.x + 98} y1="64" x2={n.x + 110} y2="64" stroke="#94a3b8" strokeWidth="1.8" />
+            )}
+          </g>
+        ))}
+        <rect x="16" y="108" width="648" height="42" rx="9" fill="#fef2f2" stroke="#fecaca" />
+        <text x="30" y="127" fontSize="10.5" fontWeight="700" fill="#b3261e">遇危险目标（浅蓝）→ 绕行 · 不降铲 · 不接触</text>
+        <text x="30" y="143" fontSize="9.5" fill="#7f1d1d">移入安全区或移出场地、停走 15 秒、失控、越界对方安全区 → 本轮结束或扣分</text>
+        <rect x="16" y="162" width="648" height="48" rx="9" fill="#f8fafc" stroke="#cbd5e1" />
+        <text x="30" y="181" fontSize="10.5" fill="#334155">得分口径：普通 5 分 / 核心 10 分 / 伤员 15 分；单次物资 ≤3 个、伤员一次 1 个。</text>
+        <text x="30" y="199" fontSize="10.5" fill="#334155">分区投放：物资进物资区、伤员进伤员区（放错半区 −10 分/个并放回中心）。</text>
+      </svg>
+    </div>
+  );
+};
 
 const Fsm = () => (
-  <Frame kicker="设计" floor="20" title="任务状态机：顺序不能错" wide>
+  <Frame kicker="设计实现" floor="21" title="任务与得分链路：顺序不能错，红线不能碰" wide>
     <div className="surface p-3 md:p-4">
-      <FsmSvg />
+      <ScoreChainSvg />
     </div>
     <div className="mt-4 grid gap-3 md:grid-cols-3">
       <Card title="首转规则" icon={Target} tone="warn">
@@ -676,7 +847,7 @@ const Fsm = () => (
 
 /* ------------------------------------------------------- 定位 */
 const Localize = () => (
-  <Frame kicker="设计" floor="21" title="定位与对位：精度与重量的三角" wide>
+  <Frame kicker="设计实现" floor="22" title="定位与对位：精度、重量、成本三角" wide>
     <DataTable
       head={["方案", "精度", "重量", "成本", "适用"]}
       widths={["30%", "16%", "16%", "18%", "20%"]}
@@ -699,7 +870,7 @@ const Localize = () => (
 
 /* ------------------------------------------------------- 三阶段 */
 const Roadmap = () => (
-  <Frame kicker="落地" floor="22" title="三阶段路线：每阶段都能独立上场" wide>
+  <Frame kicker="落地路线" floor="23" title="三阶段路线：每阶段都能独立上场" wide>
     <DataTable
       head={["阶段", "目标", "配置要点", "预估重量"]}
       widths={["16%", "22%", "48%", "14%"]}
@@ -732,7 +903,7 @@ const Roadmap = () => (
 
 /* ------------------------------------------------------- 自测 */
 const Test = () => (
-  <Frame kicker="落地" floor="23" title="训练与自测清单：按红线逐项回归" wide>
+  <Frame kicker="落地路线" floor="24" title="自测按红线逐项回归" wide>
     <Grid cols={2}>
       <Card title="通行" icon={Truck} tone="brand">
         减速带 ×3 连续通过率 ≥95%；不同路面的直行与转向偏差在容忍范围内。
@@ -762,7 +933,7 @@ const Test = () => (
 
 /* ------------------------------------------------------- 现场坑 */
 const Pitfalls = () => (
-  <Frame kicker="落地" floor="24" title="现场工程坑：都是失分点" wide>
+  <Frame kicker="落地路线" floor="25" title="现场工程坑：每一条都是失分点" wide>
     <Grid cols={2}>
       <Card title="开机自启准备不足" icon={AlertTriangle} tone="bad">
         现场曾因自启文件不完整，小车无法自动进入运行态。提前验证，赛前多次断电重启；带键鼠与备用启动方案。
@@ -785,7 +956,7 @@ const Pitfalls = () => (
 
 /* ------------------------------------------------------- 检查表 */
 const Checklist = () => (
-  <Frame kicker="落地" floor="25" title="出图前检查表" wide>
+  <Frame kicker="落地路线" floor="26" title="出图前检查表：重量与合规先过一遍" wide>
     <div className="grid gap-3 md:grid-cols-2 md:gap-4">
       <Card title="重量与尺寸" icon={Scale} tone="brand">
         <ul className="space-y-1.5">
@@ -819,7 +990,7 @@ JGB37-520 ×4            576–800 g  顶格方案要慎重
 
 /* ------------------------------------------------------- 行动 */
 const Actions = () => (
-  <Frame kicker="收尾" floor="26" title="行动清单：先打三个电话" wide>
+  <Frame kicker="收尾" floor="27" title="行动清单：先打三个电话" wide>
     <DataTable
       head={["优先", "动作", "找谁 / 要点"]}
       widths={["10%", "30%", "60%"]}
@@ -842,7 +1013,7 @@ const Actions = () => (
 
 /* ------------------------------------------------------- Closing */
 const Closing = () => (
-  <Frame kicker="收尾" floor="27" title="下载与延伸阅读">
+  <Frame kicker="收尾" floor="28" title="下载与延伸阅读">
     <div className="space-y-5">
       <Quote>
         本 deck 由本仓库「工创赛智能救援-限重方案调研包 v1.0（2026-09-28）」整理而成；克重与直播数据为二手参考，正式 BOM 前请自测。v1.1（2026-09-29）新增「判读四问」与「导流机构」两页（来源：2026-09-29 材料整合包 01 件）。
@@ -868,8 +1039,8 @@ const Closing = () => (
             下载：工创赛智能救援-判读四问与导流机制-20260929.zip
           </a>
         </Card>
-        <Card title="文字版教程（Markdown）" icon={Package} tone="brand">
-          本 deck 的完整文字版，便于检索与复制。
+        <Card title="文字版教程（Markdown + mermaid）" icon={Package} tone="brand">
+          本 deck 的完整文字版，含两张关键图（整车方案总览 / 得分链路）的 mermaid，便于检索与复制。
           <br />
           <a href="./files/智能救援车辆设计-文字版教程.md" className="break-all font-semibold text-brand-700 underline">
             下载：智能救援车辆设计-文字版教程.md
@@ -895,30 +1066,31 @@ const Closing = () => (
 export const slides = [
   { nav: "封面", group: "概览", el: <Cover /> },
   { nav: "结论先行", group: "概览", el: <Tldr /> },
-  { nav: "赛项与赛程", group: "概览", el: <Event /> },
-  { nav: "硬约束", group: "概览", el: <Limits /> },
-  { nav: "计分与红线", group: "概览", el: <Scoring /> },
-  { nav: "场地与目标", group: "概览", el: <Field /> },
-  { nav: "2027 三大变化", group: "概览", el: <Changes /> },
-  { nav: "三档配置", group: "方案", el: <Tiers /> },
-  { nav: "重量预算", group: "方案", el: <Budget /> },
-  { nav: "底盘选型", group: "方案", el: <Chassis /> },
-  { nav: "算力选型", group: "方案", el: <Compute /> },
-  { nav: "转运机构", group: "方案", el: <Mechanism /> },
-  { nav: "判读四问", group: "方案", el: <Adjudication /> },
-  { nav: "导流机构", group: "方案", el: <FlowChannel /> },
-  { nav: "感知与电源", group: "方案", el: <Sense /> },
-  { nav: "机械布局", group: "设计", el: <Layout /> },
-  { nav: "框式拨具", group: "设计", el: <Gripper /> },
-  { nav: "电气与安全", group: "设计", el: <Electric /> },
-  { nav: "软件架构", group: "设计", el: <Software /> },
-  { nav: "视觉流水线", group: "设计", el: <Vision /> },
-  { nav: "任务状态机", group: "设计", el: <Fsm /> },
-  { nav: "定位与对位", group: "设计", el: <Localize /> },
-  { nav: "三阶段路线", group: "落地", el: <Roadmap /> },
-  { nav: "训练与自测", group: "落地", el: <Test /> },
-  { nav: "现场工程坑", group: "落地", el: <Pitfalls /> },
-  { nav: "出图前检查表", group: "落地", el: <Checklist /> },
+  { nav: "赛项与赛程", group: "赛项规则", el: <Event /> },
+  { nav: "硬约束", group: "赛项规则", el: <Limits /> },
+  { nav: "计分与红线", group: "赛项规则", el: <Scoring /> },
+  { nav: "场地与目标", group: "赛项规则", el: <Field /> },
+  { nav: "2027 三大变化", group: "赛项规则", el: <Changes /> },
+  { nav: "整车方案总览", group: "整车方案", el: <PlanOverview /> },
+  { nav: "对比决策", group: "整车方案", el: <DecisionBlock /> },
+  { nav: "重量预算", group: "整车方案", el: <Budget /> },
+  { nav: "底盘选型", group: "整车方案", el: <Chassis /> },
+  { nav: "算力选型", group: "整车方案", el: <Compute /> },
+  { nav: "感知与电源", group: "整车方案", el: <Sense /> },
+  { nav: "转运机构", group: "转运与导流", el: <Mechanism /> },
+  { nav: "判读四问", group: "转运与导流", el: <Adjudication /> },
+  { nav: "导流机构", group: "转运与导流", el: <FlowChannel /> },
+  { nav: "机械布局", group: "设计实现", el: <Layout /> },
+  { nav: "框式拨具", group: "设计实现", el: <Gripper /> },
+  { nav: "电气与安全", group: "设计实现", el: <Electric /> },
+  { nav: "软件架构", group: "设计实现", el: <Software /> },
+  { nav: "视觉流水线", group: "设计实现", el: <Vision /> },
+  { nav: "任务与得分链路", group: "设计实现", el: <Fsm /> },
+  { nav: "定位与对位", group: "设计实现", el: <Localize /> },
+  { nav: "三阶段路线", group: "落地路线", el: <Roadmap /> },
+  { nav: "训练与自测", group: "落地路线", el: <Test /> },
+  { nav: "现场工程坑", group: "落地路线", el: <Pitfalls /> },
+  { nav: "出图前检查表", group: "落地路线", el: <Checklist /> },
   { nav: "行动清单", group: "收尾", el: <Actions /> },
   { nav: "下载与延伸阅读", group: "收尾", el: <Closing /> },
 ];
