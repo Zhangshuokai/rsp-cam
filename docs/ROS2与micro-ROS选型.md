@@ -235,6 +235,51 @@ flowchart LR
 - **结果**：`ros2 node list` → `/esp32_car`；`/esp32/heartbeat` ≈1 Hz；`teleop_twist_keyboard` 发 `/cmd_vel` 后左右履带前进/后退/左转/右转/停车**方向全部正确**（架空台架实测）。串口同时可看到官方的 `[ROS] Heartbeat sent: n` 与 `Received Twist message`。
 - 电机驱动侧的具体配方（`getEncoderMotor(Mn)->begin(90)`、`getMotor(Mn)->spin()`、占空比 60~100、库调用只在核心 1）见 `ESP32-S3电机驱动板资料.md` 第三节第 5 小节；下载包 `教学webppt/ESP32-S3接入micro-ROS/files/ESP32-S3-microROS.zip`。
 
+### 固件侧任务结构与重连机制
+
+固件照官方 micro-ROS 示例：通信全在核心 0 的 FreeRTOS 后台任务里，电机库只在核心 1 调。
+
+```mermaid
+flowchart TD
+    S["setup()（核心 1）<br/>Serial.begin + 电机初始化<br/>xTaskCreatePinnedToCore(microros_task, 核心 0)"]
+    S --> T["microros_task（核心 0）"]
+    T --> T1["① wait_for_wifi(30 s)：只连 2.4 GHz"]
+    T1 --> T2["② set_microros_wifi_transports(SSID, PASS, AgentIP, 8888)"]
+    T2 --> T3{"③ while (true)"}
+    T3 -->|未连接| T4["rmw_uros_ping_agent(100, 1) 探 Agent → create_entities()"]
+    T3 -->|已连接| T5["rclc_executor_spin_some(100 ms) 收发话题"]
+    T5 --> T6{"ping 失败 / 返回非 OK？"}
+    T6 -->|是| T7["destroy_entities() → 断连即停 → 重连"]
+    T5 --> T8["每 1 s rcl_publish /esp32/heartbeat"]
+    S --> L["loop()（核心 1）<br/>1 s 无 /cmd_vel → 停车<br/>drive_motor() 下发 spin(target)"]
+```
+
+三条铁律：① 电机库只在核心 1 调；② 订阅回调只写目标值；③ 断连即停，ping 重连不用重启板子。
+
+### Pi 端 Agent 通路与验证链路
+
+```mermaid
+flowchart LR
+    S3["ESP32-S3 固件<br/>micro-ROS 客户端（rcl + rclc）<br/>节点 esp32_car"]
+    S3 -->|"UDP4 :8888（双向）"| AG["树莓派 micro-ROS Agent<br/>Docker ros:jazzy-ros-base，--network host"]
+    AG -->|"翻译成普通 ROS 2 节点"| R2["ROS 2 图（Pi 5）<br/>teleop → /cmd_vel<br/>heartbeat_listener → /esp32/heartbeat"]
+    R2 -->|"/cmd_vel"| AG
+    AG -->|"/cmd_vel"| S3
+```
+
+验证链路（Pi 的 ROS 2 容器里）：`ros2 node list` → `/esp32_car`；`ros2 topic hz /esp32/heartbeat` → 约 1 Hz；`ros2 topic echo /cmd_vel` → 按键后出现 `Twist`。完整排查命令见 `ESP32-S3电机驱动板资料.md` 第六节。
+
+### 传输方式对比（串口 vs Wi-Fi）
+
+`board_microros_transport` 双选，按稳定性 / 接线 / 移动性 / 适用阶段定：
+
+| 维度 | 串口（serial） | Wi-Fi（wifi / UDP4） |
+| --- | --- | --- |
+| 稳定性 | 有线直连，不受路由器与信道干扰；长线或接触不良会掉 | 依赖 2.4 GHz 信号与同网段 |
+| 接线 | USB / GPIO 串口线接到 Pi，容器要 `--device` 映射 | 无线，无需接线 |
+| 移动性 | 拖着一根线，车不能自由跑 | 车可自由移动（本项目默认） |
+| 适用阶段 | 台架调试、固定安装 | 遥控、跑车、整机验证 |
+
 ## 七、跨机验证：WSL2 ↔ 树莓派 ping-pong
 
 本机在 WSL2 里装了第二份 ROS 2（Ubuntu 24.04 + `ros-jazzy-ros-base`，apt 走清华 TUNA 镜像），
