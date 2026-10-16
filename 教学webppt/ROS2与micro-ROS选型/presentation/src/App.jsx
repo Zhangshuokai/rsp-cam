@@ -239,7 +239,7 @@ export default function App() {
             </div>
             <div className="leading-tight">
               <p className="text-[0.9rem] font-bold text-ink">ROS 2 与 micro-ROS 选型</p>
-              <p className="text-[0.72rem] text-muted">选型 · 部署 · Clash 代理</p>
+              <p className="text-[0.72rem] text-muted">选型 · 部署 · 跨机验证</p>
             </div>
             <button
               onClick={() => setSidebar(false)}
