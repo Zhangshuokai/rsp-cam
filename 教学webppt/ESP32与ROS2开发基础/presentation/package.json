@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "ESP32 与 ROS 2 开发基础：48 学时课程包与三板上位机系统（React 单页演示）",
+  "description": "ESP32 与 ROS 2 开发基础：48 学时课程包 + 短平快集训版与三板上位机系统（React 单页演示）",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

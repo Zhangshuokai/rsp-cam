@@ -3,10 +3,12 @@ import {
   Activity,
   AlertTriangle,
   BookOpen,
+  Bot,
   Boxes,
   CalendarDays,
   CheckCircle2,
   CircuitBoard,
+  ClipboardList,
   Cpu,
   Download,
   FolderTree,
@@ -114,7 +116,8 @@ const Cover = () => (
     </h1>
     <p className="mt-5 max-w-4xl border-l-4 border-brand-500 pl-4 text-[1rem] leading-relaxed text-slateink md:mt-8 md:pl-5 md:text-[1.15rem]">
       职业本科 48 学时软硬件入门课程：三块板（绿/蓝 ESP32-S3 + 学而思掌机）经 WiFi/TCP
-      接入 WSL 里的 ROS 2，用 Web 控制台管理灯效——设备层 → 通信层 → 系统层一条主线走通。
+      接入 WSL 里的 ROS 2，用 Web 控制台管理灯效——设备层 → 通信层 → 系统层一条主线走通；
+      另备短平快集训版：1 天教师教学 + 3–4 天自学，AI 监督下完成算法开发。
     </p>
     <p className="mt-4 text-[0.86rem] text-muted md:text-[0.92rem]">
       每页默认只留要点；点「展开完整步骤」可看该步的全量命令与更多细节。
@@ -129,7 +132,8 @@ const Position = () => (
         职业本科一年级：电子信息、物联网、机器人、智能制造、计算机等专业；先修计算机应用基础。
       </Card>
       <Card title="体量" icon={CalendarDays}>
-        3 学分 / 48 学时（16 周 × 3 学时）；每周建议 45 分钟讲解演示 + 90 分钟动手实践。
+        3 学分 / 48 学时（16 周 × 3 学时）；每周建议 45 分钟讲解演示 + 90 分钟动手实践；
+        另有短平快集训版：1 天讲授 + 3–4 天自学（见后文）。
       </Card>
       <Card title="主线项目" icon={Lightbulb}>
         LED 协同控制系统：三块板 + ROS 2 桥接 + Web 控制台，所有知识点都围绕它推进。
@@ -489,8 +493,181 @@ const Assessment = () => (
   </Frame>
 );
 
+const Intensive = () => (
+  <Frame
+    kicker="短平快"
+    floor="14"
+    title="短平快集训：1 天讲授 + 3–4 天自学"
+    lead="把 48 学时改造成『最小闭环走通 + AI 监督下改算法』；材料对应课程包 06-短平快集训方案 / 07-AI监督开发工作流。"
+    wide
+  >
+    <Grid cols={3}>
+      <Card title="给谁 / 场景" icon={GraduationCap}>
+        职业本科的小学期、实训周、竞赛集训前的快速入门；有基础 Python（能读代码、改参数）即可。
+      </Card>
+      <Card title="两条硬目标" icon={Target}>
+        ① 理解 ROS 2 应用流程：构建 → 启动 → 话题 → 桥接 → 界面，能脱稿复现全链路；
+        ② 在教师监督下用 AI 工具完成本项目算法开发：能解释、能验证、有记录。
+      </Card>
+      <Card title="怎么砍：保链路、减纵深" icon={Wrench}>
+        保留最小闭环（烧录 → 部署 → 联网 → 话题 → 页面）；点灯编程压缩为「读懂 + 改参数」；
+        删除 git 与固件内部结构；样式体系升级为算法开发。
+      </Card>
+    </Grid>
+    <div className="mt-6 space-y-3">
+      <Quote>现象先行不变；新增 AI 全程带教——读 → 讲 → 改 → 验，AI 可以帮你写，解释和验证必须自己来。</Quote>
+    </div>
+  </Frame>
+);
+
+const DayOne = () => (
+  <Frame kicker="短平快" floor="15" title="第 1 天：教师教学日程（8 学时）" wide>
+    <DataTable
+      head={["时段（示例）", "环节", "内容", "验收点"]}
+      widths={["15%", "17%", "42%", "26%"]}
+      rows={[
+        ["08:30–09:10", "S1 开场", "演示完整系统、画链路大图、定目标与安全红线", "能复述链路与当天目标"],
+        [
+          "09:10–10:30",
+          "S2 烧录 + 部署",
+          <span key="s2">
+            <code>flash-id</code> → 擦写固件 → REPL → <code>deploy.py</code> 双板部署；命令卡片贴桌
+          </span>,
+          "两板闪烁 + 串口标识；能解释 0x0 偏移",
+        ],
+        [
+          "10:45–12:00",
+          "S3 联网 + 全链路",
+          "填网络配置 → 转发器 → colcon + launch → 两板 registered；故障注入看约 12 秒自动重连",
+          "link up + registered + 亲眼看一次重连",
+        ],
+        [
+          "13:30–14:45",
+          "S4 ROS 2 应用流程",
+          "topic list/echo/pub 改色；页面六项操作；讲「构建 → 启动 → 话题 → 桥接 → 界面」骨架（不展开 DDS）",
+          "命令行改色成功；页面操作全过；说清 tx/rx",
+        ],
+        ["15:00–16:05", "S5 AI 上手 + 走读", "用提示词模板让 AI 画调用链，对照源码核对并记录 AI 不准确处", "提交 1 条 AI 回答核对记录"],
+        [
+          "16:05–16:40",
+          "S6 发布 + 示范",
+          <span key="s6">
+            教师现场小改造（<code>PLAY_PERIODS</code> 4 → 2 看轮播加快）；发布任务卡与 3 天计划
+          </span>,
+          "能说出四步工作法与红线",
+        ],
+      ]}
+    />
+    <div className="mt-4">
+      <Quote>节奏要诀：工具预装、命令卡片、卡壳超 10 分钟直接换备用板——课堂时间只花在链路上。</Quote>
+    </div>
+  </Frame>
+);
+
+const SelfStudy = () => (
+  <Frame kicker="短平快" floor="16" title="第 2–4 天：自学实践日程（每天 6–7 小时）" wide>
+    <DataTable
+      head={["天", "主题", "关键任务", "当天检查点"]}
+      widths={["12%", "22%", "46%", "20%"]}
+      rows={[
+        [
+          "Day 1",
+          "脱稿复现 + 流程固化",
+          "全链路证据包；改 UI_PORT 验证重建生效；杀服务器计时重连；话题 pub/echo 对比；手绘数据流图",
+          "证据包 + 抽查问题 1–3",
+        ],
+        [
+          "Day 2",
+          "指令体系走读 + 任务卡 A",
+          "STYLE / PLAY / MIX 实操与源码走读；MIX 合成规则改造（加权平均或逐通道取最大），走完 AI 四步法",
+          "任务 A diff + 观感对照 + AI 日志",
+        ],
+        [
+          "Day 3",
+          "任务卡 B：呼吸样式",
+          <span key="d3">
+            新增 <code>breathe</code>：协议字段 + 三角波亮度 + 显示分支；回归 STYLE / MIX / RESET
+          </span>,
+          "验收断言全过 + 解释亮度公式",
+        ],
+        ["Day 4 弹性", "任务卡 C 冲刺 + 终验收", "双板交通灯协同（板端或 ROS 2 侧）；演示 + 3 个原理问答 + AI 日志抽查", "终验评分（100 分制）"],
+      ]}
+    />
+    <div className="mt-4">
+      <Quote>3 天制：取消弹性日、任务 C 转选做、终验收并入 Day 3 下午；进度快的完成 A 直接进 B / C。</Quote>
+    </div>
+  </Frame>
+);
+
+const AiWorkflow = () => (
+  <Frame kicker="短平快" floor="17" title="AI 监督开发：四步工作法 + 红线" wide>
+    <div className="space-y-4">
+      <Grid cols={2}>
+        <Card title="读 → 讲 → 改 → 验" icon={Bot}>
+          <ol className="mt-1 list-decimal space-y-1.5 pl-5">
+            <li>
+              <b>读</b>：让 AI 给「文件:函数」调用链，人对照源码核对；
+            </li>
+            <li>
+              <b>讲</b>：只让它出修改点清单（先不改代码），人审查选型；
+            </li>
+            <li>
+              <b>改</b>：最小 diff，一次只动一个点，改动前留底；
+            </li>
+            <li>
+              <b>验</b>：部署 / 构建 / 运行，按验收断言逐条打勾。
+            </li>
+          </ol>
+        </Card>
+        <Card title="三条强化提示词" icon={Terminal}>
+          「先不要改代码，只列修改点清单」「只修改 XX 函数内部，不要重构」「每条给出依据：引用文件与函数，不确定的明确标注」——写进每次对话。
+        </Card>
+        <Card title="红线（对应项记 0 分）" icon={ShieldCheck} tone="warn">
+          密钥进 AI 对话 / 截图 / 提交物；无法解释自己提交的代码（含 AI 生成）；实验记录与 AI 日志编造。
+        </Card>
+        <Card title="留痕要求" icon={ClipboardList}>
+          AI 使用日志（提示词要点 / 建议摘要 / 采纳与否 / 验证证据）+ 至少 1 条「被推翻的 AI 建议」——这是加分项。
+        </Card>
+      </Grid>
+      <Quote>监督 = 限定范围 + 强行验证 + 留痕；提示词模板 T1–T10 与记录模板见 07-AI监督开发工作流.md。</Quote>
+    </div>
+  </Frame>
+);
+
+const TaskCards = () => (
+  <Frame kicker="短平快" floor="18" title="算法任务卡：改的是真算法，验的是真观感" wide>
+    <DataTable
+      head={["任务卡", "难度", "内容", "验收（摘要）"]}
+      widths={["24%", "10%", "38%", "28%"]}
+      rows={[
+        [
+          "A · MIX 合成规则改造",
+          "★★",
+          <span key="a">
+            <code>composite()</code>：相加截断 → 加权平均 / 逐通道取最大；先预测观感再实测对照
+          </span>,
+          "改前改后观感对照；无除零；回归 MIX STOP 与报错",
+        ],
+        [
+          <span key="b">
+            B · 新增 <code>breathe</code> 呼吸样式
+          </span>,
+          "★★★",
+          "协议扩展 solid/blink/breathe + 三角波亮度 + 显示分支；定义 MIX 中的语义",
+          "1.2 秒呼吸可见；LIST 显示 breathe；60 秒在线不闪断",
+        ],
+        ["C · 双板交通灯协同", "★★★☆", "板端按 FROM 心跳切换，或 ROS 2 侧写调度节点（推荐：练应用流程）", "60 秒交替无错乱；拔板行为有定义；能画数据流图"],
+        ["D · 自拟（教师审核）", "★★", "在线时长显示 / MIX 相位参数 / PLAY 按时间切换……", "目标 + 3 条可判定断言 + AI 使用计划"],
+      ]}
+    />
+    <div className="mt-4">
+      <Quote>难度递进：A 热身 → B 协议扩展 → C 系统协同；至少完成 1 张，B / C 是默认目标。</Quote>
+    </div>
+  </Frame>
+);
+
 const Downloads = () => (
-  <Frame kicker="收尾" floor="14" title="材料下载与位置" wide>
+  <Frame kicker="收尾" floor="19" title="材料下载与位置" wide>
     <Grid cols={2}>
       <Card title="一键下载：课程包 + 代码 + 固件" icon={Download}>
         <p>
@@ -500,7 +677,8 @@ const Downloads = () => (
           </a>
         </p>
         <p className="mt-2 text-muted">
-          含课程标准 / 16 周单元设计 / 11 个实验指导 / 考核方案 / 教师手册；
+          含课程标准 / 16 周单元设计 / 11 个实验指导 / 考核方案 / 教师手册 /
+          短平快集训方案 / AI 监督开发工作流；
           <code>common</code>、<code>green</code>、<code>blue</code>、<code>xrs</code>、
           <code>tools</code>、<code>ros2_ws</code> 与两块板的 MicroPython 固件。
         </p>
@@ -508,6 +686,7 @@ const Downloads = () => (
       <Card title="工作区内的位置" icon={FolderTree}>
         <ul className="mt-1 list-disc space-y-1.5 pl-5">
           <li>课程包：<code>培训/ESP32与ROS2开发基础课程包/</code></li>
+          <li>短平快版：同目录 <code>06-短平快集训方案.md</code>、<code>07-AI监督开发工作流.md</code></li>
           <li>工程代码：<code>教学demo/ESP32-ROS2-LED协同系统/</code></li>
           <li>文字版（架构 / 协议 / 排障）：<code>docs/ESP32与ROS2开发基础.md</code></li>
         </ul>
@@ -526,7 +705,7 @@ const Downloads = () => (
 );
 
 const Wrap = () => (
-  <Frame kicker="收尾" floor="15" title="记住这三层，然后往哪走">
+  <Frame kicker="收尾" floor="20" title="记住这三层，然后往哪走">
     <div className="space-y-5">
       <Quote>板子会编程、消息会跑通、系统会搭起来——这门课把"嵌入式设备接入机器人框架"完整走了一遍。</Quote>
       <Grid cols={3}>
@@ -534,7 +713,8 @@ const Wrap = () => (
           设备层 → 通信层 → 系统层；走到系统层，才真正理解嵌入式与 ROS 2 的关系。
         </Card>
         <Card title="课程落地" icon={Rocket}>
-          48 学时 / 16 周 / 11 实验 / 1 个小组作品；材料齐全，按实验指导可完整复现。
+          48 学时 / 16 周 / 11 实验 / 1 个小组作品；另有短平快集训版（1 天 + 3–4 天）；
+          材料齐全，按实验指导可完整复现。
         </Card>
         <Card title="延续一：传感器" icon={Activity}>
           DHT11 / 超声波 / 光敏 → 把物理量映射为颜色或频率（I2C / ADC 入门）。
@@ -568,6 +748,11 @@ export const slides = [
   { nav: "教师准备", group: "实施", el: <TeacherPrep /> },
   { nav: "第一次上机", group: "实施", el: <FirstLab /> },
   { nav: "考核方案", group: "实施", el: <Assessment /> },
+  { nav: "集训总览", group: "短平快", el: <Intensive /> },
+  { nav: "第 1 天日程", group: "短平快", el: <DayOne /> },
+  { nav: "自学 3–4 天", group: "短平快", el: <SelfStudy /> },
+  { nav: "AI 四步工作法", group: "短平快", el: <AiWorkflow /> },
+  { nav: "算法任务卡", group: "短平快", el: <TaskCards /> },
   { nav: "下载与材料", group: "收尾", el: <Downloads /> },
   { nav: "小结与下一步", group: "收尾", el: <Wrap /> },
 ];
