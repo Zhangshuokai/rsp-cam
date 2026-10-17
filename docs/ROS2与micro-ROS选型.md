@@ -18,6 +18,20 @@
 
 micro-ROS 的架构是"**MCU 客户端 → Agent → ROS 2 图**"。Agent 本身是标准 ROS 2 节点，仍要依附在完整 ROS 2 上，所以 **micro-ROS 不能替代 ROS 2**。
 
+通信路径是一条直线（对应 deck 页「通信路径」，横向点式动画）：
+
+```mermaid
+flowchart LR
+    MCU["MCU（板端）<br/>micro-ROS client（rcl + rclc，静态内存）"] -->|"串口 serial / Wi-Fi UDP4"| AG["micro-ROS Agent<br/>树莓派容器：把「方言」翻成「普通话」"]
+    AG -->|"翻译成普通 ROS 2 节点"| R2["ROS 2 图（Pi 5）<br/>话题 / 服务照常收发"]
+    R2 -.->|"绿＝验证通过"| OK["node list 出现 /esp32_car<br/>topic 出现 /esp32/heartbeat"]
+```
+
+> **记忆锚（先记选型与角色）**
+> - **口诀：「小车上 micro-ROS，大车上原生 ROS 2」**——按算力与内存选型：几十 KB RAM 的单片机上 micro-ROS；有 Linux 与数百 MB 内存的主机就直跑原生 ROS 2。
+> - **生活化类比：micro-ROS＝给单片机配个翻译官，Agent＝翻译官工作站**——MCU 只说「方言」（rcl + rclc、静态内存），Agent 常驻树莓派，把方言翻成 ROS 2 的「普通话」（DDS 话题）。
+> - **颜色编码（全册统一）：蓝＝MCU / 硬件，橙＝传输 / 中间件，绿＝验证通过。**
+
 ## 二、为什么树莓派 5 选 ROS 2
 
 - Pi 5（BCM2712，aarch64）跑 Debian/Ubuntu Linux，是完整的通用计算平台，天然属于 ROS 2 的宿主侧；视觉、点云、路径规划这类算法本来就该放在这里。
@@ -55,6 +69,16 @@ flowchart TD
 
 > 辩证一问：「什么情况下反而该选另一边？」——只有 MCU、没有 Linux 主机，又要做多节点通信时，才轮到在一块强一点的 MCU 上直接跑 micro-ROS；反过来，系统里根本没有硬实时任务时，就不该为它多养一套固件与 Agent。
 
+三种接入方案按「资源 / 延迟 / 维护成本」对比（对应 deck 页「对比决策」，横向点式动画逐方案点亮）：
+
+```mermaid
+flowchart TB
+    Q["按资源 / 延迟 / 维护成本选"]
+    Q --> O1["原生 ROS 2（Linux 直跑）<br/>资源：数百 MB 起、多核 · 延迟：毫秒级抖动 · 维护：一套系统最省"]
+    Q --> O2["micro-ROS（MCU 上）<br/>资源：几十 KB RAM、单核 · 延迟：RTOS 微秒级硬实时 · 维护：多一套固件 + 跨平台工具链"]
+    Q --> O3["桥接：micro-ROS Agent<br/>资源：跟主机、可忽略 · 延迟：取决于传输链路 · 维护：随 Pi 常驻、换设备零改动"]
+```
+
 ## 三、树莓派上的 ROS 2 部署方案对比
 
 关键约束：**ROS 2 的 apt 二进制包只支持 Ubuntu。** 按 REP-2000，arm64 的 Tier 1 是 Ubuntu；Raspberry Pi OS / Debian 属于 Tier 3，需要源码编译。官方 Raspberry Pi 安装指南给的也是"Docker 或 Ubuntu"两条路。
@@ -65,6 +89,16 @@ flowchart TD
 | Ubuntu 24.04 for Pi | 重刷系统，再用标准 apt 装 ROS 2 Jazzy | 原生 apt，最"正统" | 需重装系统，破坏现有环境与已配好的网络 | 仅在要长期原生开发时考虑 |
 | 源码编译 | 在 Debian 上建 ROS 2 工作区编译 | 无 Docker 依赖 | 耗时长（Pi 5 上数小时）、依赖坑多、难维护 | ❌ 不建议 |
 | conda / RoboStack(pixi) | 用 pixi 装 conda-forge 的 ROS 2 | 宿主原生、免 Docker | 生态与官方 apt 略有差异 | 备选 |
+
+本项目采用的 Docker 方案，部署层级与「硬件要显式映射」的关系（对应 deck 页「部署方案对比」，内联 SVG 结构关系图）：
+
+```mermaid
+flowchart TB
+    H["① 宿主 · 树莓派 5（Debian 13）<br/>系统层：不装 ROS 2 本身"] --> D["② Docker 引擎 26.1.5<br/>Debian 源 docker.io，开机自启"]
+    D --> C["③ 容器 · ros:jazzy-ros-base<br/>官方 arm64 二进制，随删随建"]
+    C --> R["④ ROS 2 图 · Jazzy<br/>视觉 / 规划 / 决策节点"]
+    R -.->|"默认不进容器，需 --device 显式映射"| HW["⑤ 硬件 · 摄像头 / 串口 / GPIO"]
+```
 
 **发行版选择**：`Jazzy Jalisco`（2024-05 发布，LTS 维护到 2029-05，对应 Ubuntu 24.04）是当前最合适的长期支持版；ROS 1 Noetic 已于 2025-05 停止维护，不要再用。
 
@@ -198,6 +232,13 @@ source /opt/ros/jazzy/setup.bash
 - 多个容器要互通必须都加 `--network host`，并使用相同的 `ROS_DOMAIN_ID`。
 
 ## 六、什么时候才需要引入 micro-ROS
+
+**判据卡｜什么时候「不用」micro-ROS**（对应 deck 页「何时不用 micro-ROS」，任一成立就别多养一套固件与 Agent）：
+
+- 只有 Linux 主机、系统里**没有 MCU** 做实时底层 → 只装 ROS 2；
+- **没有硬实时与底层 I/O 需求**（电机闭环 / IMU / PWM / CAN 都不在系统边界上）；
+- 只是**取图或算法验证**（单块 Pi 上直接用 Python / OpenCV 更省事）；
+- **算力足够**、还需要导航 / 感知全量生态或多节点编排。
 
 出现下列任一需求时，才在 MCU 上引入 micro-ROS：
 
