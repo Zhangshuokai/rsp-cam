@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Cpu,
   Server,
@@ -26,6 +26,7 @@ import {
   ShieldCheck,
   Zap,
   ArrowLeftRight,
+  ArrowRight,
 } from "lucide-react";
 import { Frame, Card, DataTable, Grid, Quote, Focus, Steps, Pre, Figure } from "./components.jsx";
 
@@ -48,6 +49,264 @@ const A = ({ href, children }) => (
   >
     {children}
   </a>
+);
+
+/* ============================================================
+   守则第七节 · 点式动画（全册 ≤3 处）
+   纯前端实现：React state + setTimeout + CSS transition，无外链资源。
+   默认全亮（静态兜底，停帧/打印都完整可读）；播放时逐点 idle → active → done。
+   ============================================================ */
+function useSequence(count, initial = "on", { step = 950, hold = 850 } = {}) {
+  const [statuses, setStatuses] = useState(() => Array(count).fill(initial));
+  const timers = useRef([]);
+  const clearTimers = useCallback(() => {
+    timers.current.forEach(clearTimeout);
+    timers.current = [];
+  }, []);
+  useEffect(() => clearTimers, [clearTimers]);
+  const reset = useCallback(() => {
+    clearTimers();
+    setStatuses(Array(count).fill(initial));
+  }, [clearTimers, count, initial]);
+  const play = useCallback(() => {
+    clearTimers();
+    setStatuses(Array(count).fill("idle"));
+    for (let i = 0; i < count; i += 1) {
+      timers.current.push(
+        setTimeout(() => {
+          setStatuses((prev) => {
+            const next = [...prev];
+            if (i > 0) next[i - 1] = "done";
+            next[i] = "active";
+            return next;
+          });
+        }, i * step)
+      );
+    }
+    timers.current.push(
+      setTimeout(() => setStatuses(Array(count).fill("done")), count * step + hold)
+    );
+  }, [clearTimers, count, step, hold]);
+  const jump = useCallback(
+    (idx) => {
+      clearTimers();
+      setStatuses(
+        Array.from({ length: count }, (_, j) => (j < idx ? "done" : j === idx ? "active" : "idle"))
+      );
+    },
+    [clearTimers, count]
+  );
+  return { statuses, play, reset, jump };
+}
+
+/* 颜色编码（全册统一）：蓝＝板子侧、橙＝电脑侧、绿＝验证通过 */
+const NODE_TONE = {
+  board: {
+    idle: "border-line bg-paper text-muted",
+    on: "border-brand-400 bg-brand-50 text-brand-700",
+    active: "border-brand-600 bg-brand-600 text-white",
+    done: "border-good bg-good text-white",
+  },
+  host: {
+    idle: "border-line bg-paper text-muted",
+    on: "border-amber-400 bg-amber-50 text-warn2",
+    active: "border-warn2 bg-warn2 text-white",
+    done: "border-good bg-good text-white",
+  },
+};
+
+const PlayBtn = ({ onClick, children }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3.5 py-1.5 text-[0.82rem] font-semibold text-white transition hover:bg-brand-700"
+  >
+    <Play size={13} />
+    {children}
+  </button>
+);
+
+const ResetBtn = ({ onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="inline-flex items-center gap-1.5 rounded-lg border border-brand-300 bg-paper px-3.5 py-1.5 text-[0.82rem] font-semibold text-brand-700 transition hover:bg-brand-50"
+  >
+    <RotateCcw size={13} />
+    重置
+  </button>
+);
+
+/* 招式一 · 横向连接链点式动画：S3 → 传输 → Agent → ROS 2 网络 → 上位程序 */
+const CHAIN = [
+  { no: "1", side: "board", title: "S3 固件", sub: "micro-ROS 客户端" },
+  { no: "2", side: "board", title: "传输通道", sub: "Wi-Fi UDP :8888" },
+  { no: "3", side: "host", title: "Agent", sub: "总机 · 翻译官" },
+  { no: "4", side: "host", title: "ROS 2 网络", sub: "话题 / 服务" },
+  { no: "5", side: "host", title: "上位程序", sub: "echo / 浏览器" },
+];
+
+const segClass = (side, st) =>
+  st === "done" ? "bg-good" : st === "idle" ? "bg-line" : side === "board" ? "bg-brand-500" : "bg-warn2";
+
+function ConnFlow() {
+  const { statuses, play, reset, jump } = useSequence(CHAIN.length);
+  return (
+    <div className="surface p-4 md:p-5">
+      <div className="flex flex-col md:flex-row md:items-stretch">
+        {CHAIN.map((s, i) => {
+          const st = statuses[i];
+          return (
+            <React.Fragment key={i}>
+              <button
+                type="button"
+                onClick={() => jump(i)}
+                title={`跳到第 ${i + 1} 步`}
+                className={`flex flex-1 items-center gap-3 rounded-xl border-2 px-3 py-2.5 text-left transition-colors duration-500 md:flex-col md:gap-2 md:py-3.5 md:text-center ${NODE_TONE[s.side][st]}`}
+              >
+                <span className="relative grid h-9 w-9 flex-none place-items-center rounded-full border-2 border-current text-[0.9rem] font-bold md:h-10 md:w-10">
+                  {st === "active" && (
+                    <span
+                      className={`absolute inset-0 animate-ping rounded-full ${
+                        s.side === "board" ? "bg-brand-400/50" : "bg-amber-400/50"
+                      }`}
+                    />
+                  )}
+                  <span className="relative">{s.no}</span>
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-[0.9rem] font-bold leading-tight md:text-[0.95rem]">{s.title}</span>
+                  <span className="block text-[0.76rem] leading-tight opacity-80 md:text-[0.8rem]">{s.sub}</span>
+                </span>
+              </button>
+              {i < CHAIN.length - 1 && (
+                <span
+                  className={`ml-[1.15rem] h-3 w-0.5 flex-none self-start rounded-full transition-colors duration-500 md:ml-1 md:mr-1 md:h-0.5 md:w-6 md:self-center ${segClass(
+                    s.side,
+                    st
+                  )}`}
+                />
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+        <PlayBtn onClick={play}>播放点式动画</PlayBtn>
+        <ResetBtn onClick={reset} />
+        <span className="text-[0.78rem] text-muted">点节点可手动跳到该步；默认全亮＝静态兜底。</span>
+      </div>
+      <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-line pt-2.5 text-[0.78rem] text-muted">
+        <span className="font-bold text-ink">口诀：板等 Agent，Agent 等端口，端口等网络</span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-3 w-3 rounded bg-brand-600" />
+          蓝＝板子侧
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-3 w-3 rounded bg-warn2" />
+          橙＝电脑侧
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-3 w-3 rounded bg-good" />
+          绿＝验证通过
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/* 招式二 · 纵向点式分步（验证流程 / 故障排查流共用同一点式动画） */
+function PointSteps({ steps, hint }) {
+  const { statuses, play, reset, jump } = useSequence(steps.length, "on", { step: 1050, hold: 900 });
+  return (
+    <div className="surface p-4 md:p-5">
+      <div className="space-y-2.5">
+        {steps.map((s, i) => {
+          const st = statuses[i];
+          const badge =
+            st === "done"
+              ? "bg-good text-white"
+              : st === "active"
+              ? "bg-warn2 text-white"
+              : st === "idle"
+              ? "bg-slate-200 text-muted"
+              : s.tone === "board"
+              ? "bg-brand-600 text-white"
+              : s.tone === "host"
+              ? "bg-warn2 text-white"
+              : "bg-good text-white";
+          return (
+            <button
+              key={i}
+              type="button"
+              onClick={() => jump(i)}
+              className={`flex w-full items-start gap-3 rounded-xl border-2 px-3.5 py-3 text-left transition-colors duration-500 ${
+                st === "done"
+                  ? "border-good bg-emerald-50"
+                  : st === "active"
+                  ? "border-warn2 bg-amber-50"
+                  : "border-line bg-paper"
+              }`}
+            >
+              <span
+                className={`relative mt-0.5 grid h-7 w-7 flex-none place-items-center rounded-full text-[0.8rem] font-bold transition-colors duration-500 ${badge}`}
+              >
+                {st === "active" && <span className="absolute inset-0 animate-ping rounded-full bg-amber-400/50" />}
+                <span className="relative">{i + 1}</span>
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[0.92rem] font-bold text-ink">{s.t}</span>
+                <span className="block text-[0.82rem] leading-relaxed text-muted">{s.s}</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <PlayBtn onClick={play}>逐步推进</PlayBtn>
+        <ResetBtn onClick={reset} />
+        {hint && <span className="text-[0.78rem] text-muted">{hint}</span>}
+      </div>
+    </div>
+  );
+}
+
+/* 部署组理解型图示：传输方式对比图（结构化卡片，非表格、非 ASCII） */
+const TransportCompare = () => (
+  <div className="grid gap-3 md:grid-cols-2">
+    <div className="surface border-t-4 border-t-slate-300 p-4 md:p-5">
+      <div className="mb-3 flex items-center gap-2.5">
+        <span className="grid h-9 w-9 flex-none place-items-center rounded-lg bg-slate-100 text-slateink">
+          <Cable size={17} />
+        </span>
+        <span>
+          <span className="block text-[0.98rem] font-bold text-ink">串口 serial</span>
+          <span className="block text-[0.76rem] text-muted">有线直连 · 台架调试、固定安装</span>
+        </span>
+      </div>
+      <ul className="space-y-1.5 text-[0.86rem] leading-relaxed text-slateink">
+        <li>优势：有线直连，稳定，不受路由器与信道干扰。</li>
+        <li>代价：拖一根线，车不能自由跑。</li>
+        <li>注意：别和 serial monitor 抢同一个串口。</li>
+      </ul>
+    </div>
+    <div className="surface border-t-4 border-t-brand-500 p-4 md:p-5">
+      <div className="mb-3 flex items-center gap-2.5">
+        <span className="grid h-9 w-9 flex-none place-items-center rounded-lg bg-brand-50 text-brand-700">
+          <Wifi size={17} />
+        </span>
+        <span>
+          <span className="block text-[0.98rem] font-bold text-ink">Wi-Fi wifi / UDP4</span>
+          <span className="block text-[0.76rem] font-semibold text-brand-700">本课默认 · 遥控、跑车、整机验证</span>
+        </span>
+      </div>
+      <ul className="space-y-1.5 text-[0.86rem] leading-relaxed text-slateink">
+        <li>优势：无线机动，S3 不用插着 Pi，车能自由跑。</li>
+        <li>代价：依赖 2.4 GHz 与同网段，受路由器与干扰影响。</li>
+        <li>注意：S3 只连 2.4 GHz；Agent IP 不能写 127.0.0.1。</li>
+      </ul>
+    </div>
+  </div>
 );
 
 /* 通路验证链路：Pi 端 Agent 把 S3 接进 ROS 2 图（内联 SVG，禁用 ASCII 字符画） */
@@ -240,10 +499,46 @@ const Conclusion = () => (
   </Frame>
 );
 
-const Pathway = () => (
+const ChainAnchor = () => (
   <Frame
     kicker="概览"
     floor="02"
+    title="连接链一步步点亮：蓝是板、橙是脑、绿是通"
+    lead="五个角色连成一条链，顺序就是口诀。先按顺序点亮（蓝板、橙脑），再走通一遍（全绿）——记住「灯走到哪」，流程就记到哪。"
+    wide
+  >
+    <div className="space-y-4">
+      <ConnFlow />
+      <Grid cols={3}>
+        <Card title="口诀" icon={BookOpen} tone="brand">
+          「板等 Agent，Agent 等端口，端口等网络」——先开后连、顺序不反，顺序题一眼定音。
+        </Card>
+        <Card title="生活化类比" icon={Cable} tone="warn">
+          串口／网线＝电话线，一头插板、一头插电脑；Agent＝总机，把「电话」接进 ROS 2 这张「城市电话网」。
+        </Card>
+        <Card title="颜色编码" icon={Layers} tone="good">
+          <span className="mb-1 flex items-center gap-2">
+            <span className="h-3.5 w-3.5 rounded bg-brand-600" />
+            蓝＝板子侧动作（S3）
+          </span>
+          <span className="mb-1 flex items-center gap-2">
+            <span className="h-3.5 w-3.5 rounded bg-warn2" />
+            橙＝电脑侧动作（Agent / ROS 2）
+          </span>
+          <span className="flex items-center gap-2">
+            <span className="h-3.5 w-3.5 rounded bg-good" />
+            绿＝验证通过（全链贯通）
+          </span>
+        </Card>
+      </Grid>
+    </div>
+  </Frame>
+);
+
+const Pathway = () => (
+  <Frame
+    kicker="概览"
+    floor="03"
     title="S3 不直说 DDS：经 Agent 翻译成普通 ROS 2 节点"
     lead="三个角色各司其职：S3 只和 Agent 建一条会话，Agent 再把它翻译成 ROS 2 图里的节点——micro-ROS 不能替代 ROS 2。"
     wide
@@ -286,7 +581,7 @@ ROS 2 图（Pi 5）
 const FirmwareTaskPage = () => (
   <Frame
     kicker="固件"
-    floor="03"
+    floor="04"
     title="固件一条后台任务包办：连 Wi-Fi、保活重连、收发话题"
     lead="结构照官方示例：setup 里起 FreeRTOS（一种实时操作系统）后台任务，通信全在核心 0 的任务里，电机库只在核心 1 调。"
     wide
@@ -345,7 +640,7 @@ void microros_task(void *param) {
 const Skeleton = () => (
   <Frame
     kicker="固件"
-    floor="04"
+    floor="05"
     title="初始化顺序是固定的：接传输 → 建节点 → 挂执行器"
     lead="micro-ROS 固件的骨架就五步，顺序不能换；换的只是回调里做什么。"
     wide
@@ -408,7 +703,7 @@ void loop() {
 const Heartbeat = () => (
   <Frame
     kicker="固件"
-    floor="05"
+    floor="06"
     title="发心跳：发布者 + 定时器，让 Pi 知道你在线"
     lead="S3 → Pi 的链路靠心跳证明：一个 publisher 加一个每秒触发的 timer，参数只有话题名、周期、作用三件事。"
     wide
@@ -481,7 +776,7 @@ void loop() {
 const CmdVel = () => (
   <Frame
     kicker="固件"
-    floor="06"
+    floor="07"
     title="收指令：订阅 /cmd_vel，回调里算、loop 里发"
     lead="Pi → S3 的链路收敛成一个回调：从 Twist 算出左右目标占空比，真正驱动放到核心 1。"
     wide
@@ -573,7 +868,7 @@ void loop() {
 const Params = () => (
   <Frame
     kicker="固件"
-    floor="07"
+    floor="08"
     title="连接参数要填对：错一个，Agent 日志里就没有 S3"
     lead="四个参数对齐才有通路：Wi-Fi 双频段、Agent IP、端口、域号，每条都有踩过的坑。"
   >
@@ -606,46 +901,49 @@ const Params = () => (
 const Transport = () => (
   <Frame
     kicker="部署"
-    floor="08"
+    floor="09"
     title="传输方式怎么选：台架用串口，跑车用 Wi-Fi"
     lead="对比对象：串口（serial，有线直连）与 Wi-Fi（wifi，走 UDP4）。按稳定性 / 接线 / 移动性 / 适用阶段四个维度选。"
     wide
   >
     <div className="space-y-4">
-      <DataTable
-        head={["维度", "串口（serial）", "Wi-Fi（wifi / UDP4）"]}
-        rows={[
-          [
-            "稳定性",
-            "有线直连，不受路由器与信道干扰；但长线或接触不良会掉",
-            "依赖 2.4 GHz 信号与同网段，受路由器与干扰影响",
-          ],
-          [
-            "接线",
-            "USB / GPIO 串口线接到 Pi，容器要 --device 映射",
-            <strong className="font-bold text-ink">无线，无需接线，S3 不用插着 Pi</strong>,
-          ],
-          [
-            "移动性",
-            "拖着一根线，车不能自由跑",
-            "车可自由移动（本课默认）",
-          ],
-          [
-            "适用阶段",
-            "台架调试、固定安装",
-            "遥控、跑车、整机验证",
-          ],
-          [
-            "注意",
-            "别和 serial monitor 抢同一个串口",
-            "S3 只连 2.4 GHz 且与 Pi 同网段；Agent IP 不能写 127.0.0.1",
-          ],
-        ]}
-      />
+      <TransportCompare />
       <Quote>
         辩证一问：什么情况下反而该选另一边？——只在台架上调固件、又不想被 Wi-Fi 环境干扰，串口最直接；
         一旦整车要跑起来，就别再让一根线拖住车，改用 Wi-Fi。
       </Quote>
+      <Steps title="展开：传输方式逐项对比（表格）">
+        <DataTable
+          head={["维度", "串口（serial）", "Wi-Fi（wifi / UDP4）"]}
+          rows={[
+            [
+              "稳定性",
+              "有线直连，不受路由器与信道干扰；但长线或接触不良会掉",
+              "依赖 2.4 GHz 信号与同网段，受路由器与干扰影响",
+            ],
+            [
+              "接线",
+              "USB / GPIO 串口线接到 Pi，容器要 --device 映射",
+              <strong className="font-bold text-ink">无线，无需接线，S3 不用插着 Pi</strong>,
+            ],
+            [
+              "移动性",
+              "拖着一根线，车不能自由跑",
+              "车可自由移动（本课默认）",
+            ],
+            [
+              "适用阶段",
+              "台架调试、固定安装",
+              "遥控、跑车、整机验证",
+            ],
+            [
+              "注意",
+              "别和 serial monitor 抢同一个串口",
+              "S3 只连 2.4 GHz 且与 Pi 同网段；Agent IP 不能写 127.0.0.1",
+            ],
+          ]}
+        />
+      </Steps>
       <Steps title="展开：串口传输的完整步骤（备选）">
         <ol className="list-decimal space-y-2 pl-5">
           <li>
@@ -672,7 +970,7 @@ docker run -it --rm --network host \\
 const Esp32Env = () => (
   <Frame
     kicker="部署"
-    floor="09"
+    floor="10"
     title="ESP32 侧：PlatformIO 一键装依赖、编译、烧录"
     lead="官方示例就是 VSCode + PlatformIO；固件依赖 micro_ros_platformio，版本与传输都要对齐。"
     wide
@@ -752,7 +1050,7 @@ pio run -t clean_microros   # 或删掉 .pio 库目录里的 libmicroros/，再�
 const AgentSetup = () => (
   <Frame
     kicker="部署"
-    floor="10"
+    floor="11"
     title="Pi 侧：在 ROS 2 容器里常驻一个 Agent"
     lead="Agent 要常驻、要 host 网络、要挂在容器外的工作区；顺序上先起 Agent，再给 S3 上电。"
     wide
@@ -823,7 +1121,7 @@ ros2 run micro_ros_agent micro_ros_agent udp4 --port 8888`}</Pre>
 const BuildFlash = () => (
   <Frame
     kicker="部署"
-    floor="11"
+    floor="12"
     title="编译与烧录：先 build，再 upload，别抢串口"
     lead="PlatformIO 三条命令走天下；首次编译慢、上传时别同时开串口监视器。"
     wide
@@ -860,34 +1158,24 @@ pio device monitor -b 115200   # 看串口输出`}</Pre>
 const Startup = () => (
   <Frame
     kicker="验证"
-    floor="12"
+    floor="13"
     title="启动顺序：先 Agent，再 S3；顺序反了也不用重启"
     lead="先把 Pi 侧全部就绪，再给 S3 上电；即使上电早了，固件也会按 ping 机制自动重连。"
     wide
   >
     <div className="space-y-4">
-      <Focus
-        no="4"
-        title="四个步骤"
-        tag="顺序"
-        goal="先让 Agent 在监听，再给 S3 上电；顺序反了也不用重启（固件会按官方示例的 ping 机制自动重连）。"
-        points={[
-          "Pi：起 ROS 2 容器（--network host）→ 启动 Agent（udp4 8888）。",
-          "Pi：另开终端 source ROS 2 → 运行监听 / 遥操作节点。",
-          "S3：上电，固件主动连 Agent。",
-          "观察：Agent 打印 session created；topic list 出现 /esp32/heartbeat。",
+      <PointSteps
+        hint="默认全绿＝静态兜底；点「逐步推进」走一遍，也可点某一步跳过去。"
+        steps={[
+          { t: "烧固件", s: "把 micro-ROS 固件写进 S3（pio run -t upload），一次就好", tone: "board" },
+          { t: "起 Agent", s: "Pi 容器里先跑 udp4 --port 8888，占好端口等着板子来电", tone: "host" },
+          { t: "S3 上电连上", s: "板子主动连 Agent，日志出现 session created —— 出现即通", tone: "host" },
+          {
+            t: "看话题",
+            s: "ros2 topic list 出现 /esp32/heartbeat、node list 出现 /esp32_car，全链贯通",
+            tone: "ok",
+          },
         ]}
-        aside={
-          <Code>{`# 终端 A：Agent
-ros2 run micro_ros_agent \\
-  micro_ros_agent udp4 --port 8888
-
-# 终端 B：看心跳（不要设 ROS_DOMAIN_ID）
-ros2 topic echo /esp32/heartbeat
-
-# 终端 C：键盘控车
-ros2 run teleop_twist_keyboard teleop_twist_keyboard`}</Code>
-        }
       />
       <Steps title="展开：三终端完整启动步骤">
         <Pre>{`# 每个终端先进入同一个容器
@@ -920,7 +1208,7 @@ ros2 run teleop_twist_keyboard teleop_twist_keyboard
 const Verify = () => (
   <Frame
     kicker="验证"
-    floor="13"
+    floor="14"
     title="验证按顺序来：节点 → 话题 → 频率 → 指令"
     lead="一条通路从接入到可控，四级都能查到；Agent 日志是两端有没有牵手的证据。"
     wide
@@ -971,12 +1259,21 @@ ros2 topic echo /cmd_vel`}</Pre>
 const Pitfalls = () => (
   <Frame
     kicker="验证"
-    floor="14"
+    floor="15"
     title="连不上别乱改：八成是网络、端口或初始化"
     lead="十一个高频坑按类别归好；先查 Agent 是否在监听、网段频段对不对，再怀疑固件。"
     wide
   >
     <div className="space-y-4">
+      <PointSteps
+        hint="默认全亮＝静态兜底；连不上就按这个顺序查，别一上来就乱改固件。"
+        steps={[
+          { t: "Agent 在监听吗", s: "ss -lunp | grep 8888 没输出，就先起 Agent（udp4 8888）", tone: "host" },
+          { t: "同网段 + 2.4 GHz 吗", s: "对一下填进固件的 Agent IP；S3 只连 2.4 GHz", tone: "host" },
+          { t: "容器是 host 网络吗", s: "docker inspect 查 NetworkMode，期望 host，否则 UDP 8888 只活在容器里", tone: "host" },
+          { t: "固件初始化 / 占空比对吗", s: "少了 begin(90) 就静默不出 PWM；spin 要到 60~100 才转", tone: "board" },
+        ]}
+      />
       <Grid cols={2}>
         <Card title="Agent 没起 / 端口被占" icon={AlertTriangle} tone="warn">
           8888 无监听，S3 一直重连。
@@ -1035,7 +1332,7 @@ docker inspect -f '{{.HostConfig.NetworkMode}}' microros   # 期望 host
 const Downloads = () => (
   <Frame
     kicker="收尾"
-    floor="15"
+    floor="16"
     title="下载入口：固件工程与官方示例随 deck 分发"
     lead="两件随 deck 离线可取：固件工程（含电机库精简子集）与官方 micro-ROS 示例源码。"
     wide
@@ -1088,23 +1385,32 @@ docs/工具链与踩坑.md                  PlatformIO 镜像加速、WSL 编 li
 const Action = () => (
   <Frame
     kicker="收尾"
-    floor="16"
+    floor="17"
     title="照清单做：先起 Agent，再上电，最后按键控车"
     lead="顺序与判据都固定：通路四级验完，才算把 S3 真正接进了 ROS 2。"
     wide
   >
     <div className="space-y-5">
-      <Grid cols={3}>
+      <div className="grid gap-3 md:grid-cols-[1fr_auto_1fr_auto_1fr] md:items-stretch">
         <Card title="第一步：Pi 侧就绪" icon={Server}>
           容器加 <code>--network host</code>，先起 Agent（udp4 8888），再开监听与 teleop 两个终端。
         </Card>
+        <div className="hidden items-center justify-center md:flex">
+          <ArrowRight size={22} className="text-brand-400" />
+        </div>
         <Card title="第二步：S3 上电" icon={Cpu} tone="good">
           固件连 2.4 GHz Wi-Fi、探到 Agent 就建实体；起晚了会自动重连，不用重启板子。
         </Card>
+        <div className="hidden items-center justify-center md:flex">
+          <ArrowRight size={22} className="text-brand-400" />
+        </div>
         <Card title="第三步：按键控车" icon={Rocket}>
           teleop 发 <code>/cmd_vel</code>，车轮跟随；松开 1 s 自动停车。
         </Card>
-      </Grid>
+      </div>
+      <p className="text-[0.88rem] font-semibold text-ink">
+        口诀：板等 Agent，Agent 等端口，端口等网络 —— 先起 Agent，再上电。
+      </p>
       <Quote>
         验收判据：<code>ros2 node list</code> 有 <code>/esp32_car</code>、心跳约 1 Hz、按键后履带方向正确、松手即停。
       </Quote>
@@ -1139,6 +1445,7 @@ ros2 run teleop_twist_keyboard teleop_twist_keyboard
 export const slides = [
   { nav: "封面", group: "概览", el: <Cover /> },
   { nav: "结论先行", group: "概览", el: <Conclusion /> },
+  { nav: "连接链与记忆锚", group: "概览", el: <ChainAnchor /> },
   { nav: "通路与角色", group: "概览", el: <Pathway /> },
   { nav: "固件任务结构", group: "固件", el: <FirmwareTaskPage /> },
   { nav: "固件骨架", group: "固件", el: <Skeleton /> },
