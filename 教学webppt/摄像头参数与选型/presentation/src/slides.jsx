@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Activity,
   AlertTriangle,
@@ -16,6 +16,8 @@ import {
   Lightbulb,
   ListChecks,
   Network,
+  Play,
+  RotateCcw,
   Route,
   ShieldCheck,
   Target,
@@ -24,6 +26,394 @@ import {
   Zap,
 } from "lucide-react";
 import { Frame, Card, DataTable, Grid, Quote, Steps, Pre } from "./components.jsx";
+
+/* ============================================================
+   守则第七节 · 点式动画（全册 ≤3 处）
+   纯前端实现：React state + setTimeout + CSS transition，无任何外链资源。
+   默认全亮（静态兜底：停帧 / 无 JS / 打印时完整可读）；播放时逐点 idle → active → done。
+   颜色编码全册统一：蓝＝设备 / 硬件，橙＝软件 / 参数，绿＝验证通过。
+   ============================================================ */
+function useSequence(count, initial = "on", { step = 950, hold = 850 } = {}) {
+  const [statuses, setStatuses] = useState(() => Array(count).fill(initial));
+  const timers = useRef([]);
+  const clearTimers = useCallback(() => {
+    timers.current.forEach(clearTimeout);
+    timers.current = [];
+  }, []);
+  useEffect(() => clearTimers, [clearTimers]);
+  const reset = useCallback(() => {
+    clearTimers();
+    setStatuses(Array(count).fill(initial));
+  }, [clearTimers, count, initial]);
+  const play = useCallback(() => {
+    clearTimers();
+    setStatuses(Array(count).fill("idle"));
+    for (let i = 0; i < count; i += 1) {
+      timers.current.push(
+        setTimeout(() => {
+          setStatuses((prev) => {
+            const next = [...prev];
+            if (i > 0) next[i - 1] = "done";
+            next[i] = "active";
+            return next;
+          });
+        }, i * step)
+      );
+    }
+    timers.current.push(
+      setTimeout(() => setStatuses(Array(count).fill("done")), count * step + hold)
+    );
+  }, [clearTimers, count, step, hold]);
+  const jump = useCallback(
+    (idx) => {
+      clearTimers();
+      setStatuses(
+        Array.from({ length: count }, (_, j) => (j < idx ? "done" : j === idx ? "active" : "idle"))
+      );
+    },
+    [clearTimers, count]
+  );
+  return { statuses, play, reset, jump };
+}
+
+const NODE_TONE = {
+  need: {
+    idle: "border-line bg-paper text-muted",
+    on: "border-slate-400 bg-slate-100 text-slateink",
+    active: "border-slate-600 bg-slate-600 text-white",
+    done: "border-good bg-good text-white",
+  },
+  param: {
+    idle: "border-line bg-paper text-muted",
+    on: "border-amber-400 bg-amber-50 text-warn2",
+    active: "border-warn2 bg-warn2 text-white",
+    done: "border-good bg-good text-white",
+  },
+  board: {
+    idle: "border-line bg-paper text-muted",
+    on: "border-brand-400 bg-brand-50 text-brand-700",
+    active: "border-brand-600 bg-brand-600 text-white",
+    done: "border-good bg-good text-white",
+  },
+};
+
+const SEG_TONE = { need: "bg-slate-400", param: "bg-warn2", board: "bg-brand-500" };
+const segClass = (side, st) =>
+  st === "done" ? "bg-good" : st === "idle" ? "bg-line" : SEG_TONE[side] || "bg-brand-500";
+
+const PlayBtn = ({ onClick, children }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3.5 py-1.5 text-[0.82rem] font-semibold text-white transition hover:bg-brand-700"
+  >
+    <Play size={13} />
+    {children}
+  </button>
+);
+
+const ResetBtn = ({ onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="inline-flex items-center gap-1.5 rounded-lg border border-brand-300 bg-paper px-3.5 py-1.5 text-[0.82rem] font-semibold text-brand-700 transition hover:bg-brand-50"
+  >
+    <RotateCcw size={13} />
+    重置
+  </button>
+);
+
+/* 颜色编码图例（记忆锚之一，在多张图示里重复出现） */
+const ColorLegend = () => (
+  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[0.78rem] text-muted">
+    <span className="inline-flex items-center gap-1.5">
+      <span className="h-3 w-3 rounded bg-brand-600" />
+      蓝＝设备 / 硬件
+    </span>
+    <span className="inline-flex items-center gap-1.5">
+      <span className="h-3 w-3 rounded bg-warn2" />
+      橙＝软件 / 参数
+    </span>
+    <span className="inline-flex items-center gap-1.5">
+      <span className="h-3 w-3 rounded bg-good" />
+      绿＝验证通过
+    </span>
+  </div>
+);
+
+/* ---- 点式动画 ① 选型决策流程（横向）：需求 → 焦距/分辨率/帧率/接口 → 选定型号 ---- */
+const DECISION = [
+  { no: "1", side: "need", title: "场景需求", sub: "距离 · 运动 · 光照 · 预算" },
+  { no: "2", side: "param", title: "焦距", sub: "近大远小 · 长短广窄" },
+  { no: "3", side: "param", title: "分辨率", sub: "像素数 · 单像素尺寸" },
+  { no: "4", side: "param", title: "帧率 / 延迟", sub: "看画面 25fps 够" },
+  { no: "5", side: "board", title: "接口带宽", sub: "USB2 / USB3 / CSI" },
+  { no: "6", side: "board", title: "选定型号", sub: "对号入座 · 验证通过" },
+];
+
+function DecisionFlow() {
+  const { statuses, play, reset, jump } = useSequence(DECISION.length);
+  return (
+    <div className="surface p-4 md:p-5">
+      <div className="flex flex-col md:flex-row md:items-stretch">
+        {DECISION.map((s, i) => {
+          const st = statuses[i];
+          return (
+            <React.Fragment key={i}>
+              <button
+                type="button"
+                onClick={() => jump(i)}
+                title={`跳到第 ${i + 1} 步`}
+                className={`flex flex-1 items-center gap-3 rounded-xl border-2 px-3 py-2.5 text-left transition-colors duration-500 md:flex-col md:gap-2 md:py-3.5 md:text-center ${
+                  NODE_TONE[s.side][st]
+                }`}
+              >
+                <span className="relative grid h-9 w-9 flex-none place-items-center rounded-full border-2 border-current text-[0.9rem] font-bold md:h-10 md:w-10">
+                  {st === "active" && (
+                    <span
+                      className={`absolute inset-0 animate-ping rounded-full ${
+                        s.side === "param" ? "bg-amber-400/50" : s.side === "need" ? "bg-slate-400/50" : "bg-brand-400/50"
+                      }`}
+                    />
+                  )}
+                  <span className="relative">{s.no}</span>
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-[0.9rem] font-bold leading-tight md:text-[0.95rem]">{s.title}</span>
+                  <span className="block text-[0.76rem] leading-tight opacity-80 md:text-[0.8rem]">{s.sub}</span>
+                </span>
+              </button>
+              {i < DECISION.length - 1 && (
+                <span
+                  className={`ml-[1.15rem] h-3 w-0.5 flex-none self-start rounded-full transition-colors duration-500 md:ml-1 md:mr-1 md:h-0.5 md:w-6 md:self-center ${segClass(
+                    s.side,
+                    st
+                  )}`}
+                />
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+        <PlayBtn onClick={play}>播放点式动画</PlayBtn>
+        <ResetBtn onClick={reset} />
+        <span className="text-[0.78rem] text-muted">点节点可手动跳到该步；默认全亮＝静态兜底。</span>
+      </div>
+      <div className="mt-2.5 border-t border-line pt-2.5">
+        <ColorLegend />
+      </div>
+    </div>
+  );
+}
+
+/* ---- 点式动画 ② / ③ 纵向点式分步（参数-效果、换机核对共用） ---- */
+function PointSteps({ steps, hint }) {
+  const { statuses, play, reset, jump } = useSequence(steps.length, "on", { step: 1050, hold: 900 });
+  return (
+    <div className="surface p-4 md:p-5">
+      <div className="space-y-2.5">
+        {steps.map((s, i) => {
+          const st = statuses[i];
+          const badge =
+            st === "done"
+              ? "bg-good text-white"
+              : st === "active"
+              ? "bg-warn2 text-white"
+              : st === "idle"
+              ? "bg-slate-200 text-muted"
+              : s.side === "board"
+              ? "bg-brand-600 text-white"
+              : s.side === "param"
+              ? "bg-warn2 text-white"
+              : s.side === "good"
+              ? "bg-good text-white"
+              : "bg-slate-600 text-white";
+          return (
+            <button
+              key={i}
+              type="button"
+              onClick={() => jump(i)}
+              className={`flex w-full items-start gap-3 rounded-xl border-2 px-3.5 py-3 text-left transition-colors duration-500 ${
+                st === "done"
+                  ? "border-good bg-emerald-50"
+                  : st === "active"
+                  ? "border-warn2 bg-amber-50"
+                  : "border-line bg-paper"
+              }`}
+            >
+              <span
+                className={`relative mt-0.5 grid h-7 w-7 flex-none place-items-center rounded-full text-[0.8rem] font-bold transition-colors duration-500 ${badge}`}
+              >
+                {st === "active" && <span className="absolute inset-0 animate-ping rounded-full bg-amber-400/50" />}
+                <span className="relative">{i + 1}</span>
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[0.92rem] font-bold text-ink">{s.t}</span>
+                <span className="block text-[0.82rem] leading-relaxed text-muted">{s.s}</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <PlayBtn onClick={play}>逐步推进</PlayBtn>
+        <ResetBtn onClick={reset} />
+        {hint && <span className="text-[0.78rem] text-muted">{hint}</span>}
+      </div>
+    </div>
+  );
+}
+
+/* ---- 理解型图示：焦距-视野关系（内联 SVG 静态图；可配合本机 ManimGX 动画《同一距离：焦距决定视野》） ---- */
+const FocalFov = () => (
+  <div className="surface p-4">
+    <svg
+      viewBox="0 0 680 284"
+      role="img"
+      aria-label="同一距离下焦距决定视野：短焦距广角看到整间屋子，长焦距长焦只看到一扇窗并被放大"
+      className="h-auto w-full"
+    >
+      <text x="8" y="18" fill="#0f172a" fontSize="12.5" fontWeight="700">
+        同一距离：焦距决定视野（近大远小、长短广窄）
+      </text>
+
+      {/* 短焦距 · 广角 */}
+      <text x="8" y="46" fill="#b4690e" fontSize="12" fontWeight="700">短焦距 · 广角镜头</text>
+      <rect x="10" y="58" width="52" height="34" rx="9" fill="#fef3c7" stroke="#fbbf24" />
+      <circle cx="42" cy="75" r="7" fill="#b4690e" />
+      <polygon points="66,75 400,52 400,98" fill="#fef3c7" opacity="0.55" />
+      <line x1="66" y1="75" x2="400" y2="52" stroke="#b4690e" strokeWidth="1.6" />
+      <line x1="66" y1="75" x2="400" y2="98" stroke="#b4690e" strokeWidth="1.6" />
+      <line x1="400" y1="46" x2="400" y2="104" stroke="#94a3b8" strokeWidth="2" />
+      <text x="412" y="68" fill="#475569" fontSize="11">看到整间屋子</text>
+      <text x="412" y="86" fill="#b4690e" fontSize="11" fontWeight="700">视野大 · 物体小</text>
+
+      {/* 长焦距 · 长焦 */}
+      <text x="8" y="164" fill="#1a5cae" fontSize="12" fontWeight="700">长焦距 · 长焦镜头</text>
+      <rect x="10" y="176" width="52" height="34" rx="9" fill="#eff8ff" stroke="#93cdfb" />
+      <circle cx="42" cy="193" r="7" fill="#1f72d6" />
+      <polygon points="66,193 400,182 400,204" fill="#dbeefe" opacity="0.7" />
+      <line x1="66" y1="193" x2="400" y2="182" stroke="#1a5cae" strokeWidth="1.6" />
+      <line x1="66" y1="193" x2="400" y2="204" stroke="#1a5cae" strokeWidth="1.6" />
+      <line x1="400" y1="176" x2="400" y2="210" stroke="#94a3b8" strokeWidth="2" />
+      <text x="412" y="186" fill="#475569" fontSize="11">只看到一扇窗</text>
+      <text x="412" y="204" fill="#1a5cae" fontSize="11" fontWeight="700">视野小 · 物体大（放大）</text>
+
+      {/* 底部：记忆锚 + 颜色编码 */}
+      <rect x="8" y="232" width="664" height="44" rx="10" fill="#f8fafc" stroke="#cbd5e1" strokeDasharray="4 4" />
+      <text x="24" y="252" fill="#0f172a" fontSize="11.5" fontWeight="700">口诀：近大远小、长短广窄</text>
+      <text x="24" y="269" fill="#475569" fontSize="10.5">
+        类比：广角＝站在门口拍全屋；长焦＝用望远镜看一扇窗。焦距短 → 视野广；焦距长 → 视野窄。
+      </text>
+    </svg>
+  </div>
+);
+
+/* ---- 收尾理解型图示：行动决策树（内联 SVG 静态图） ---- */
+const ActionTree = () => (
+  <div className="surface p-4">
+    <svg
+      viewBox="0 0 680 220"
+      role="img"
+      aria-label="行动决策树：看不清或拖影时先判断能否软件补偿，能则补光固定距离调参，不能再判断硬约束，防拖影换全局快门、近距对焦换可对焦镜头，最后验证"
+      className="h-auto w-full"
+    >
+      <defs>
+        <marker id="at-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="#64748b" />
+        </marker>
+      </defs>
+
+      <rect x="250" y="10" width="180" height="42" rx="10" fill="#f8fafc" stroke="#cbd5e1" />
+      <text x="340" y="36" textAnchor="middle" fill="#0f172a" fontSize="12" fontWeight="700">看不清 / 拖影</text>
+
+      <line x1="280" y1="52" x2="180" y2="86" stroke="#64748b" strokeWidth="2" markerEnd="url(#at-arrow)" />
+      <line x1="400" y1="52" x2="500" y2="86" stroke="#64748b" strokeWidth="2" markerEnd="url(#at-arrow)" />
+      <text x="196" y="76" fill="#b4690e" fontSize="10" fontWeight="700">能补偿</text>
+      <text x="470" y="76" fill="#1a5cae" fontSize="10" fontWeight="700">不能补偿</text>
+
+      <rect x="24" y="88" width="290" height="52" rx="10" fill="#fef3c7" stroke="#fbbf24" />
+      <text x="40" y="112" fill="#0f172a" fontSize="11.5" fontWeight="700">先榨干现有（软件 / 参数）</text>
+      <text x="40" y="130" fill="#475569" fontSize="10.5">补光 + 固定工作距离 + 调参 —— 零成本先见效</text>
+
+      <rect x="366" y="88" width="290" height="52" rx="10" fill="#eff8ff" stroke="#93cdfb" />
+      <text x="382" y="112" fill="#0f172a" fontSize="11.5" fontWeight="700">按硬约束换硬件（设备）</text>
+      <text x="382" y="130" fill="#475569" fontSize="10.5">防拖影→全局快门；近距对焦→可对焦 / 可换镜头</text>
+
+      <line x1="169" y1="140" x2="280" y2="172" stroke="#64748b" strokeWidth="2" markerEnd="url(#at-arrow)" />
+      <line x1="511" y1="140" x2="400" y2="172" stroke="#64748b" strokeWidth="2" markerEnd="url(#at-arrow)" />
+
+      <rect x="230" y="172" width="220" height="40" rx="10" fill="#d1fae5" stroke="#6ee7b7" />
+      <text x="340" y="197" textAnchor="middle" fill="#0f8a5f" fontSize="12" fontWeight="700">验证通过：分辨率 / 帧率达标</text>
+    </svg>
+  </div>
+);
+
+/* ---- 参数速查卡：把六个维度写成可背的短句 ---- */
+const ParamCards = () => (
+  <div className="grid gap-3 md:grid-cols-3">
+    {[
+      { k: "焦距", v: "短 = 广角（近大）；长 = 长焦（远小）", tone: "text-warn2 bg-amber-50" },
+      { k: "分辨率", v: "看像素数，也看单像素大小（低照度）", tone: "text-warn2 bg-amber-50" },
+      { k: "帧率", v: "看画面 25fps 够；闭环要低延迟", tone: "text-warn2 bg-amber-50" },
+      { k: "接口", v: "USB2 只能 MJPG；USB3 / CSI 可未压缩", tone: "text-brand-700 bg-brand-50" },
+      { k: "快门", v: "卷帘有果冻效应；高速运动用全局快门", tone: "text-brand-700 bg-brand-50" },
+      { k: "对焦", v: "定焦 / 手动（M12·C 口）/ 自动对焦", tone: "text-brand-700 bg-brand-50" },
+    ].map((c) => (
+      <div key={c.k} className="surface p-3.5 md:p-4">
+        <div className="mb-1.5 flex items-center gap-2">
+          <span className={`grid h-6 w-6 place-items-center rounded-md text-[0.7rem] font-extrabold ${c.tone}`}>
+            {c.k.slice(0, 1)}
+          </span>
+          <span className="text-[0.96rem] font-bold text-ink">{c.k}</span>
+        </div>
+        <p className="text-[0.86rem] leading-relaxed text-slateink">{c.v}</p>
+      </div>
+    ))}
+  </div>
+);
+
+/* ---- 记忆锚三卡（口诀 / 生活化类比 / 颜色编码） ---- */
+const AnchorCards = () => (
+  <div className="grid gap-3 md:grid-cols-3">
+    <div className="surface border-t-4 border-t-brand-500 p-4 md:p-5">
+      <div className="mb-2 text-[0.72rem] font-extrabold tracking-[0.14em] text-brand-700">口 诀</div>
+      <p className="text-[1rem] font-extrabold leading-snug text-ink">近大远小、长短广窄</p>
+      <p className="mt-2 text-[0.84rem] leading-relaxed text-muted">
+        焦距短 → 视野广；焦距长 → 视野窄。选镜头先背这一句。
+      </p>
+    </div>
+    <div className="surface border-t-4 border-t-warn2 p-4 md:p-5">
+      <div className="mb-2 text-[0.72rem] font-extrabold tracking-[0.14em] text-warn2">生活化类比</div>
+      <p className="text-[1rem] font-extrabold leading-snug text-ink">广角＝站在门口拍全屋</p>
+      <p className="mt-1.5 text-[1rem] font-extrabold leading-snug text-ink">长焦＝用望远镜看一扇窗</p>
+      <p className="mt-2 text-[0.84rem] leading-relaxed text-muted">
+        同一位置，广角装得下全屋但东西小；长焦只看一扇窗却放得很大。
+      </p>
+    </div>
+    <div className="surface border-t-4 border-t-good p-4 md:p-5">
+      <div className="mb-2 text-[0.72rem] font-extrabold tracking-[0.14em] text-good">颜色编码</div>
+      <div className="space-y-1.5 text-[0.9rem] font-semibold text-ink">
+        <p className="flex items-center gap-2">
+          <span className="h-3.5 w-3.5 rounded bg-brand-600" />
+          蓝＝设备 / 硬件
+        </p>
+        <p className="flex items-center gap-2">
+          <span className="h-3.5 w-3.5 rounded bg-warn2" />
+          橙＝软件 / 参数
+        </p>
+        <p className="flex items-center gap-2">
+          <span className="h-3.5 w-3.5 rounded bg-good" />
+          绿＝验证通过
+        </p>
+      </div>
+      <p className="mt-2 text-[0.84rem] leading-relaxed text-muted">
+        全册一致：看到颜色就知道这一步在动硬件还是调参数。
+      </p>
+    </div>
+  </div>
+);
 
 /* 瓶颈分解：内联 SVG（离线单文件，不用 ASCII / 线框图） */
 const Bottleneck = () => (
@@ -343,7 +733,7 @@ v4l2-ctl -d /dev/video0 --stream-mmap --stream-count=1 --stream-to=frame.jpg
 const Protocols = () => (
   <Frame
     kicker="选型"
-    floor="05"
+    floor="06"
     title="免驱通用选 UVC；要低延迟就上 CSI 或 USB3"
     lead="三条路线各有取舍：UVC 走 USB 免驱，CSI 走排线拿硬件 ISP，工业接口长线但贵。"
     wide
@@ -386,29 +776,10 @@ const Protocols = () => (
 const Dimensions = () => (
   <Frame
     kicker="选型"
-    floor="06"
-    title="先定场景硬需求，再对号入座挑型号"
+    floor="07"
+    title="六个维度速查：先定场景硬需求，再对号入座挑型号"
   >
-    <Grid cols={3}>
-      <Card title="分辨率 / 像素尺寸" icon={Camera}>
-        不只看多少 MP，也看单像素大小（决定低照度）。
-      </Card>
-      <Card title="对焦方式" icon={Focus}>
-        定焦 / 手动（M12·C·CS 可换镜头）/ 自动对焦（AF）。
-      </Card>
-      <Card title="快门类型" icon={Zap}>
-        卷帘（rolling）运动有果冻效应；高速运动必须全局（global）快门。
-      </Card>
-      <Card title="帧率 / 延迟" icon={Gauge}>
-        看画面 25 fps 够用；闭环抓取要低延迟 → USB3 + 未压缩格式。
-      </Card>
-      <Card title="视场角 / 景深" icon={Compass}>
-        读码分拣常用 70–110°；C/CS 口可配镜头调景深。
-      </Card>
-      <Card title="接口带宽" icon={Usb}>
-        USB2 只能 MJPG；USB3 可跑未压缩 YUY2。
-      </Card>
-    </Grid>
+    <ParamCards />
     <div className="mt-6">
       <Quote>先把场景能接受的边界写下来——工作距离、运动速度、光照、预算，再逐条对到型号。</Quote>
     </div>
@@ -418,7 +789,7 @@ const Dimensions = () => (
 const DecisionBlock = () => (
   <Frame
     kicker="选型"
-    floor="07"
+    floor="10"
     title="先榨干现有这颗，确需升级再按硬需求换"
     wide
   >
@@ -451,7 +822,7 @@ const DecisionBlock = () => (
 const Models = () => (
   <Frame
     kicker="选型"
-    floor="08"
+    floor="11"
     title="确需升级：防拖影选全局快门，拍清小字选可对焦"
     wide
   >
@@ -525,7 +896,7 @@ const Models = () => (
 const Scenarios = () => (
   <Frame
     kicker="选型"
-    floor="09"
+    floor="12"
     title="按赛项场景对号入座，别买错方向"
   >
     <Grid cols={2}>
@@ -567,7 +938,7 @@ const Scenarios = () => (
 const Performance = () => (
   <Frame
     kicker="落地"
-    floor="10"
+    floor="13"
     title="1280×960 掉到约 20 fps，带宽根本不是瓶颈"
     wide
   >
@@ -620,24 +991,82 @@ JPEG 质量  上限 100；90→100 肉眼提升很小、体积翻倍，1280×960
   </Frame>
 );
 
+/* ---- 现状 · 参数-效果对应（点式动画 ②） ---- */
+const ParamEffect = () => (
+  <Frame
+    kicker="现状"
+    floor="05"
+    title="动一个参数，画面就变一个样"
+    lead="分辨率和质量是「甜蜜的负担」：调高更清楚，但体积与掉帧跟着来；补光和距离才是定焦镜头的解药。"
+    wide
+  >
+    <PointSteps
+      hint="点节点可跳到该步；默认全亮＝静态兜底。"
+      steps={[
+        { side: "param", t: "分辨率 1280×960", s: "细节更清楚，但单帧从约 64 KB 涨到约 200 KB，帧率由 25 掉到约 20。" },
+        { side: "param", t: "JPEG 质量 100", s: "已到上限：90→100 肉眼提升很小、体积翻倍，还会继续掉帧。" },
+        { side: "param", t: "补光 + 固定工作距离", s: "定焦镜头也能对上焦，弱光噪点变少——零成本先见效。" },
+        { side: "board", t: "换硬件（最后一步）", s: "只有软件补偿不了时：防拖影→全局快门；近距对焦→可对焦 / 可换镜头。" },
+        { side: "good", t: "验证通过", s: "抓一帧看清晰度、实测帧率达标，才算真的解决。" },
+      ]}
+    />
+  </Frame>
+);
+
+/* ---- 选型 · 选型决策流程（点式动画 ①） ---- */
+const DecisionFlowPage = () => (
+  <Frame
+    kicker="选型"
+    floor="08"
+    title="选型是一条流水线：需求 → 焦距/分辨率/帧率/接口 → 选定型号"
+    lead="按顺序点亮，一步只看一件事：先写清场景需求，再逐项对参数，最后才落到型号。"
+    wide
+  >
+    <div className="space-y-4">
+      <DecisionFlow />
+      <Quote>顺序不能跳：先写清场景硬需求（距离、运动、光照、预算），再逐项对焦距、分辨率、帧率与接口，最后才落到具体型号。</Quote>
+    </div>
+  </Frame>
+);
+
+/* ---- 选型 · 焦距-视野理解图 + 记忆锚（口诀 / 类比 / 颜色编码） ---- */
+const FocalPage = () => (
+  <Frame
+    kicker="选型"
+    floor="09"
+    title="先懂焦距：近大远小、长短广窄"
+    wide
+  >
+    <div className="space-y-4">
+      <FocalFov />
+      <AnchorCards />
+      <p className="text-[0.82rem] leading-relaxed text-muted">
+        配套动画：本机 ManimGX《同一距离：焦距决定视野》在同一距离上改变焦距，画面广度随之变化；上面这张内联 SVG 是它的静态版，离线也能看。
+      </p>
+    </div>
+  </Frame>
+);
+
+/* ---- 落地 · 换机核对流程（点式动画 ③） ---- */
+const CHECK = [
+  { side: "board", t: "确认采集节点", s: "v4l2-ctl --list-devices，采集节点应为 /dev/video0。" },
+  { side: "board", t: "确认协议与速度", s: "dmesg | grep -i uvc，看 UVC 版本与 USB 速度（USB2 / USB3）。" },
+  { side: "board", t: "核对分辨率 / 帧率", s: "v4l2-ctl -d /dev/video0 --list-formats-ext 是否符合需求。" },
+  { side: "param", t: "判断定焦还是自动对焦", s: "--list-ctrls 看有没有 focus_*。" },
+  { side: "param", t: "抓一帧看清晰度", s: "--stream-mmap --stream-count=1 --stream-to=frame.jpg。" },
+  { side: "good", t: "起脚本实测", s: "cam_server.py --width 1280 --height 960；本机 cam_view.py --check --frames 30。" },
+  { side: "good", t: "确认权限", s: "groups 输出应含 video。" },
+];
+
 const Checklist = () => (
   <Frame
     kicker="落地"
-    floor="11"
-    title="换机 / 到货后，用这几步复核对齐"
+    floor="14"
+    title="换机 / 到货后，按这个顺序逐项核对"
+    wide
   >
     <div className="space-y-4">
-      <Card title="验证步骤（换摄像头后复跑一遍）" icon={ListChecks}>
-        <ol className="list-decimal space-y-2 pl-5">
-          <li><code>v4l2-ctl --list-devices</code> 确认采集节点（应为 /dev/video0）。</li>
-          <li><code>dmesg | grep -i uvc</code> 确认 UVC 版本与 USB 速度（USB2 / USB3）。</li>
-          <li><code>v4l2-ctl -d /dev/video0 --list-formats-ext</code> 核对分辨率 / 帧率是否达标。</li>
-          <li><code>--list-ctrls</code> 看有没有 focus_*，判断是定焦还是自动对焦。</li>
-          <li>抓一帧存盘看清晰度：<code>--stream-mmap --stream-count=1 --stream-to=frame.jpg</code>。</li>
-          <li>起两份脚本实测：<code>python3 cam_server.py --width 1280 --height 960 --quality 100 --fps 25</code>，本机 <code>python cam_view.py --check --frames 30</code>。</li>
-          <li>确认账号在 <code>video</code> 组（<code>groups</code> 输出应含 video）。</li>
-        </ol>
-      </Card>
+      <PointSteps hint="默认全亮＝静态兜底；播放时逐项点亮，灯走到哪核到哪。" steps={CHECK} />
       <Quote>验收点：分辨率 / 帧率达标，且对焦能满足实际工作距离。</Quote>
     </div>
   </Frame>
@@ -646,7 +1075,7 @@ const Checklist = () => (
 const Downloads = () => (
   <Frame
     kicker="收尾"
-    floor="12"
+    floor="15"
     title="参数表与选型参考，随 deck 下载"
     wide
   >
@@ -686,12 +1115,13 @@ const Downloads = () => (
 const Action = () => (
   <Frame
     kicker="收尾"
-    floor="13"
+    floor="16"
     title="照这份清单做，先别急着换"
     wide
   >
     <div className="space-y-5">
       <Quote>别为「协议」换摄像头：先用固定工作距离 + 补光榨干现有这颗。</Quote>
+      <ActionTree />
       <Grid cols={3}>
         <Card title="现有榨干" icon={Wrench} tone="good">
           锁死距离、加光源、对好参数，解决大部分「看不清」。
@@ -734,8 +1164,11 @@ export const slides = [
   { nav: "当前摄像头", group: "现状", el: <Device /> },
   { nav: "分辨率与帧率", group: "现状", el: <Formats /> },
   { nav: "可调控件", group: "现状", el: <Controls /> },
+  { nav: "参数-效果", group: "现状", el: <ParamEffect /> },
   { nav: "协议对比", group: "选型", el: <Protocols /> },
   { nav: "选型六维度", group: "选型", el: <Dimensions /> },
+  { nav: "焦距与视野", group: "选型", el: <FocalPage /> },
+  { nav: "选型流程", group: "选型", el: <DecisionFlowPage /> },
   { nav: "对比决策", group: "选型", el: <DecisionBlock /> },
   { nav: "型号参考", group: "选型", el: <Models /> },
   { nav: "场景建议", group: "选型", el: <Scenarios /> },
