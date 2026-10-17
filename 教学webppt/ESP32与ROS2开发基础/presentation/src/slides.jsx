@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Activity,
   AlertTriangle,
@@ -21,9 +21,11 @@ import {
   MonitorSmartphone,
   Network,
   Palette,
+  Play,
   Rocket,
   RotateCcw,
   Scale,
+  Search,
   Send,
   Server,
   ShieldCheck,
@@ -35,6 +37,405 @@ import {
   Wrench,
 } from "lucide-react";
 import { Frame, Card, DataTable, Grid, Quote, Steps, Pre, Pill } from "./components.jsx";
+
+/* ============================================================
+   守则第七节 · 点式动画（全册 ≤3 处）
+   纯前端实现：React state + setTimeout + CSS transition，无外链资源。
+   默认全亮（静态兜底，停帧 / 打印都完整可读）；播放时逐点 idle → active → done。
+   ============================================================ */
+function useSequence(count, initial = "on", { step = 1000, hold = 900 } = {}) {
+  const [statuses, setStatuses] = useState(() => Array(count).fill(initial));
+  const timers = useRef([]);
+  const clearTimers = useCallback(() => {
+    timers.current.forEach(clearTimeout);
+    timers.current = [];
+  }, []);
+  useEffect(() => clearTimers, [clearTimers]);
+  const reset = useCallback(() => {
+    clearTimers();
+    setStatuses(Array(count).fill(initial));
+  }, [clearTimers, count, initial]);
+  const play = useCallback(() => {
+    clearTimers();
+    setStatuses(Array(count).fill("idle"));
+    for (let i = 0; i < count; i += 1) {
+      timers.current.push(
+        setTimeout(() => {
+          setStatuses((prev) => {
+            const next = [...prev];
+            if (i > 0) next[i - 1] = "done";
+            next[i] = "active";
+            return next;
+          });
+        }, i * step)
+      );
+    }
+    timers.current.push(
+      setTimeout(() => setStatuses(Array(count).fill("done")), count * step + hold)
+    );
+  }, [clearTimers, count, step, hold]);
+  const jump = useCallback(
+    (idx) => {
+      clearTimers();
+      setStatuses(
+        Array.from({ length: count }, (_, j) => (j < idx ? "done" : j === idx ? "active" : "idle"))
+      );
+    },
+    [clearTimers, count]
+  );
+  return { statuses, play, reset, jump };
+}
+
+/* 颜色编码（全册统一）：蓝＝硬件 / 板子、橙＝代码 / 工具链、绿＝验证通过 */
+const NODE_TONE = {
+  board: {
+    idle: "border-line bg-paper text-muted",
+    on: "border-brand-400 bg-brand-50 text-brand-700",
+    active: "border-brand-600 bg-brand-600 text-white",
+    done: "border-good bg-good text-white",
+  },
+  tool: {
+    idle: "border-line bg-paper text-muted",
+    on: "border-amber-400 bg-amber-50 text-warn2",
+    active: "border-warn2 bg-warn2 text-white",
+    done: "border-good bg-good text-white",
+  },
+  verify: {
+    idle: "border-line bg-paper text-muted",
+    on: "border-emerald-400 bg-emerald-50 text-good",
+    active: "border-good bg-good text-white",
+    done: "border-good bg-good text-white",
+  },
+};
+
+const PlayBtn = ({ onClick, children }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3.5 py-1.5 text-[0.82rem] font-semibold text-white transition hover:bg-brand-700"
+  >
+    <Play size={13} />
+    {children}
+  </button>
+);
+
+const ResetBtn = ({ onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="inline-flex items-center gap-1.5 rounded-lg border border-brand-300 bg-paper px-3.5 py-1.5 text-[0.82rem] font-semibold text-brand-700 transition hover:bg-brand-50"
+  >
+    <RotateCcw size={13} />
+    重置
+  </button>
+);
+
+const ToneChips = () => (
+  <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-line pt-2.5 text-[0.78rem] text-muted">
+    <span className="inline-flex items-center gap-1.5">
+      <span className="h-3 w-3 rounded bg-brand-600" />
+      蓝＝硬件 / 板子
+    </span>
+    <span className="inline-flex items-center gap-1.5">
+      <span className="h-3 w-3 rounded bg-warn2" />
+      橙＝代码 / 工具链
+    </span>
+    <span className="inline-flex items-center gap-1.5">
+      <span className="h-3 w-3 rounded bg-good" />
+      绿＝验证通过
+    </span>
+  </div>
+);
+
+const segClass = (side, st) =>
+  st === "done" ? "bg-good" : st === "idle" ? "bg-line" : side === "tool" ? "bg-warn2" : side === "verify" ? "bg-good" : "bg-brand-500";
+
+/* 点式动画 ① · 最小开发闭环：改代码 → 编译 → 烧录 → 看日志 → 验证 */
+const DEV_LOOP = [
+  { no: "1", side: "tool", title: "改代码", sub: "改 main.py / 样式参数" },
+  { no: "2", side: "tool", title: "编译", sub: "colcon build · 语法检查" },
+  { no: "3", side: "board", title: "烧录", sub: "写固件 · 上传到板子" },
+  { no: "4", side: "tool", title: "看日志", sub: "串口 / ros2 topic echo" },
+  { no: "5", side: "verify", title: "验证", sub: "灯变了 · 话题通了" },
+];
+
+function DevLoop() {
+  const { statuses, play, reset, jump } = useSequence(DEV_LOOP.length);
+  return (
+    <div className="surface p-4 md:p-5">
+      <div className="flex flex-col md:flex-row md:items-stretch">
+        {DEV_LOOP.map((s, i) => {
+          const st = statuses[i];
+          return (
+            <React.Fragment key={i}>
+              <button
+                type="button"
+                onClick={() => jump(i)}
+                title={`跳到第 ${i + 1} 步`}
+                className={`flex flex-1 items-center gap-3 rounded-xl border-2 px-3 py-2.5 text-left transition-colors duration-500 md:flex-col md:gap-2 md:py-3.5 md:text-center ${NODE_TONE[s.side][st]}`}
+              >
+                <span className="relative grid h-9 w-9 flex-none place-items-center rounded-full border-2 border-current text-[0.9rem] font-bold md:h-10 md:w-10">
+                  {st === "active" && (
+                    <span
+                      className={`absolute inset-0 animate-ping rounded-full ${
+                        s.side === "tool" ? "bg-amber-400/50" : s.side === "verify" ? "bg-emerald-400/50" : "bg-brand-400/50"
+                      }`}
+                    />
+                  )}
+                  <span className="relative">{s.no}</span>
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-[0.9rem] font-bold leading-tight md:text-[0.95rem]">{s.title}</span>
+                  <span className="block text-[0.76rem] leading-tight opacity-80 md:text-[0.8rem]">{s.sub}</span>
+                </span>
+              </button>
+              {i < DEV_LOOP.length - 1 && (
+                <span
+                  className={`ml-[1.15rem] h-3 w-0.5 flex-none self-start rounded-full transition-colors duration-500 md:ml-1 md:mr-1 md:h-0.5 md:w-6 md:self-center ${segClass(
+                    s.side,
+                    st
+                  )}`}
+                />
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+        <PlayBtn onClick={play}>播放点式动画</PlayBtn>
+        <ResetBtn onClick={reset} />
+        <span className="text-[0.78rem] text-muted">点节点可手动跳到该步；默认全亮＝静态兜底。</span>
+      </div>
+      <p className="mt-2.5 border-t border-line pt-2.5 text-[0.82rem] font-bold text-ink">
+        口诀：改、编、烧、看、验——五步不断链
+      </p>
+      <ToneChips />
+    </div>
+  );
+}
+
+/* 纵向点式分步：故障排查顺序（当前步脉冲、已完成转绿） */
+function PointSteps({ steps, hint }) {
+  const { statuses, play, reset, jump } = useSequence(steps.length, "on", { step: 1050, hold: 900 });
+  return (
+    <div className="surface p-4 md:p-5">
+      <div className="space-y-2.5">
+        {steps.map((s, i) => {
+          const st = statuses[i];
+          const badge =
+            st === "done"
+              ? "bg-good text-white"
+              : st === "active"
+              ? "bg-warn2 text-white"
+              : st === "idle"
+              ? "bg-slate-200 text-muted"
+              : s.tone === "board"
+              ? "bg-brand-600 text-white"
+              : s.tone === "verify"
+              ? "bg-good text-white"
+              : "bg-warn2 text-white";
+          return (
+            <button
+              key={i}
+              type="button"
+              onClick={() => jump(i)}
+              className={`flex w-full items-start gap-3 rounded-xl border-2 px-3.5 py-3 text-left transition-colors duration-500 ${
+                st === "done"
+                  ? "border-good bg-emerald-50"
+                  : st === "active"
+                  ? "border-warn2 bg-amber-50"
+                  : "border-line bg-paper"
+              }`}
+            >
+              <span
+                className={`relative mt-0.5 grid h-7 w-7 flex-none place-items-center rounded-full text-[0.8rem] font-bold transition-colors duration-500 ${badge}`}
+              >
+                {st === "active" && <span className="absolute inset-0 animate-ping rounded-full bg-amber-400/50" />}
+                <span className="relative">{i + 1}</span>
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[0.92rem] font-bold text-ink">{s.t}</span>
+                <span className="block text-[0.82rem] leading-relaxed text-muted">{s.s}</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <PlayBtn onClick={play}>逐步推进</PlayBtn>
+        <ResetBtn onClick={reset} />
+        {hint && <span className="text-[0.78rem] text-muted">{hint}</span>}
+      </div>
+    </div>
+  );
+}
+
+/* 点式动画 ③ · 一次改色的消息往返：浏览器 → 控制台 → 桥接 → 板子 → 验证 */
+const ROUND_TRIP = [
+  { no: "1", side: "tool", title: "浏览器", sub: "下指令 COLOR 255 0 0" },
+  { no: "2", side: "tool", title: "led_ui", sub: "Web 控制台 :8080" },
+  { no: "3", side: "tool", title: "wifi_server", sub: "行 ↔ /board/…/tx" },
+  { no: "4", side: "board", title: "板子", sub: "收指令、改灯、回 OK" },
+  { no: "5", side: "verify", title: "验证", sub: "灯变红 · 徽标在线" },
+];
+
+function RoundTripFlow() {
+  const { statuses, play, reset, jump } = useSequence(ROUND_TRIP.length);
+  return (
+    <div className="surface p-4 md:p-5">
+      <div className="flex flex-col md:flex-row md:items-stretch">
+        {ROUND_TRIP.map((s, i) => {
+          const st = statuses[i];
+          return (
+            <React.Fragment key={i}>
+              <button
+                type="button"
+                onClick={() => jump(i)}
+                title={`跳到第 ${i + 1} 步`}
+                className={`flex flex-1 items-center gap-3 rounded-xl border-2 px-3 py-2.5 text-left transition-colors duration-500 md:flex-col md:gap-2 md:py-3.5 md:text-center ${NODE_TONE[s.side][st]}`}
+              >
+                <span className="relative grid h-9 w-9 flex-none place-items-center rounded-full border-2 border-current text-[0.9rem] font-bold md:h-10 md:w-10">
+                  {st === "active" && (
+                    <span
+                      className={`absolute inset-0 animate-ping rounded-full ${
+                        s.side === "tool" ? "bg-amber-400/50" : s.side === "verify" ? "bg-emerald-400/50" : "bg-brand-400/50"
+                      }`}
+                    />
+                  )}
+                  <span className="relative">{s.no}</span>
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-[0.9rem] font-bold leading-tight md:text-[0.95rem]">{s.title}</span>
+                  <span className="block text-[0.76rem] leading-tight opacity-80 md:text-[0.8rem]">{s.sub}</span>
+                </span>
+              </button>
+              {i < ROUND_TRIP.length - 1 && (
+                <span
+                  className={`ml-[1.15rem] h-3 w-0.5 flex-none self-start rounded-full transition-colors duration-500 md:ml-1 md:mr-1 md:h-0.5 md:w-6 md:self-center ${segClass(
+                    s.side,
+                    st
+                  )}`}
+                />
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+        <PlayBtn onClick={play}>播放消息往返</PlayBtn>
+        <ResetBtn onClick={reset} />
+        <span className="text-[0.78rem] text-muted">一条指令从页面走到板子、再走回来；默认全亮＝静态兜底。</span>
+      </div>
+      <p className="mt-2.5 border-t border-line pt-2.5 text-[0.82rem] font-bold text-ink">
+        口诀：页面下发、桥接转发、板子执行、回包验证
+      </p>
+    </div>
+  );
+}
+
+/* 静态结构关系图：ROS 2 工作空间 → 包 → 节点 / 话题（非 ASCII，目录细节用嵌套列表） */
+function PackageStructure() {
+  return (
+    <div className="surface p-4 md:p-5">
+      <div className="grid gap-3 md:grid-cols-3">
+        <div className="rounded-xl border-2 border-brand-300 bg-brand-50 p-3.5">
+          <p className="text-[0.78rem] font-bold tracking-wide text-brand-700">① 工作空间 ros2_ws</p>
+          <p className="mt-1.5 text-[0.84rem] leading-relaxed text-slateink">
+            <code>src/</code> 放源码；<code>build/</code> 与 <code>install/</code> 由 colcon 生成，不手改。
+          </p>
+        </div>
+        <div className="rounded-xl border-2 border-amber-300 bg-amber-50 p-3.5">
+          <p className="text-[0.78rem] font-bold tracking-wide text-warn2">② 包 board_bridge</p>
+          <p className="mt-1.5 text-[0.84rem] leading-relaxed text-slateink">
+            <code>package.xml</code> + <code>setup.py</code> + <code>board_bridge/</code> 源码目录；包是构建的最小单位。
+          </p>
+        </div>
+        <div className="rounded-xl border-2 border-emerald-300 bg-emerald-50 p-3.5">
+          <p className="text-[0.78rem] font-bold tracking-wide text-good">③ 节点与话题</p>
+          <p className="mt-1.5 text-[0.84rem] leading-relaxed text-slateink">
+            <code>wifi_server</code> / <code>relay</code> / <code>led_ui</code> 三个节点，经{" "}
+            <code>/board/&lt;板名&gt;/rx</code>、<code>/tx</code> 通信。
+          </p>
+        </div>
+      </div>
+      <p className="mt-2.5 border-t border-line pt-2.5 text-[0.8rem] text-muted">
+        构建规则：colcon 只认 <code>src/</code> 下的包；改完代码先 <code>colcon build</code>，再{" "}
+        <code>source install/setup.bash</code>。
+      </p>
+    </div>
+  );
+}
+
+/* 静态流程条（不播放动画）：用于只讲顺序、不需要点式动画的页面 */
+function FlowStrip({ items, note }) {
+  return (
+    <div className="surface p-4 md:p-5">
+      <div className="flex flex-col md:flex-row md:items-stretch">
+        {items.map((s, i) => (
+          <React.Fragment key={i}>
+            <div
+              className={`flex flex-1 items-center gap-3 rounded-xl border-2 px-3 py-2.5 md:flex-col md:gap-1.5 md:text-center ${
+                s.side === "verify"
+                  ? "border-emerald-300 bg-emerald-50"
+                  : s.side === "board"
+                  ? "border-brand-300 bg-brand-50"
+                  : "border-amber-300 bg-amber-50"
+              }`}
+            >
+              <span
+                className={`grid h-8 w-8 flex-none place-items-center rounded-full text-[0.82rem] font-bold text-white ${
+                  s.side === "verify" ? "bg-good" : s.side === "board" ? "bg-brand-600" : "bg-warn2"
+                }`}
+              >
+                {i + 1}
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[0.88rem] font-bold leading-tight text-ink">{s.t}</span>
+                <span className="block text-[0.75rem] leading-tight text-muted">{s.s}</span>
+              </span>
+            </div>
+            {i < items.length - 1 && (
+              <span className="ml-[1rem] h-3 w-0.5 flex-none self-start rounded-full bg-line md:ml-1 md:mr-1 md:h-0.5 md:w-5 md:self-center" />
+            )}
+          </React.Fragment>
+        ))}
+      </div>
+      {note && <p className="mt-2.5 border-t border-line pt-2.5 text-[0.8rem] text-muted">{note}</p>}
+    </div>
+  );
+}
+
+/* 对比决策图：场景判断 → 两条路径（结构化卡片，非 ASCII） */
+function ChoiceDiagram() {
+  return (
+    <div className="space-y-3">
+      <div className="surface flex items-center justify-center gap-3 border-brand-300 bg-brand-50 px-4 py-3">
+        <Search size={18} className="text-brand-700" />
+        <span className="text-[0.95rem] font-bold text-ink">先回答：你要「整学期系统培养」，还是「几天内走通闭环」？</span>
+      </div>
+      <div className="grid gap-3 md:grid-cols-2">
+        <div className="surface border-t-4 border-t-brand-500 p-4 md:p-5">
+          <p className="text-[0.98rem] font-bold text-ink">有整学期排课 → 系统学期版</p>
+          <p className="mt-1 text-[0.8rem] font-semibold text-brand-700">16 周 / 48 学时 · 覆盖全部知识点</p>
+          <ul className="mt-2.5 space-y-1.5 text-[0.86rem] leading-relaxed text-slateink">
+            <li>要体系、要带班、有实验室机位。</li>
+            <li>设备 → 通信 → 系统逐层展开，11 个实验逐个验收。</li>
+            <li>产出：实验记录 + 小组作品 + 答辩。</li>
+          </ul>
+        </div>
+        <div className="surface border-t-4 border-t-warn2 p-4 md:p-5">
+          <p className="text-[0.98rem] font-bold text-ink">只有几天 → 短平快版</p>
+          <p className="mt-1 text-[0.8rem] font-semibold text-warn2">1 天集中 + 3–4 天自学 · 约 30 学时</p>
+          <ul className="mt-2.5 space-y-1.5 text-[0.86rem] leading-relaxed text-slateink">
+            <li>会基础 Python，目标就是走通闭环并改一次算法。</li>
+            <li>保链路、减纵深：点灯压为「读懂 + 改参数」。</li>
+            <li>产出：五个学习单元证据包 + 结课演示。</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /* 链路全景：开发环境 ↔ 开发板 ↔ ROS 2 系统（内联 SVG，标注工具链与数据流，不用 ASCII / 线框图） */
 const LinkPanorama = () => (
@@ -365,8 +766,34 @@ const ThreeLayers = () => (
   </Frame>
 );
 
+const DevLoopPage = () => (
+  <Frame
+    kicker="教学主线"
+    floor="07"
+    title="最小开发闭环：改、编、烧、看、验——五步不断链"
+    lead="从改一行代码到看见结果，只走这五步；顺序固定，哪一步断链就从哪一步查。"
+    wide
+  >
+    <div className="space-y-4">
+      <DevLoop />
+      <Grid cols={3}>
+        <Card title="口诀" icon={BookOpen} tone="brand">
+          「改、编、烧、看、验」——改完必须编译，烧完必须看日志，看到现象才算验证；五步不断链。
+        </Card>
+        <Card title="生活化类比" icon={Lightbulb} tone="warn">
+          编译＝做菜备料，烧录＝端上桌，日志＝尝味道。没备料就上桌是空盘，不尝味道不知道咸淡。
+        </Card>
+        <Card title="颜色编码" icon={Palette} tone="good">
+          蓝＝硬件 / 板子（烧录、上电），橙＝代码 / 工具链（改、编、看日志），绿＝验证通过。全册统一。
+        </Card>
+      </Grid>
+      <Quote>五步不断链：任何一步跳过，后面看到的都不是真实结果。</Quote>
+    </div>
+  </Frame>
+);
+
 const Protocol = () => (
-  <Frame kicker="教学主线" floor="07" title="行协议（line protocol）：一行一条消息，全是人话" wide>
+  <Frame kicker="教学主线" floor="08" title="行协议（line protocol）：一行一条消息，全是人话" wide>
     <div className="space-y-4">
       <DataTable
         head={["方向", "示例", "说明"]}
@@ -417,7 +844,7 @@ const Protocol = () => (
 );
 
 const StyleAndMix = () => (
-  <Frame kicker="教学主线" floor="08" title="两个设计问题，就是两节算法课" wide>
+  <Frame kicker="教学主线" floor="09" title="两个设计问题，就是两节算法课" wide>
     <Grid cols={2}>
       <Card title="保存与应用分离" icon={Palette}>
         <ul className="mt-1 list-disc space-y-1.5 pl-5">
@@ -443,7 +870,7 @@ mix   = min(255, Σ 亮着的样式 RGB)   # 合成：OR 取亮灭，RGB 相加�
 );
 
 const RosBridge = () => (
-  <Frame kicker="教学主线" floor="09" title="ROS 2 侧：三个节点（node）各司其职" wide>
+  <Frame kicker="教学主线" floor="10" title="ROS 2 侧：三个节点（node）各司其职" wide>
     <div className="space-y-4">
       <Grid cols={3}>
         <Card title="wifi_server" icon={Server}>
@@ -459,6 +886,7 @@ const RosBridge = () => (
           默认只绑本机地址。
         </Card>
       </Grid>
+      <RoundTripFlow />
       <Pre>{`ros2 topic list                        # /board/green/rx、/board/green/tx、/board/blue/…、/board/xrs/…
 ros2 topic pub --once /board/green/tx std_msgs/String "{data: 'COLOR 255 0 0'}"
 ros2 topic echo /board/green/rx        # 心跳 DATA GREEN … 与 STYLE-OK / STYLE-ERR 应答`}</Pre>
@@ -476,8 +904,54 @@ ros2 topic echo /board/green/rx        # 心跳 DATA GREEN … 与 STYLE-OK / ST
   </Frame>
 );
 
+const RosPackagePage = () => (
+  <Frame
+    kicker="教学主线"
+    floor="11"
+    title="一个 ROS 2 包长什么样：工作空间 → 包 → 节点"
+    lead="看到陌生工程先认三层：工作空间装包、包装代码、代码里跑节点；目录认对了，构建和排错就不会找错地方。"
+    wide
+  >
+    <div className="space-y-4">
+      <PackageStructure />
+      <Steps title="展开：board_bridge 包的目录结构（嵌套列表）">
+        <ul className="list-disc space-y-1.5 pl-5">
+          <li>
+            <code>ros2_ws/</code>
+            <ul className="mt-1 list-disc space-y-1 pl-5">
+              <li>
+                <code>src/</code>（源码；colcon 只从这里找包）
+                <ul className="mt-1 list-disc space-y-1 pl-5">
+                  <li>
+                    <code>board_bridge/</code>
+                    <ul className="mt-1 list-disc space-y-1 pl-5">
+                      <li><code>package.xml</code>（包元数据与依赖）</li>
+                      <li><code>setup.py</code>（入口与节点注册）</li>
+                      <li>
+                        <code>board_bridge/</code>
+                        <ul className="mt-1 list-disc space-y-1 pl-5">
+                          <li><code>wifi_server.py</code>：TCP 行 ↔ 话题</li>
+                          <li><code>relay.py</code>：板间转发</li>
+                          <li><code>led_ui.py</code>：Web 控制台</li>
+                        </ul>
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
+              </li>
+              <li><code>build/</code>（colcon 生成，不手改）</li>
+              <li><code>install/</code>（colcon 生成，启动前 source）</li>
+            </ul>
+          </li>
+        </ul>
+      </Steps>
+      <Quote>记法：工作空间是「柜子」，包是「抽屉」，节点是抽屉里的「工具」——先找对抽屉，再拿工具。</Quote>
+    </div>
+  </Frame>
+);
+
 const Method = () => (
-  <Frame kicker="教学方法" floor="10" title="怎么教：现象先行 + 故障驱动">
+  <Frame kicker="教学方法" floor="12" title="怎么教：现象先行 + 故障驱动">
     <Grid cols={2}>
       <Card title="现象先行" icon={Lightbulb}>
         每节课的第一次演示一定是「能看 / 能玩」的结果，原理放在现象之后；单次连续讲授不超过 15 分钟。
@@ -493,14 +967,25 @@ const Method = () => (
         服务器重启板子掉线、页面「每刷新一次多一条样式」、保存覆盖闪烁……
       </Card>
     </Grid>
-    <div className="mt-6">
+    <div className="mt-4">
+      <FlowStrip
+        items={[
+          { side: "verify", t: "演示现象", s: "先给能看的结果" },
+          { side: "tool", t: "讲清原理", s: "单次不超过 15 分钟" },
+          { side: "board", t: "动手实践", s: "结对轮换操作者" },
+          { side: "verify", t: "当堂验收", s: "功能演示 + 问答" },
+        ]}
+        note="教学环：现象 → 原理 → 动手 → 验收，每节课都完整走一圈。"
+      />
+    </div>
+    <div className="mt-4">
       <Quote>巡场技巧：先看灯、再看日志、最后问代码——80% 的问题，日志里已经写明了原因。</Quote>
     </div>
   </Frame>
 );
 
 const Labs = () => (
-  <Frame kicker="教学方法" floor="11" title="11 个实验，全部当堂验收" wide>
+  <Frame kicker="教学方法" floor="13" title="11 个实验，全部当堂验收" wide>
     <DataTable
       head={["实验", "周次", "核心能力"]}
       widths={["44%", "14%", "42%"]}
@@ -522,7 +1007,7 @@ const Labs = () => (
 );
 
 const TeacherPrep = () => (
-  <Frame kicker="开课准备" floor="12" title="开课前：清单化准备，一项都不能漏">
+  <Frame kicker="开课准备" floor="14" title="开课前：清单化准备，一项都不能漏">
     <Grid cols={2}>
       <Card title="环境镜像（提前一周）" icon={Wrench}>
         Windows 10/11 + Python 3.10+（<code>esptool</code> / <code>mpremote</code>）、
@@ -545,7 +1030,7 @@ const TeacherPrep = () => (
 );
 
 const FirstLab = () => (
-  <Frame kicker="开课准备" floor="13" title="实验一：从探测到 REPL，一条命令都不能错" wide>
+  <Frame kicker="开课准备" floor="15" title="实验一：从探测到 REPL，一条命令都不能错" wide>
     <div className="space-y-4">
       <Pre>{`python -m pip install esptool mpremote            # 每台电脑一次
 
@@ -582,8 +1067,58 @@ python -m mpremote connect COM13                  # 进入 REPL：print("hello e
   </Frame>
 );
 
+const TROUBLE_STEPS = [
+  {
+    tone: "tool",
+    t: "第一问：端口对不对？",
+    s: "报 could not open port → 先关 Thonny / 串口助手，再换一根数据线。",
+  },
+  {
+    tone: "board",
+    t: "第二问：进得了 REPL 吗？",
+    s: "raw repl 失败 → 等 2 s 重试；mpremote 首次连接偶发失败，不是硬件坏。",
+  },
+  {
+    tone: "board",
+    t: "第三问：烧完有没有输出？",
+    s: "没输出先复位：python -m mpremote connect COMx reset。",
+  },
+  {
+    tone: "tool",
+    t: "第四问：地址偏移对不对？",
+    s: "S3 完整镜像烧 0x0、掌机烧 0x1000；写错偏移板子根本不启动。",
+  },
+  {
+    tone: "verify",
+    t: "四问都过还不行？",
+    s: "换备用板 / 换线排除硬件，记录现象再继续——别一上来就重装环境。",
+  },
+];
+
+const Troubleshoot = () => (
+  <Frame
+    kicker="开课准备"
+    floor="16"
+    title="先错哪一步：编译 / 烧录报错按顺序查"
+    lead="报错不是随机事件——从上到下逐层排除，先定位再动手；一次只改一个变量。"
+    wide
+  >
+    <div className="space-y-4">
+      <PointSteps steps={TROUBLE_STEPS} hint="当前步脉冲＝正在查这一层；已完成转绿。" />
+      <Grid cols={2}>
+        <Card title="排查口诀" icon={Search} tone="warn">
+          「先看端口、再进 REPL、烧完复位、最后对偏移」——四问都过，才怀疑硬件。
+        </Card>
+        <Card title="一条铁律" icon={ShieldCheck} tone="brand">
+          一次只改一个变量：换线就不换端口，重烧就不改代码；否则不知道是哪一步修好的。
+        </Card>
+      </Grid>
+    </div>
+  </Frame>
+);
+
 const Assessment = () => (
-  <Frame kicker="开课准备" floor="14" title="考核：能力本位，不设期末闭卷" wide>
+  <Frame kicker="开课准备" floor="17" title="考核：能力本位，不设期末闭卷" wide>
     <div className="space-y-4">
       <DataTable
         head={["考核项目", "比例", "说明"]}
@@ -611,7 +1146,7 @@ const Assessment = () => (
 const Decision = () => (
   <Frame
     kicker="对比决策"
-    floor="15"
+    floor="18"
     title="两套上法怎么选：系统学期版 vs 短平快版"
     lead="同一门课有两种上法：16 周系统课打底，或 1 天集中 + 3–4 天自学速通。先看清取舍，再定上法。"
     wide
@@ -629,14 +1164,7 @@ const Decision = () => (
           ["主要风险", "周期长，需整学期排课与实验室机位", "学时不宽裕、删减多，自学自律要求高"],
         ]}
       />
-      <Grid cols={2}>
-        <Card title="什么时候选系统版" icon={Compass} tone="brand">
-          要体系、要带班、要覆盖全部知识点，且有整学期排课与机位——选 48 学时正课，别压缩。
-        </Card>
-        <Card title="什么时候选短平快版" icon={Ban} tone="warn">
-          只有几天、基础 Python 已会、目标就是走通闭环并改一次算法——选短平快版，别硬排 16 周。
-        </Card>
-      </Grid>
+      <ChoiceDiagram />
       <Quote>
         引导问题：你的场景是「整学期系统培养」，还是「几天内把闭环跑通并改一次算法」？先回答它，再决定上哪一套。
       </Quote>
@@ -647,7 +1175,7 @@ const Decision = () => (
 const Intensive = () => (
   <Frame
     kicker="短课模式"
-    floor="16"
+    floor="19"
     title="短平快版：1 天集中教学 + 3–4 天自学，约 30 学时"
     lead="把 48 学时改造成「最小闭环走通 + AI 监督下改算法」：教师用 06-短平快课程方案，学生用 07-学生学习手册（标记图例、知识讲解、验收清单与记录表都在手册里）。"
     wide
@@ -672,7 +1200,7 @@ const Intensive = () => (
 );
 
 const DayOne = () => (
-  <Frame kicker="短课模式" floor="17" title="第 1 天：8 学时把全链路集中走一遍" wide>
+  <Frame kicker="短课模式" floor="20" title="第 1 天：8 学时把全链路集中走一遍" wide>
     <DataTable
       head={["时段（示例）", "环节", "内容", "验收点"]}
       widths={["15%", "17%", "42%", "26%"]}
@@ -716,7 +1244,7 @@ const DayOne = () => (
 );
 
 const SelfStudy = () => (
-  <Frame kicker="短课模式" floor="18" title="自学 3–4 天：每天一个任务，抽查证据" wide>
+  <Frame kicker="短课模式" floor="21" title="自学 3–4 天：每天一个任务，抽查证据" wide>
     <DataTable
       head={["时间", "主题", "学生完成", "教师抽查"]}
       widths={["14%", "24%", "42%", "20%"]}
@@ -754,7 +1282,7 @@ const SelfStudy = () => (
 );
 
 const AiWorkflow = () => (
-  <Frame kicker="短课模式" floor="19" title="AI 监督开发：读 → 讲 → 改 → 验，红线不能碰" wide>
+  <Frame kicker="短课模式" floor="22" title="AI 监督开发：读 → 讲 → 改 → 验，红线不能碰" wide>
     <div className="space-y-4">
       <Grid cols={2}>
         <Card title="读 → 讲 → 改 → 验" icon={Bot}>
@@ -783,13 +1311,22 @@ const AiWorkflow = () => (
           AI 使用日志（提示词要点 / 建议摘要 / 采纳与否 / 验证证据）+ 至少 1 条「被推翻的 AI 建议」——这是加分项。
         </Card>
       </Grid>
+      <FlowStrip
+        items={[
+          { side: "tool", t: "读", s: "AI 给调用链，人核对源码" },
+          { side: "tool", t: "讲", s: "只列修改点，人审查选型" },
+          { side: "tool", t: "改", s: "最小 diff，一次动一处" },
+          { side: "verify", t: "验", s: "构建运行，逐条打勾" },
+        ]}
+        note="四步缺一不可：不读就改是瞎改，不验就交是赌博。"
+      />
       <Quote>监督 = 限定范围 + 强行验证 + 留痕；十个提示词模板与 AI 使用记录表见 07-学生学习手册.md 第三节。</Quote>
     </div>
   </Frame>
 );
 
 const TaskCards = () => (
-  <Frame kicker="短课模式" floor="20" title="四个算法任务：难度递进，改的是真算法" wide>
+  <Frame kicker="短课模式" floor="23" title="四个算法任务：难度递进，改的是真算法" wide>
     <DataTable
       head={["任务", "难度", "内容", "验收（摘要）"]}
       widths={["24%", "10%", "38%", "28%"]}
@@ -821,7 +1358,7 @@ const TaskCards = () => (
 );
 
 const Actions = () => (
-  <Frame kicker="收尾" floor="21" title="行动清单：按周推进，一步步验收" wide>
+  <Frame kicker="收尾" floor="24" title="行动清单：按周推进，一步步验收" wide>
     <DataTable
       head={["优先", "动作", "入口 / 预算"]}
       widths={["10%", "48%", "42%"]}
@@ -833,6 +1370,17 @@ const Actions = () => (
         ["5", "短平快场景：1 天集中 + 3–4 天自学 + 结课验收", "约 30 学时"],
       ]}
     />
+    <div className="mt-4">
+      <FlowStrip
+        items={[
+          { side: "tool", t: "装环境", s: "Windows + WSL2 + ROS 2" },
+          { side: "tool", t: "逐周推进", s: "每周一个实验并验收" },
+          { side: "verify", t: "第 8 周门禁", s: "colcon build 本机可跑" },
+          { side: "verify", t: "项目答辩", s: "演示 + 答辩 + 报告" },
+        ]}
+        note="节奏：先备好工具链，再按周推；门禁不过不进入项目阶段。"
+      />
+    </div>
     <div className="mt-4 grid gap-3 md:grid-cols-2 md:gap-4">
       <Card title="三条纪律" icon={ListChecks} tone="brand">
         <ul className="space-y-1.5">
@@ -849,7 +1397,7 @@ const Actions = () => (
 );
 
 const Closing = () => (
-  <Frame kicker="收尾" floor="22" title="下载与延伸：材料齐全，按实验指导即可复现" wide>
+  <Frame kicker="收尾" floor="25" title="下载与延伸：材料齐全，按实验指导即可复现" wide>
     <div className="space-y-5">
       <Quote>
         板子会编程、消息会跑通、系统会搭起来——这门课把「嵌入式设备接入机器人框架」完整走了一遍。
@@ -909,13 +1457,16 @@ export const slides = [
   { nav: "硬件与角色", group: "概览", el: <Hardware /> },
   { nav: "链路全景", group: "概览", el: <Architecture /> },
   { nav: "三层教学", group: "教学主线", el: <ThreeLayers /> },
+  { nav: "开发闭环", group: "教学主线", el: <DevLoopPage /> },
   { nav: "通信协议", group: "教学主线", el: <Protocol /> },
   { nav: "样式与混合", group: "教学主线", el: <StyleAndMix /> },
   { nav: "ROS 2 桥接", group: "教学主线", el: <RosBridge /> },
+  { nav: "包结构", group: "教学主线", el: <RosPackagePage /> },
   { nav: "教学方法", group: "教学方法", el: <Method /> },
   { nav: "实验一览", group: "教学方法", el: <Labs /> },
   { nav: "教师准备", group: "开课准备", el: <TeacherPrep /> },
   { nav: "第一次上机", group: "开课准备", el: <FirstLab /> },
+  { nav: "报错排查", group: "开课准备", el: <Troubleshoot /> },
   { nav: "考核方案", group: "开课准备", el: <Assessment /> },
   { nav: "对比决策", group: "对比决策", el: <Decision /> },
   { nav: "短课总览", group: "短课模式", el: <Intensive /> },

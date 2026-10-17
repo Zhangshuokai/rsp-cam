@@ -70,6 +70,30 @@ flowchart LR
 数据流即教学顺序，也是全课主线：设备层（GPIO / WS2812 · MicroPython）→ 通信层（WiFi / TCP /
 行协议 / 心跳）→ 系统层（ROS 2 节点 / 话题 / 桥接 / 人机界面）。
 
+### 最小开发闭环：改、编、烧、看、验
+
+从改一行代码到看见结果，只走这五步；顺序固定，哪一步断链就从哪一步查。deck「开发闭环」页同源，
+那里是点式动画（默认全亮＝静态兜底）。
+
+```mermaid
+flowchart LR
+  A["改代码<br/>改 main.py / 样式参数"]:::tool --> B["编译<br/>colcon build · 语法检查"]:::tool
+  B --> C["烧录<br/>写固件 · 上传到板子"]:::board
+  C --> D["看日志<br/>串口 / ros2 topic echo"]:::tool
+  D --> E["验证<br/>灯变了 · 话题通了"]:::verify
+  classDef board fill:#eff8ff,stroke:#1f72d6,color:#0d1b2a
+  classDef tool fill:#fef3c7,stroke:#b4690e,color:#0d1b2a
+  classDef verify fill:#d1fae5,stroke:#0f8a5f,color:#0d1b2a
+```
+
+记忆锚（全册统一，讲课时反复出现）：
+
+- **口诀**：改、编、烧、看、验——五步不断链。
+- **生活化类比**：编译＝做菜备料，烧录＝端上桌，日志＝尝味道；没备料就上桌是空盘，不尝味道不知道咸淡。
+- **颜色编码**：蓝＝硬件 / 板子，橙＝代码 / 工具链，绿＝验证通过。
+
+五步不断链：任何一步跳过，后面看到的都不是真实结果。
+
 ## 二、硬件与烧录
 
 | 板 | 固件 | 烧录偏移 | 串口 |
@@ -85,6 +109,31 @@ python -m esptool --port COM13 --baud 460800 erase-flash
 python -m esptool --port COM13 --baud 460800 write-flash -z 0x0 "教学demo/ESP32-ROS2-LED协同系统/firmware/GENERIC_S3-20220618-v1.19.1.bin"
 python -m esptool --port COM5  --baud 460800 write-flash -z 0x1000 "教学demo/ESP32-ROS2-LED协同系统/xrs/firmware/ESP32_GENERIC-SPIRAM-20220618-v1.19.1.bin"
 ```
+
+### 报错排查顺序：先错哪一步
+
+报错不是随机事件——从上到下逐层排除，先定位再动手；一次只改一个变量。deck「报错排查」页同源。
+
+```mermaid
+flowchart TD
+  S["先读报错原文"] --> Q1{"能打开端口吗？"}
+  Q1 -- 否 --> A1["关 Thonny / 串口助手<br/>换一根数据线"]
+  Q1 -- 是 --> Q2{"进得了 REPL 吗？"}
+  Q2 -- 否 --> A2["等 2 s 重试<br/>mpremote 首次连接偶发失败"]
+  Q2 -- 是 --> Q3{"烧完有输出吗？"}
+  Q3 -- 否 --> A3["先复位<br/>mpremote connect COMx reset"]
+  Q3 -- 是 --> Q4{"地址偏移对吗？"}
+  Q4 -- 否 --> A4["S3 烧 0x0<br/>掌机烧 0x1000"]
+  Q4 -- 是 --> A5["换备用板 / 换线<br/>排除硬件后再继续"]
+  classDef tool fill:#fef3c7,stroke:#b4690e,color:#0d1b2a
+  classDef board fill:#eff8ff,stroke:#1f72d6,color:#0d1b2a
+  classDef verify fill:#d1fae5,stroke:#0f8a5f,color:#0d1b2a
+  class A1,A4 tool
+  class A2,A3 board
+  class A5 verify
+```
+
+排查口诀：「先看端口、再进 REPL、烧完复位、最后对偏移」——四问都过，才怀疑硬件。
 
 ## 三、网络与运行
 
@@ -132,6 +181,25 @@ UI_HOST=0.0.0.0 ros2 launch board_bridge wifi.launch.py   # 页面 http://<WSL_I
 
 样式存 RAM，重启清空；`default` 永远健在，所以原始绿/蓝闪烁不会丢。
 
+### 一条改色指令的消息往返
+
+页面下发、桥接转发、板子执行、回包验证——一次改色要走的往返路径；deck「ROS 2 桥接」页同源，
+那里是点式动画（默认全亮＝静态兜底）。
+
+```mermaid
+sequenceDiagram
+  participant BR as 浏览器
+  participant UI as led_ui :8080
+  participant WS as wifi_server
+  participant BD as 板子
+  BR->>UI: HTTP 下发 COLOR 255 0 0
+  UI->>WS: 话题 /board/green/tx
+  WS->>BD: TCP 行 COLOR 255 0 0
+  BD-->>WS: STYLE-OK（应答）
+  WS-->>UI: 话题 /board/green/rx
+  UI-->>BR: 页面状态更新 · 灯变红
+```
+
 ## 五、排障速查
 
 | 现象 | 优先检查 | 处理 |
@@ -177,3 +245,41 @@ UI_HOST=0.0.0.0 ros2 launch board_bridge wifi.launch.py   # 页面 http://<WSL_I
 
 - 要体系、要带班、要覆盖全部知识点、有整学期排课与机位 → 选 **系统学期版**，别压缩。
 - 只有几天、基础 Python 已会、目标就是走通闭环并改一次算法 → 选 **短平快版**，别硬排 16 周。
+
+## 八、教学法与短平快模式（与 deck 同源）
+
+### 教学环：现象 → 原理 → 动手 → 验收
+
+每节课都完整走一圈：先给能看 / 能玩的结果，再讲原理，然后结对动手，最后当堂验收。
+
+```mermaid
+flowchart LR
+  A["演示现象<br/>先给能看的结果"] --> B["讲清原理<br/>单次不超过 15 分钟"]
+  B --> C["动手实践<br/>结对轮换操作者"]
+  C --> D["当堂验收<br/>功能演示 + 问答"]
+  D --> A
+  classDef verify fill:#d1fae5,stroke:#0f8a5f,color:#0d1b2a
+  classDef tool fill:#fef3c7,stroke:#b4690e,color:#0d1b2a
+  classDef board fill:#eff8ff,stroke:#1f72d6,color:#0d1b2a
+  class A,D verify
+  class B tool
+  class C board
+```
+
+### AI 监督开发：读 → 讲 → 改 → 验
+
+四步缺一不可：不读就改是瞎改，不验就交是赌博。AI 可以帮你写，解释和验证必须自己来。
+
+```mermaid
+flowchart LR
+  R["读<br/>AI 给调用链，人核对源码"]:::tool --> T["讲<br/>只列修改点，人审查选型"]:::tool
+  T --> M["改<br/>最小 diff，一次动一处"]:::tool
+  M --> V["验<br/>构建运行，逐条打勾"]:::verify
+  classDef tool fill:#fef3c7,stroke:#b4690e,color:#0d1b2a
+  classDef verify fill:#d1fae5,stroke:#0f8a5f,color:#0d1b2a
+```
+
+### 行动节奏
+
+装环境 → 逐周推进 → 第 8 周门禁（`colcon build` 本机可跑）→ 选题与答辩。门禁不过不进入项目阶段。
+短平快场景按「1 天集中 + 3–4 天自学 + 结课验收」推进，约 30 学时。
