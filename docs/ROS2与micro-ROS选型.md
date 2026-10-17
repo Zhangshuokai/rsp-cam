@@ -269,6 +269,19 @@ flowchart LR
 
 验证链路（Pi 的 ROS 2 容器里）：`ros2 node list` → `/esp32_car`；`ros2 topic hz /esp32/heartbeat` → 约 1 Hz；`ros2 topic echo /cmd_vel` → 按键后出现 `Twist`。完整排查命令见 `ESP32-S3电机驱动板资料.md` 第六节。
 
+**记忆锚（先记顺序）**：口诀「板等 Agent，Agent 等端口，端口等网络」——先开后连，顺序不反；生活化类比：串口／网线＝电话线（一头插板、一头插电脑），Agent＝总机；颜色编码（全册统一）：蓝＝板子侧、橙＝电脑侧、绿＝验证通过。
+
+验证流程（对应 deck 页「启动顺序」，纵向点式动画）：
+
+```mermaid
+flowchart TD
+    S1["① 烧固件（板子侧）<br/>pio run -t upload"] --> S2["② 起 Agent（电脑侧）<br/>容器内 udp4 --port 8888"]
+    S2 --> S3["③ S3 上电连上<br/>Agent 日志出现 session created"]
+    S3 --> S4["④ 看话题（验证通过）<br/>topic list 出现 /esp32/heartbeat，node list 出现 /esp32_car"]
+```
+
+顺序反了也不用重启板子（`rmw_uros_ping_agent` 自动重连）；连不上的排查顺序与命令见 `ESP32-S3电机驱动板资料.md` 第六节。
+
 ### 传输方式对比（串口 vs Wi-Fi）
 
 `board_microros_transport` 双选，按稳定性 / 接线 / 移动性 / 适用阶段定：

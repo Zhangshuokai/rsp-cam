@@ -224,6 +224,24 @@ ros2 run micro_ros_agent micro_ros_agent udp4 --port 8888
 >
 > 完整搭建记录、固件工程与实测结论：`ROS2与micro-ROS选型.md` 第六节、`教学demo/ESP32-S3-microROS/`；电机驱动侧的配方见本文第三节第 5 小节。
 
+### 连接链与记忆锚：先记顺序
+
+一条通路把五个角色串成链，顺序就是全部——先按顺序点亮（蓝＝板子侧、橙＝电脑侧），走通一遍再全绿（绿＝验证通过）：
+
+```mermaid
+flowchart LR
+    A["① S3 固件<br/>micro-ROS 客户端"] --> B["② 传输通道<br/>Wi-Fi UDP :8888"]
+    B --> C["③ Agent<br/>总机 · 翻译官"]
+    C --> D["④ ROS 2 网络<br/>话题 / 服务"]
+    D --> E["⑤ 上位程序<br/>ros2 topic echo / 浏览器"]
+```
+
+- **口诀**：「板等 Agent，Agent 等端口，端口等网络」——先开后连，顺序不反。
+- **生活化类比**：串口／网线＝电话线（一头插板、一头插电脑），Agent＝总机（把「电话」接进 ROS 2 这张「城市电话网」）。
+- **颜色编码**（全册统一）：蓝＝板子侧动作（S3）、橙＝电脑侧动作（Agent / ROS 2）、绿＝验证通过（全链贯通）。
+
+> 对应 deck 页「连接链与记忆锚」（概览组第 2 页，横向点式动画：逐点点亮、当前步高亮、完成转绿；默认全亮＝静态兜底）。
+
 ### 固件侧任务结构（核心 1 初始化 → 核心 0 通信 → 核心 1 驱动）
 
 固件照官方 micro-ROS 示例：通信全在核心 0 的 FreeRTOS 后台任务里，电机库只在核心 1 调。
@@ -258,6 +276,19 @@ flowchart LR
 
 验证链路（在 Pi 的 ROS 2 容器里，先 `source` setup）：`ros2 node list` → `/esp32_car`；`ros2 topic hz /esp32/heartbeat` → 约 1 Hz；`ros2 topic echo /cmd_vel` → 按键后出现 `Twist`。micro-ROS Agent 固定跑在默认 DDS 域 0，客户端**不要** `export ROS_DOMAIN_ID`。
 
+### 验证流程：按顺序走一遍
+
+四个动作有固定先后，一步只盯一件事（对应 deck 页「启动顺序」，纵向点式动画；口诀「板等 Agent，Agent 等端口，端口等网络」）：
+
+```mermaid
+flowchart TD
+    S1["① 烧固件（板子侧）<br/>pio run -t upload，把 micro-ROS 固件写进 S3"] --> S2["② 起 Agent（电脑侧）<br/>容器内 udp4 --port 8888，占好端口等着板子来电"]
+    S2 --> S3["③ S3 上电连上<br/>Agent 日志出现 session created，出现即通"]
+    S3 --> S4["④ 看话题（验证通过）<br/>topic list 出现 /esp32/heartbeat，node list 出现 /esp32_car"]
+```
+
+顺序反了也不用重启板子：固件按官方示例的 `rmw_uros_ping_agent` 机制自动重连；但 Agent 必须先起，否则 S3 一直重连。
+
 ### 传输方式对比（串口 vs Wi-Fi）
 
 `platformio.ini` 的 `board_microros_transport` 双选，按下面四个维度定：
@@ -285,7 +316,22 @@ docker run -it --rm --network host \
 ros2 run micro_ros_agent micro_ros_agent serial --dev /dev/ttyUSB0 -b 115200
 ```
 
-### 连不上时的排查命令
+### 连不上时的排查顺序与命令
+
+连不上先按顺序查，别一上来就乱改固件（对应 deck 页「常见坑」，纵向点式动画）：
+
+```mermaid
+flowchart TD
+    P1{"① Agent 在监听吗（ss -lunp 看 8888）"} -->|否| F1["先起 Agent：udp4 --port 8888"]
+    P1 -->|是| P2{"② 同网段 + 2.4 GHz 吗（对一下固件里的 Agent IP）"}
+    P2 -->|否| F2["改成与 Pi 同网段；S3 只连 2.4 GHz"]
+    P2 -->|是| P3{"③ 容器是 host 网络吗（docker inspect 查 NetworkMode）"}
+    P3 -->|否| F3["容器加 --network host，UDP 8888 才落宿主网络"]
+    P3 -->|是| P4{"④ 固件初始化 / 占空比对吗"}
+    P4 -->|否| F4["补 getEncoderMotor 的 begin(90) 初始化；占空比用 60~100"]
+```
+
+对应命令：
 
 ```bash
 # 1) Agent 是否在监听 8888（容器/宿主机内）
