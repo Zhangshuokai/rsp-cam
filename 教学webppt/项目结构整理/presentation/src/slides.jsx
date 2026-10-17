@@ -1,42 +1,356 @@
-import React from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
   BookOpen,
+  CheckCircle2,
+  Database,
   Download,
+  FileCode2,
   FileText,
   FolderPlus,
   FolderTree,
   GitBranch,
   Layers,
+  Lightbulb,
   ListChecks,
   MessageSquare,
+  Play,
   Presentation,
   Rocket,
+  RotateCcw,
+  Route,
   ShieldCheck,
   Target,
   Terminal,
 } from "lucide-react";
 import { Frame, Card, DataTable, Grid, Quote, Focus, Steps, Pre } from "./components.jsx";
 
-/* 目录结构图：内联 SVG（离线单文件，不用 ASCII 字符画 / 线框图） */
-const DIRS = [
-  ["docs/", "技术文档：设计原理、硬件参数、选型、部署与协作记录"],
-  ["培训/", "培训资料与赛项规则解读"],
-  ["教学demo/", "可直接运行的最小示例（一个 demo 一个子目录）"],
-  ["教学webppt/", "线下教学 web 幻灯片（一个主题一个子目录，成品单文件）"],
-  ["算法/", "视觉 / 控制算法实现"],
-  ["模型/", "模型权重与序列化产物"],
-  ["训练/", "训练脚本与配置"],
-  ["数据/", "数据集（raw / interim / processed / external，内容不入库）"],
-  ["tools/", "工程脚本工具（树莓派连接、串口监控等）"],
+/* ============================================================
+   守则第七节 · 点式动画（全册 ≤3 处）
+   纯前端实现：React state + setTimeout + CSS transition，无任何外链资源。
+   默认全亮（静态兜底：停帧 / 关动画 / 打印都完整可读）；播放时逐点 idle → active → done。
+   颜色编码全册统一：蓝＝代码、橙＝数据 / 资源、青＝文档 / 说明、绿＝验证通过。
+   ============================================================ */
+function useSequence(count, initial = "on", { step = 1000, hold = 900 } = {}) {
+  const [statuses, setStatuses] = useState(() => Array(count).fill(initial));
+  const timers = useRef([]);
+  const clearTimers = useCallback(() => {
+    timers.current.forEach(clearTimeout);
+    timers.current = [];
+  }, []);
+  useEffect(() => clearTimers, [clearTimers]);
+  const reset = useCallback(() => {
+    clearTimers();
+    setStatuses(Array(count).fill(initial));
+  }, [clearTimers, count, initial]);
+  const play = useCallback(() => {
+    clearTimers();
+    setStatuses(Array(count).fill("idle"));
+    for (let i = 0; i < count; i += 1) {
+      timers.current.push(
+        setTimeout(() => {
+          setStatuses((prev) => {
+            const next = [...prev];
+            if (i > 0) next[i - 1] = "done";
+            next[i] = "active";
+            return next;
+          });
+        }, i * step)
+      );
+    }
+    timers.current.push(
+      setTimeout(() => setStatuses(Array(count).fill("done")), count * step + hold)
+    );
+  }, [clearTimers, count, step, hold]);
+  const jump = useCallback(
+    (idx) => {
+      clearTimers();
+      setStatuses(
+        Array.from({ length: count }, (_, j) => (j < idx ? "done" : j === idx ? "active" : "idle"))
+      );
+    },
+    [clearTimers, count]
+  );
+  return { statuses, play, reset, jump };
+}
+
+/* 颜色编码：同一含义固定同一颜色（全册一致） */
+const SEQ_TONE = {
+  code: { on: "border-brand-300 bg-brand-50 text-brand-700", active: "border-brand-600 bg-brand-600 text-white" },
+  data: { on: "border-amber-400 bg-amber-50 text-warn2", active: "border-warn2 bg-warn2 text-white" },
+  doc: { on: "border-teal-300 bg-teal-50 text-teal2", active: "border-teal2 bg-teal2 text-white" },
+};
+const IDLE_TONE = "border-line bg-paper text-muted";
+const DONE_TONE = "border-good bg-good text-white";
+const PING_BG = { code: "bg-brand-400/50", data: "bg-amber-400/50", doc: "bg-teal-400/50" };
+const SEG_TONE = { code: "bg-brand-500", data: "bg-warn2", doc: "bg-teal2" };
+const segClass = (side, st) =>
+  st === "done" ? "bg-good" : st === "idle" ? "bg-line" : SEG_TONE[side] || "bg-brand-500";
+const nodeTone = (side, st) =>
+  st === "done" ? DONE_TONE : st === "idle" ? IDLE_TONE : (SEQ_TONE[side] || SEQ_TONE.code)[st];
+
+const PlayBtn = ({ onClick, children }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3.5 py-1.5 text-[0.82rem] font-semibold text-white transition hover:bg-brand-700"
+  >
+    <Play size={13} />
+    {children}
+  </button>
+);
+
+const ResetBtn = ({ onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="inline-flex items-center gap-1.5 rounded-lg border border-brand-300 bg-paper px-3.5 py-1.5 text-[0.82rem] font-semibold text-brand-700 transition hover:bg-brand-50"
+  >
+    <RotateCcw size={13} />
+    重置
+  </button>
+);
+
+/* 颜色编码图例（记忆锚之一，在多张图示里重复出现） */
+const ColorLegend = () => (
+  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[0.78rem] text-muted">
+    <span className="inline-flex items-center gap-1.5">
+      <span className="h-3 w-3 rounded bg-brand-600" />
+      蓝＝代码（脚本 / 算法 / 工具）
+    </span>
+    <span className="inline-flex items-center gap-1.5">
+      <span className="h-3 w-3 rounded bg-warn2" />
+      橙＝数据 / 资源
+    </span>
+    <span className="inline-flex items-center gap-1.5">
+      <span className="h-3 w-3 rounded bg-teal2" />
+      青＝文档 / 说明
+    </span>
+    <span className="inline-flex items-center gap-1.5">
+      <span className="h-3 w-3 rounded bg-good" />
+      绿＝验证通过
+    </span>
+  </div>
+);
+
+/* ---- 点式动画 ① 最小工作区生成（横向）：建目录 → 放代码 / 数据 → 写说明 → 跑通 ---- */
+function PointFlow({ steps, legend = true, hint }) {
+  const { statuses, play, reset, jump } = useSequence(steps.length);
+  return (
+    <div className="surface p-4 md:p-5">
+      <div className="flex flex-col md:flex-row md:items-stretch">
+        {steps.map((s, i) => {
+          const st = statuses[i];
+          return (
+            <React.Fragment key={i}>
+              <button
+                type="button"
+                onClick={() => jump(i)}
+                title={`跳到第 ${i + 1} 步`}
+                className={`flex flex-1 items-center gap-3 rounded-xl border-2 px-3 py-2.5 text-left transition-colors duration-500 md:flex-col md:gap-2 md:py-3.5 md:text-center ${nodeTone(
+                  s.side,
+                  st
+                )}`}
+              >
+                <span className="relative grid h-9 w-9 flex-none place-items-center rounded-full border-2 border-current text-[0.9rem] font-bold md:h-10 md:w-10">
+                  {st === "active" && (
+                    <span className={`absolute inset-0 animate-ping rounded-full ${PING_BG[s.side] || "bg-brand-400/50"}`} />
+                  )}
+                  <span className="relative">{s.no}</span>
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-[0.9rem] font-bold leading-tight md:text-[0.95rem]">{s.title}</span>
+                  <span className="block text-[0.76rem] leading-tight opacity-80 md:text-[0.8rem]">{s.sub}</span>
+                </span>
+              </button>
+              {i < steps.length - 1 && (
+                <span
+                  className={`ml-[1.15rem] h-3 w-0.5 flex-none self-start rounded-full transition-colors duration-500 md:ml-1 md:mr-1 md:h-0.5 md:w-6 md:self-center ${segClass(
+                    s.side,
+                    st
+                  )}`}
+                />
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+        <PlayBtn onClick={play}>播放点式动画</PlayBtn>
+        <ResetBtn onClick={reset} />
+        <span className="text-[0.78rem] text-muted">
+          {hint || "点节点可手动跳到该步；默认全亮＝静态兜底（关动画 / 打印照样完整）。"}
+        </span>
+      </div>
+      {legend && (
+        <div className="mt-2.5 border-t border-line pt-2.5">
+          <ColorLegend />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---- 点式动画 ③ 纵向点式分步（上手 / 排错顺序共用） ---- */
+function PointSteps({ steps, hint }) {
+  const { statuses, play, reset, jump } = useSequence(steps.length, "on", { step: 1050, hold: 900 });
+  return (
+    <div className="surface p-4 md:p-5">
+      <div className="space-y-2.5">
+        {steps.map((s, i) => {
+          const st = statuses[i];
+          const badge =
+            st === "done"
+              ? "bg-good text-white"
+              : st === "active"
+              ? "bg-warn2 text-white"
+              : st === "idle"
+              ? "bg-slate-200 text-muted"
+              : s.side === "doc"
+              ? "bg-teal2 text-white"
+              : s.side === "data"
+              ? "bg-warn2 text-white"
+              : "bg-brand-600 text-white";
+          return (
+            <button
+              key={i}
+              type="button"
+              onClick={() => jump(i)}
+              className={`flex w-full items-start gap-3 rounded-xl border-2 px-3.5 py-3 text-left transition-colors duration-500 ${
+                st === "done"
+                  ? "border-good bg-emerald-50"
+                  : st === "active"
+                  ? "border-warn2 bg-amber-50"
+                  : "border-line bg-paper"
+              }`}
+            >
+              <span className={`relative mt-0.5 grid h-7 w-7 flex-none place-items-center rounded-full text-[0.8rem] font-bold transition-colors duration-500 ${badge}`}>
+                {st === "active" && <span className="absolute inset-0 animate-ping rounded-full bg-amber-400/50" />}
+                <span className="relative">{i + 1}</span>
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[0.92rem] font-bold text-ink">{s.t}</span>
+                <span className="block text-[0.82rem] leading-relaxed text-muted">{s.s}</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <PlayBtn onClick={play}>逐步推进</PlayBtn>
+        <ResetBtn onClick={reset} />
+        {hint && <span className="text-[0.78rem] text-muted">{hint}</span>}
+      </div>
+    </div>
+  );
+}
+
+/* ---- 记忆锚三卡（口诀 / 生活化类比 / 颜色编码），并在图里重复出现 ---- */
+const AnchorCards = () => (
+  <div className="grid gap-3 md:grid-cols-3">
+    <div className="surface border-t-4 border-t-brand-500 p-4 md:p-5">
+      <div className="mb-2 text-[0.72rem] font-extrabold tracking-[0.14em] text-brand-700">口 诀</div>
+      <p className="text-[1rem] font-extrabold leading-snug text-ink">一个目录、三类文件、一份说明</p>
+      <p className="mt-2 text-[0.84rem] leading-relaxed text-muted">
+        代码 + 数据 + 文档齐备，才算一个能交付的项目单元；缺一样就不算「一个项目」。
+      </p>
+    </div>
+    <div className="surface border-t-4 border-t-warn2 p-4 md:p-5">
+      <div className="mb-2 text-[0.72rem] font-extrabold tracking-[0.14em] text-warn2">生活化类比</div>
+      <p className="text-[1rem] font-extrabold leading-snug text-ink">工作区＝书桌</p>
+      <p className="mt-2 text-[0.84rem] leading-relaxed text-muted">
+        常用的放手边（<code>tools/</code>、在跑的脚本），杂物理进抽屉（<code>docs/</code>、<code>培训/</code> 归档），桌上只留正在写的那一份——根目录就是这张「暂存桌面」。
+      </p>
+    </div>
+    <div className="surface border-t-4 border-t-good p-4 md:p-5">
+      <div className="mb-2 text-[0.72rem] font-extrabold tracking-[0.14em] text-good">颜色编码</div>
+      <div className="space-y-1.5 text-[0.9rem] font-semibold text-ink">
+        <p className="flex items-center gap-2">
+          <span className="h-3.5 w-3.5 rounded bg-brand-600" />
+          蓝＝代码
+        </p>
+        <p className="flex items-center gap-2">
+          <span className="h-3.5 w-3.5 rounded bg-warn2" />
+          橙＝数据 / 资源
+        </p>
+        <p className="flex items-center gap-2">
+          <span className="h-3.5 w-3.5 rounded bg-teal2" />
+          青＝文档 / 说明
+        </p>
+        <p className="flex items-center gap-2">
+          <span className="h-3.5 w-3.5 rounded bg-good" />
+          绿＝验证通过
+        </p>
+      </div>
+      <p className="mt-2 text-[0.84rem] leading-relaxed text-muted">
+        全册一致：看颜色就知道这是代码、数据还是说明。
+      </p>
+    </div>
+  </div>
+);
+
+/* ---- 最小工作区生成（点式动画 ①）---- */
+const WORKSPACE = [
+  { no: "1", side: "doc", title: "建目录", sub: "先给项目一个名字：demo/" },
+  { no: "2", side: "code", title: "放代码", sub: "main.py（可运行脚本）" },
+  { no: "3", side: "data", title: "放数据", sub: "data/（输入与资源）" },
+  { no: "4", side: "doc", title: "写说明", sub: "README.md（怎么用）" },
+  { no: "5", side: "good", title: "跑通脚本", sub: "能运行 = 验证通过" },
 ];
+
+const MinimalWorkspace = () => (
+  <Frame
+    kicker="概览"
+    floor="06"
+    title="最小工作区：一个目录、三类文件、一份说明"
+    lead="能独立跑通、别人拿到就能用，才算一个项目单元；下面这条就是它的生成顺序。"
+    wide
+  >
+    <div className="space-y-4">
+      <PointFlow steps={WORKSPACE} />
+      <Grid cols={3}>
+        <Card title="代码（蓝）" icon={FileCode2}>
+          能运行的脚本或算法；<code>main.py</code> 是入口，别人一眼知道从哪跑。
+        </Card>
+        <Card title="数据 / 资源（橙）" icon={Database}>
+          输入、样例与权重放 <code>data/</code>；内容和来源在说明里写清。
+        </Card>
+        <Card title="文档 / 说明（青）" icon={FileText}>
+          <code>README.md</code> 写用途、运行方法、依赖；缺说明就不算交付物。
+        </Card>
+      </Grid>
+      <Quote>
+        口诀：<strong>一个目录、三类文件、一份说明</strong>——三样齐备、脚本能跑通（全绿），这个项目才算立住。
+      </Quote>
+    </div>
+  </Frame>
+);
+
+/* ---- 目录结构图：内联 SVG（离线单文件，不用 ASCII 字符画 / 线框图） ---- */
+const DIRS = [
+  ["docs/", "技术文档：设计原理、硬件参数、选型、部署与协作记录", "doc"],
+  ["培训/", "培训资料与赛项规则解读", "doc"],
+  ["教学demo/", "可直接运行的最小示例（一个 demo 一个子目录）", "code"],
+  ["教学webppt/", "线下教学 web 幻灯片（一个主题一个子目录，成品单文件）", "doc"],
+  ["算法/", "视觉 / 控制算法实现", "code"],
+  ["模型/", "模型权重与序列化产物", "data"],
+  ["训练/", "训练脚本与配置", "code"],
+  ["数据/", "数据集（raw / interim / processed / external，内容不入库）", "data"],
+  ["tools/", "工程脚本工具（树莓派连接、串口监控等）", "code"],
+];
+
+const DIR_COLOR = {
+  code: { dot: "#1f72d6", fill: "#eff8ff", stroke: "#93cdfb" },
+  data: { dot: "#b4690e", fill: "#fef3c7", stroke: "#fbbf24" },
+  doc: { dot: "#0ea5a3", fill: "#f0fdfa", stroke: "#5eead4" },
+};
 
 const DirTree = () => (
   <div className="surface p-4">
     <svg
       viewBox="0 0 820 486"
       role="img"
-      aria-label="rsp-cam 根目录下按用途划分的九个分类目录结构"
+      aria-label="rsp-cam 根目录下按用途划分的九个分类目录结构，按代码、数据、文档三类着色"
       className="h-auto w-full"
     >
       <rect x="16" y="194" width="176" height="72" rx="12" fill="#eff8ff" stroke="#93cdfb" />
@@ -47,15 +361,17 @@ const DirTree = () => (
       <line x1="192" y1="230" x2="286" y2="230" stroke="#94a3b8" strokeWidth="1.5" />
       <line x1="286" y1="38" x2="286" y2="422" stroke="#cbd5e1" strokeWidth="1.5" />
 
-      {DIRS.map(([name, desc], i) => {
+      {DIRS.map(([name, desc, side], i) => {
         const y = 18 + i * 48;
         const cy = y + 20;
+        const c = DIR_COLOR[side];
         return (
           <g key={name}>
             <line x1="286" y1={cy} x2="320" y2={cy} stroke="#cbd5e1" strokeWidth="1.5" />
-            <rect x="320" y={y} width="484" height="40" rx="8" fill="#f8fafc" stroke="#e2e8f0" />
-            <text x="336" y={y + 17} fill="#0f172a" fontSize="12.5" fontWeight="700">{name}</text>
-            <text x="336" y={y + 32} fill="#475569" fontSize="10.5">{desc}</text>
+            <rect x="320" y={y} width="484" height="40" rx="8" fill={c.fill} stroke={c.stroke} />
+            <circle cx="336" cy={y + 20} r="4.5" fill={c.dot} />
+            <text x="350" y={y + 17} fill="#0f172a" fontSize="12.5" fontWeight="700">{name}</text>
+            <text x="350" y={y + 32} fill="#475569" fontSize="10.5">{desc}</text>
           </g>
         );
       })}
@@ -64,61 +380,21 @@ const DirTree = () => (
         根级另有两个文件：README.md（项目总览与目录约定）、AGENTS.md（协作与环境备忘）。
       </text>
     </svg>
+    <div className="mt-3 border-t border-line pt-3">
+      <ColorLegend />
+    </div>
   </div>
 );
 
-/* 协作流程图：内联 SVG */
-const Flow = () => (
-  <div className="surface p-4">
-    <svg
-      viewBox="0 0 900 224"
-      role="img"
-      aria-label="从根目录暂存文件到归档分类、同步 md、提交、生成 webppt 的四步固定流程"
-      className="h-auto w-full"
-    >
-      <defs>
-        <marker id="flow-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-          <path d="M0,0 L10,5 L0,10 z" fill="#0d9488" />
-        </marker>
-      </defs>
+/* ---- 提交流转：四步固定（点式动画 ②，归档 → 同步 md → 提交 → 出 deck） ---- */
+const COMMIT_FLOW = [
+  { no: "1", side: "code", title: "归档分类", sub: "git mv 进对应目录，保留历史" },
+  { no: "2", side: "doc", title: "同步 md", sub: "更新目标目录 README" },
+  { no: "3", side: "code", title: "提交", sub: "中文信息 · 不主动 push" },
+  { no: "4", side: "doc", title: "出 webppt", sub: "生成 / 更新 deck · 构建成品" },
+];
 
-      <rect x="8" y="66" width="132" height="88" rx="10" fill="#fffbeb" stroke="#fbbf24" />
-      <text x="74" y="102" textAnchor="middle" fill="#0f172a" fontSize="12" fontWeight="700">根目录</text>
-      <text x="74" y="122" textAnchor="middle" fill="#475569" fontSize="10">新建 / 更新的文件</text>
-
-      <line x1="140" y1="110" x2="164" y2="110" stroke="#0d9488" strokeWidth="2" markerEnd="url(#flow-arrow)" />
-      <line x1="332" y1="110" x2="356" y2="110" stroke="#0d9488" strokeWidth="2" markerEnd="url(#flow-arrow)" />
-      <line x1="524" y1="110" x2="548" y2="110" stroke="#0d9488" strokeWidth="2" markerEnd="url(#flow-arrow)" />
-      <line x1="716" y1="110" x2="740" y2="110" stroke="#0d9488" strokeWidth="2" markerEnd="url(#flow-arrow)" />
-
-      <rect x="168" y="56" width="164" height="108" rx="12" fill="#eff8ff" stroke="#93cdfb" />
-      <text x="184" y="88" fill="#0f766e" fontSize="12.5" fontWeight="700">① 归档分类</text>
-      <text x="184" y="112" fill="#475569" fontSize="10.5">按用途放进对应目录</text>
-      <text x="184" y="130" fill="#475569" fontSize="10.5">git mv 保留历史</text>
-
-      <rect x="360" y="56" width="164" height="108" rx="12" fill="#eff8ff" stroke="#93cdfb" />
-      <text x="376" y="88" fill="#0f766e" fontSize="12.5" fontWeight="700">② 同步 md</text>
-      <text x="376" y="112" fill="#475569" fontSize="10.5">更新目标目录 README</text>
-      <text x="376" y="130" fill="#475569" fontSize="10.5">必要时同步根 README</text>
-
-      <rect x="552" y="56" width="164" height="108" rx="12" fill="#eff8ff" stroke="#93cdfb" />
-      <text x="568" y="88" fill="#0f766e" fontSize="12.5" fontWeight="700">③ 提交</text>
-      <text x="568" y="112" fill="#475569" fontSize="10.5">历史风格信息 + 中文描述</text>
-      <text x="568" y="130" fill="#475569" fontSize="10.5">不主动 push</text>
-
-      <rect x="744" y="56" width="148" height="108" rx="12" fill="#f0fdfa" stroke="#5eead4" />
-      <text x="760" y="88" fill="#0f766e" fontSize="12.5" fontWeight="700">④ 出 webppt</text>
-      <text x="760" y="112" fill="#475569" fontSize="10.5">生成 / 更新主题 deck</text>
-      <text x="760" y="130" fill="#475569" fontSize="10.5">构建成品</text>
-
-      <text x="8" y="204" fill="#94a3b8" fontSize="10.5">
-        根目录只是暂存区：新增或改动内容后，从「归档分类」重新走一遍。
-      </text>
-    </svg>
-  </div>
-);
-
-/* 对比决策：先写后整 vs 入库即归类（内联 SVG） */
+/* ---- 对比决策：先写后整 vs 入库即归类（内联 SVG） ---- */
 const Decision = () => (
   <div className="surface p-4">
     <svg
@@ -204,7 +480,7 @@ const Conclusion = () => (
 
 const Problem = () => (
   <Frame
-    kicker="背景"
+    kicker="概览"
     floor="02"
     title="随手堆在根目录，新人找不到、自己也放不对"
     lead="整理前的三个典型问题，都源于根目录没有职责边界。"
@@ -228,7 +504,7 @@ const Problem = () => (
 
 const Principles = () => (
   <Frame
-    kicker="原则"
+    kicker="概览"
     floor="03"
     title="四条原则定下目录的边界"
   >
@@ -249,12 +525,29 @@ const Principles = () => (
   </Frame>
 );
 
+const Anchors = () => (
+  <Frame
+    kicker="概览"
+    floor="04"
+    title="先记住三把钩子：口诀、类比、颜色"
+    lead="概念背不动没关系——先想起钩子，再顺出知识；这三个锚会在后面每张图里重复出现。"
+    wide
+  >
+    <div className="space-y-4">
+      <AnchorCards />
+      <Quote>
+        备考也照这个记：先复述口诀「一个目录、三类文件、一份说明」，再想书桌的比喻，最后确认颜色编码对不对。
+      </Quote>
+    </div>
+  </Frame>
+);
+
 const TreePage = () => (
   <Frame
     kicker="结构"
-    floor="04"
+    floor="07"
     title="九类目录各司其职，一眼看懂文件放哪"
-    lead="顶层按用途分九个目录；每个目录对应通用分层里的一类资产。"
+    lead="顶层按用途分九个目录，并按下图颜色归入「代码 / 数据 / 文档」三类；每个目录对应通用分层里的一类资产。"
     wide
   >
     <div className="space-y-4">
@@ -288,7 +581,7 @@ const TreePage = () => (
 const Filing = () => (
   <Frame
     kicker="结构"
-    floor="05"
+    floor="08"
     title="根目录的每个文件都有固定去处"
     lead="先判断「属于哪类」，再放进对应目录；移动已跟踪文件一律用 git mv。"
   >
@@ -331,16 +624,46 @@ git rm __pycache__/*.pyc                        （构建产物不再入库）
   </Frame>
 );
 
+/* ---- 新人上手 / 找不到东西时的排错顺序（点式动画 ③）---- */
+const ONBOARD = [
+  { side: "doc", t: "先看根 README.md", s: "搞清仓库分几类、每类放什么——这是总目录。" },
+  { side: "doc", t: "再看目标目录的 README.md", s: "确定「这类东西放哪、怎么命名」。" },
+  { side: "doc", t: "要细节翻 docs/", s: "原理、参数、部署与踩坑都在这；找不到就把这条路径当索引。" },
+  { side: "code", t: "要跑起来进 教学demo/", s: "挑最小示例直接运行，用输出验证环境是否正常。" },
+  { side: "good", t: "提交前回到归档流程", s: "归档 → 同步 md → 提交 → 出 deck：走一遍就算复位。" },
+];
+
+const Onboarding = () => (
+  <Frame
+    kicker="结构"
+    floor="09"
+    title="新人上手：按这个顺序找，不迷路"
+    lead="面对一个不熟悉的仓库，别乱翻——照下面的顺序逐层推进，每一步都能定位到答案。"
+    wide
+  >
+    <div className="space-y-4">
+      <PointSteps steps={ONBOARD} hint="逐条点亮：上一层没看明白，就别急着跳到下一层。" />
+      <Quote>
+        口诀复用「先说明、后代码」：书桌上先看标签（README / docs），再动手翻抽屉（教学demo / tools）。
+      </Quote>
+    </div>
+  </Frame>
+);
+
 const Workflow = () => (
   <Frame
     kicker="流程"
-    floor="06"
+    floor="10"
     title="归档 → 同步 md → 提交 → 出 deck，四步固定"
     lead="根目录只是暂存区；新增或改动内容后，从「归档分类」重新走一遍。"
     wide
   >
     <div className="space-y-4">
-      <Flow />
+      <PointFlow
+        steps={COMMIT_FLOW}
+        legend={false}
+        hint="点节点可手动跳到该步；默认全亮＝静态兜底（关动画 / 打印照样完整）。"
+      />
       <Focus
         no="1"
         title="归档前先自查三件事"
@@ -378,7 +701,7 @@ git commit -m "docs: 归档 <主题> 到 docs/"`}</Pre>
 const AfterCommit = () => (
   <Frame
     kicker="流程"
-    floor="07"
+    floor="11"
     title="归档后自动出 deck，提交信息沿用历史风格"
     lead="新增 / 归档内容后，同步生成或更新对应主题 deck 并构建成品，不再逐次询问。"
     wide
@@ -426,7 +749,7 @@ git commit -m "docs(webppt): 新增 <主题> deck"`}</Pre>
 const DecisionBlock = () => (
   <Frame
     kicker="流程"
-    floor="08"
+    floor="12"
     title="先写后整 vs 入库即归类，选入库即归类"
     wide
   >
@@ -459,7 +782,7 @@ const DecisionBlock = () => (
 const Hygiene = () => (
   <Frame
     kicker="流程"
-    floor="09"
+    floor="13"
     title="大文件与密钥不入库，换行用 .gitattributes 锁死"
     wide
   >
@@ -506,7 +829,7 @@ node_modules/
 const Downloads = () => (
   <Frame
     kicker="收尾"
-    floor="10"
+    floor="14"
     title="协作约定全文与相关入口，随 deck 下载"
     wide
   >
@@ -518,7 +841,7 @@ const Downloads = () => (
           </a>
         </p>
         <p className="mt-2 text-muted">
-          含完整目录职责表、归档去向、不入库清单、webppt 构建约定与下载地址约定。
+          含完整目录职责表、归档去向、最小工作区与记忆锚、不上库清单、webppt 构建约定与下载地址约定。
         </p>
       </Card>
       <Card title="工作区内的位置" icon={FolderTree}>
@@ -541,7 +864,7 @@ const Downloads = () => (
 const Action = () => (
   <Frame
     kicker="收尾"
-    floor="11"
+    floor="15"
     title="照这份清单做，新文件先归档再提交"
     wide
   >
@@ -560,6 +883,13 @@ const Action = () => (
           目录约定写进 <code>AGENTS.md</code>，新会话可直接遵循。
         </Card>
       </Grid>
+      <div className="surface flex flex-wrap items-center gap-x-5 gap-y-2 p-4">
+        <span className="inline-flex items-center gap-2 text-[0.9rem] font-bold text-ink">
+          <CheckCircle2 size={17} className="text-good" />
+          记住三样，项目就立住
+        </span>
+        <ColorLegend />
+      </div>
       <Steps title="展开：一次性整理步骤（完整命令）">
         <Pre>{`# 归档
 git mv "<文件>" "<分类目录>/<文件>"
@@ -588,8 +918,11 @@ export const slides = [
   { nav: "结论先行", group: "概览", el: <Conclusion /> },
   { nav: "整理前的问题", group: "概览", el: <Problem /> },
   { nav: "四条原则", group: "概览", el: <Principles /> },
+  { nav: "记忆锚", group: "概览", el: <Anchors /> },
+  { nav: "最小工作区", group: "概览", el: <MinimalWorkspace /> },
   { nav: "目录结构", group: "结构", el: <TreePage /> },
   { nav: "归档去向", group: "结构", el: <Filing /> },
+  { nav: "新人上手顺序", group: "结构", el: <Onboarding /> },
   { nav: "协作流程", group: "流程", el: <Workflow /> },
   { nav: "提交与出 deck", group: "流程", el: <AfterCommit /> },
   { nav: "对比决策", group: "流程", el: <DecisionBlock /> },
