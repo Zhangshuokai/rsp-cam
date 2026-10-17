@@ -315,7 +315,7 @@ const AgentPathway = () => (
     <svg
       viewBox="0 0 900 430"
       role="img"
-      aria-label="ESP32-S3 到树莓派 micro-ROS Agent 再到 ROS 2 图的通路验证链路：S3 固件跑 micro-ROS 客户端，节点名 esp32_car，经 Wi-Fi UDP4 连到 Pi 上 Docker 容器里的 micro-ROS Agent，UDP 端口 8888；Agent 把受限设备会话翻译成普通 ROS 2 节点，接进 ROS 2 图；teleop_twist_keyboard 发 cmd_vel，heartbeat_listener 收 esp32 heartbeat；底部给出 ros2 node list、ros2 topic hz、ros2 topic echo 的验证命令与默认域 0 的注意事项"
+      aria-label="ESP32-S3 到树莓派 micro-ROS Agent 再到 ROS 2 图的通路验证链路：S3 固件跑 micro-ROS 客户端，节点名 esp32_car，经 Wi-Fi UDP4 连到 Pi 上 Docker 容器里的 micro-ROS Agent，UDP 端口 8888；Agent 把受限设备会话翻译成普通 ROS 2 节点，接进 ROS 2 图。两段链路均为双向箭头：S3 与 Agent 之间走 UDP4 :8888 双向；Agent 与 ROS 2 图之间，/esp32/heartbeat 上行、/cmd_vel 下行。teleop_twist_keyboard 发 cmd_vel，heartbeat_listener 收 esp32 heartbeat；底部给出 ros2 node list、ros2 topic hz、ros2 topic echo 的验证命令与默认域 0 的注意事项"
       className="h-auto w-full"
     >
       <defs>
@@ -370,11 +370,13 @@ const AgentPathway = () => (
       <text x="644" y="264" fill="#475569" fontSize="10">随官方示例工程附带</text>
       <text x="644" y="290" fill="#b4690e" fontSize="10" fontWeight="700">客户端别设 ROS_DOMAIN_ID</text>
 
-      <line x1="272" y1="150" x2="322" y2="150" stroke="#0d9488" strokeWidth="2" markerEnd="url(#ap-teal)" />
-      <text x="297" y="140" textAnchor="middle" fill="#0f766e" fontSize="9">UDP4 :8888</text>
-      <text x="297" y="172" textAnchor="middle" fill="#0f766e" fontSize="9">双向</text>
-      <line x1="574" y1="150" x2="624" y2="150" stroke="#1a5cae" strokeWidth="2" markerEnd="url(#ap-blue)" />
-      <text x="599" y="140" textAnchor="middle" fill="#1a5cae" fontSize="9">ROS 2 话题</text>
+      <line x1="272" y1="146" x2="322" y2="146" stroke="#0d9488" strokeWidth="2" markerEnd="url(#ap-teal)" />
+      <line x1="322" y1="162" x2="272" y2="162" stroke="#0d9488" strokeWidth="2" markerEnd="url(#ap-teal)" />
+      <text x="297" y="138" textAnchor="middle" fill="#0f766e" fontSize="9">UDP4 :8888 双向</text>
+      <line x1="574" y1="146" x2="624" y2="146" stroke="#1a5cae" strokeWidth="2" markerEnd="url(#ap-blue)" />
+      <line x1="624" y1="162" x2="574" y2="162" stroke="#1a5cae" strokeWidth="2" markerEnd="url(#ap-blue)" />
+      <text x="599" y="138" textAnchor="middle" fill="#1a5cae" fontSize="9">heartbeat ↑</text>
+      <text x="599" y="178" textAnchor="middle" fill="#1a5cae" fontSize="9">/cmd_vel ↓</text>
 
       <rect x="16" y="322" width="868" height="92" rx="12" fill="#f8fafc" stroke="#cbd5e1" />
       <text x="32" y="346" fill="#0f172a" fontSize="11" fontWeight="700">验证链路（在 Pi 的 ROS 2 容器里执行，先 source setup.bash）</text>
@@ -1165,16 +1167,13 @@ const Startup = () => (
   >
     <div className="space-y-4">
       <PointSteps
-        hint="默认全绿＝静态兜底；点「逐步推进」走一遍，也可点某一步跳过去。"
+        hint="默认全绿＝静态兜底；点「逐步推进」走一遍（服务起 → 握手 → 话题通 → 收指令），也可点某一步跳过去。"
         steps={[
           { t: "烧固件", s: "把 micro-ROS 固件写进 S3（pio run -t upload），一次就好", tone: "board" },
-          { t: "起 Agent", s: "Pi 容器里先跑 udp4 --port 8888，占好端口等着板子来电", tone: "host" },
-          { t: "S3 上电连上", s: "板子主动连 Agent，日志出现 session created —— 出现即通", tone: "host" },
-          {
-            t: "看话题",
-            s: "ros2 topic list 出现 /esp32/heartbeat、node list 出现 /esp32_car，全链贯通",
-            tone: "ok",
-          },
+          { t: "起 Agent（服务起）", s: "Pi 容器里先跑 udp4 --port 8888，占好端口等着板子来电", tone: "host" },
+          { t: "S3 上电握手", s: "板子主动连 Agent，日志出现 session created —— 出现即通", tone: "host" },
+          { t: "看话题（话题通）", s: "ros2 topic list 出现 /esp32/heartbeat、node list 出现 /esp32_car，全链贯通", tone: "ok" },
+          { t: "按键收指令", s: "teleop 发 /cmd_vel，车轮跟着动、松手 1 s 停 —— 一收一发都通了", tone: "ok" },
         ]}
       />
       <Steps title="展开：三终端完整启动步骤">
@@ -1265,13 +1264,19 @@ const Pitfalls = () => (
     wide
   >
     <div className="space-y-4">
+      <p className="text-[0.86rem] leading-relaxed text-muted">
+        排查先分路：<b className="text-brand-700">Wi-Fi 路</b>（UDP4，查 Agent 监听 / 同网段 2.4 GHz / 容器 host 网络）与{" "}
+        <b className="text-brand-700">串口路</b>（查串口设备 / 容器 <code>--device</code> 映射 / 波特率与串口占用），
+        两路都通后再查固件初始化。
+      </p>
       <PointSteps
-        hint="默认全亮＝静态兜底；连不上就按这个顺序查，别一上来就乱改固件。"
+        hint="默认全亮＝静态兜底；连不上先分清走哪条路，再按顺序查，别一上来就乱改固件。"
         steps={[
-          { t: "Agent 在监听吗", s: "ss -lunp | grep 8888 没输出，就先起 Agent（udp4 8888）", tone: "host" },
-          { t: "同网段 + 2.4 GHz 吗", s: "对一下填进固件的 Agent IP；S3 只连 2.4 GHz", tone: "host" },
-          { t: "容器是 host 网络吗", s: "docker inspect 查 NetworkMode，期望 host，否则 UDP 8888 只活在容器里", tone: "host" },
-          { t: "固件初始化 / 占空比对吗", s: "少了 begin(90) 就静默不出 PWM；spin 要到 60~100 才转", tone: "board" },
+          { t: "第 0 步：先分清走哪条路", s: "看 platformio.ini 的 board_microros_transport——wifi 走 UDP4、serial 走串口，两路排查点不同", tone: "host" },
+          { t: "Wi-Fi 路①：Agent 在监听 8888 吗", s: "ss -lunp | grep 8888 没输出，就先起 Agent（udp4 --port 8888）", tone: "host" },
+          { t: "Wi-Fi 路②：同网段 + 2.4 GHz 吗", s: "对一下填进固件的 Agent IP；S3 只连 2.4 GHz；容器要 --network host", tone: "host" },
+          { t: "串口路：设备 / 波特率 / 别抢串口", s: "ls /dev/ttyUSB*；容器加 --device 映射；Agent 用 serial --dev … -b 115200，先关 serial monitor", tone: "host" },
+          { t: "两路都通后：固件初始化 / 占空比对吗", s: "少了 begin(90) 就静默不出 PWM；spin 要到 60~100 才转", tone: "board" },
         ]}
       />
       <Grid cols={2}>
@@ -1309,21 +1314,24 @@ const Pitfalls = () => (
           用了 <code>updateVelocity()</code> / <code>spinRPM()</code>（PID）：无编码器反馈恒 0，PID 饱和到满 PWM。
         </Card>
       </Grid>
-      <Steps title="展开：连不上时的排查命令">
-        <Pre>{`# 1) Agent 是否在监听 8888（容器/宿主机内）
-ss -lunp | grep 8888
+      <Steps title="展开：连不上时的排查命令（分串口 / Wi-Fi 两路）">
+        <Pre>{`# 第 0 步：先确认本课走哪条路
+grep board_microros_transport platformio.ini      # wifi 或 serial
 
-# 2) Pi 上确认自己的 IP（填进固件的那个）
-ip -4 addr show wlan0
+# --- 走 Wi-Fi（wifi / UDP4）时 ---
+ss -lunp | grep 8888                              # 1) Agent 是否在监听 8888
+ip -4 addr show wlan0                             # 2) Pi 的 IP（填进固件的那个）
+docker inspect -f '{{.HostConfig.NetworkMode}}' microros   # 3) 期望 host
+# 4) 网段与频段：S3 与 Pi 同网段可达且用 2.4 GHz；Agent IP 写成 127.0.0.1 永远连不上
 
-# 3) 容器是否用了 host 网络
-docker inspect -f '{{.HostConfig.NetworkMode}}' microros   # 期望 host
+# --- 走串口（serial）时 ---
+ls -l /dev/ttyUSB* /dev/ttyACM*                   # 1) 串口设备是否认到
+docker inspect -f '{{.HostConfig.Devices}}' microros        # 2) 容器是否映射了串口
+# 3) Agent 用 serial --dev /dev/ttyUSB0 -b 115200；先关掉 serial monitor 再开门
 
-# 4) Agent 日志有没有 S3 会话
-#    出现 session established / create session 即已连上
-
-# 5) 网段与频段：S3 与 Pi 必须同网段可达，且用 2.4 GHz
-#    Agent IP 若写成 127.0.0.1，S3 永远连不上`}</Pre>
+# --- 两路通用 ---
+# Agent 日志出现 session established / create session 即已连上
+# 固件侧：补 getEncoderMotor(M1/M2)->begin(90)；占空比用 60~100`}</Pre>
       </Steps>
     </div>
   </Frame>
