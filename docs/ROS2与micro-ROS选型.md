@@ -317,11 +317,12 @@ flowchart LR
 ```mermaid
 flowchart TD
     S1["① 烧固件（板子侧）<br/>pio run -t upload"] --> S2["② 起 Agent（电脑侧）<br/>容器内 udp4 --port 8888"]
-    S2 --> S3["③ S3 上电连上<br/>Agent 日志出现 session created"]
-    S3 --> S4["④ 看话题（验证通过）<br/>topic list 出现 /esp32/heartbeat，node list 出现 /esp32_car"]
+    S2 --> S3["③ S3 上电握手<br/>Agent 日志出现 session created"]
+    S3 --> S4["④ 看话题（话题通）<br/>topic list 出现 /esp32/heartbeat，node list 出现 /esp32_car"]
+    S4 --> S5["⑤ 按键收指令<br/>teleop 发 /cmd_vel，车轮跟着动、松手 1 s 停"]
 ```
 
-顺序反了也不用重启板子（`rmw_uros_ping_agent` 自动重连）；连不上的排查顺序与命令见 `ESP32-S3电机驱动板资料.md` 第六节。
+顺序反了也不用重启板子（`rmw_uros_ping_agent` 自动重连）；连不上时先分清**串口 / Wi-Fi 两路**，再按顺序排查——分路流程图与命令见 `ESP32-S3电机驱动板资料.md` 第六节。
 
 ### 传输方式对比（串口 vs Wi-Fi）
 

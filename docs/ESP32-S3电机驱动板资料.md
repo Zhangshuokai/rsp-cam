@@ -341,13 +341,14 @@ flowchart LR
 
 ### 验证流程：按顺序走一遍
 
-四个动作有固定先后，一步只盯一件事（对应 deck 页「启动顺序」，纵向点式动画；口诀「板等 Agent，Agent 等端口，端口等网络」）：
+五个动作有固定先后，一步只盯一件事（对应 deck 页「启动顺序」，纵向点式动画；口诀「板等 Agent，Agent 等端口，端口等网络」）：
 
 ```mermaid
 flowchart TD
     S1["① 烧固件（板子侧）<br/>pio run -t upload，把 micro-ROS 固件写进 S3"] --> S2["② 起 Agent（电脑侧）<br/>容器内 udp4 --port 8888，占好端口等着板子来电"]
-    S2 --> S3["③ S3 上电连上<br/>Agent 日志出现 session created，出现即通"]
-    S3 --> S4["④ 看话题（验证通过）<br/>topic list 出现 /esp32/heartbeat，node list 出现 /esp32_car"]
+    S2 --> S3["③ S3 上电握手<br/>Agent 日志出现 session created，出现即通"]
+    S3 --> S4["④ 看话题（话题通）<br/>topic list 出现 /esp32/heartbeat，node list 出现 /esp32_car"]
+    S4 --> S5["⑤ 按键收指令<br/>teleop 发 /cmd_vel，车轮跟着动、松手 1 s 停 —— 一收一发都通了"]
 ```
 
 顺序反了也不用重启板子：固件按官方示例的 `rmw_uros_ping_agent` 机制自动重连；但 Agent 必须先起，否则 S3 一直重连。
@@ -381,34 +382,49 @@ ros2 run micro_ros_agent micro_ros_agent serial --dev /dev/ttyUSB0 -b 115200
 
 ### 连不上时的排查顺序与命令
 
-连不上先按顺序查，别一上来就乱改固件（对应 deck 页「常见坑」，纵向点式动画）：
+连不上先分清走哪条路（看 `platformio.ini` 的 `board_microros_transport`：`wifi` 走 UDP4、`serial` 走串口，两路排查点不同），再按顺序查，别一上来就乱改固件（对应 deck 页「常见坑」，纵向点式动画）：
 
 ```mermaid
 flowchart TD
-    P1{"① Agent 在监听吗（ss -lunp 看 8888）"} -->|否| F1["先起 Agent：udp4 --port 8888"]
-    P1 -->|是| P2{"② 同网段 + 2.4 GHz 吗（对一下固件里的 Agent IP）"}
-    P2 -->|否| F2["改成与 Pi 同网段；S3 只连 2.4 GHz"]
-    P2 -->|是| P3{"③ 容器是 host 网络吗（docker inspect 查 NetworkMode）"}
-    P3 -->|否| F3["容器加 --network host，UDP 8888 才落宿主网络"]
-    P3 -->|是| P4{"④ 固件初始化 / 占空比对吗"}
-    P4 -->|否| F4["补 getEncoderMotor 的 begin(90) 初始化；占空比用 60~100"]
+    P0{"第 0 步：board_microros_transport 是 wifi 还是 serial？"}
+    P0 -->|wifi / UDP4| W1{"Wi-Fi 路① Agent 在监听 8888 吗（ss -lunp）"}
+    W1 -->|否| WF1["先起 Agent：udp4 --port 8888"]
+    W1 -->|是| W2{"Wi-Fi 路② 同网段 + 2.4 GHz 吗（对一下固件里的 Agent IP）"}
+    W2 -->|否| WF2["改成与 Pi 同网段；S3 只连 2.4 GHz"]
+    W2 -->|是| W3{"Wi-Fi 路③ 容器是 host 网络吗（docker inspect 查 NetworkMode）"}
+    W3 -->|否| WF3["容器加 --network host，UDP 8888 才落宿主网络"]
+    W3 -->|是| C1{"固件初始化 / 占空比对吗"}
+    P0 -->|serial 串口| T1{"串口路① 串口设备认到了吗（ls /dev/ttyUSB*）"}
+    T1 -->|否| TF1["装 CH34x / CP210x 驱动，确认 USB 线"]
+    T1 -->|是| T2{"串口路② 容器映射了串口吗（--device /dev/ttyUSB0）"}
+    T2 -->|否| TF2["起容器时加 --device 映射"]
+    T2 -->|是| T3{"串口路③ 波特率对、串口没被占用吗"}
+    T3 -->|否| TF3["Agent 用 serial -b 115200；先关掉 serial monitor"]
+    T3 -->|是| C1
+    C1 -->|否| CF1["补 getEncoderMotor(M1/M2)->begin(90) 初始化；占空比用 60~100"]
+    C1 -->|是| OK["两端握手成功：Agent 日志出现 session created"]
 ```
 
 对应命令：
 
 ```bash
-# 1) Agent 是否在监听 8888（容器/宿主机内）
-ss -lunp | grep 8888
+# 第 0 步：先确认本课走哪条路
+grep board_microros_transport platformio.ini      # wifi 或 serial
 
-# 2) Pi 上确认自己的 IP（填进固件的那个）
-ip -4 addr show wlan0
+# --- 走 Wi-Fi（wifi / UDP4）时 ---
+ss -lunp | grep 8888                              # 1) Agent 是否在监听 8888
+ip -4 addr show wlan0                             # 2) Pi 的 IP（填进固件的那个）
+docker inspect -f '{{.HostConfig.NetworkMode}}' microros   # 3) 期望 host
+# 4) 网段与频段：S3 与 Pi 同网段可达且用 2.4 GHz；Agent IP 写成 127.0.0.1 永远连不上
 
-# 3) 容器是否用了 host 网络（期望 host）
-docker inspect -f '{{.HostConfig.NetworkMode}}' microros
+# --- 走串口（serial）时 ---
+ls -l /dev/ttyUSB* /dev/ttyACM*                   # 1) 串口设备是否认到
+docker inspect -f '{{.HostConfig.Devices}}' microros        # 2) 容器是否映射了串口
+# 3) Agent 用 serial --dev /dev/ttyUSB0 -b 115200；先关掉 serial monitor 再开门
 
-# 4) Agent 日志有没有 S3 会话：出现 session established / create session 即已连上
-
-# 5) 网段与频段：S3 与 Pi 必须同网段可达，且用 2.4 GHz；Agent IP 写成 127.0.0.1 永远连不上
+# --- 两路通用 ---
+# Agent 日志出现 session established / create session 即已连上
+# 固件侧：补 getEncoderMotor(M1/M2)->begin(90)；占空比用 60~100（少了初始化静默不出 PWM）
 ```
 
 ## 七、串口调试与实测遥测
