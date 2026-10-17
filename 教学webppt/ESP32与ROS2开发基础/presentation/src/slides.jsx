@@ -792,8 +792,85 @@ const DevLoopPage = () => (
   </Frame>
 );
 
+/* 静态结构图：回调三段（事件 → 框架 → 你的函数），蓝＝事件来源、橙＝框架调度、绿＝调用完成 */
+function CallbackFlow() {
+  return (
+    <div className="surface p-3 md:p-4">
+      <svg
+        viewBox="0 0 900 190"
+        role="img"
+        aria-label="回调的三段结构：事件发生（蓝色，硬件或话题来源）→ 框架调度（橙色，ROS 2 执行器）→ 框架调用你写的函数（绿色，订阅回调或定时器回调）。"
+        className="h-auto w-full"
+      >
+        <defs>
+          <marker id="cb-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="#94a3b8" />
+          </marker>
+        </defs>
+        <rect x="16" y="26" width="252" height="110" rx="16" fill="#eff8ff" stroke="#60b0f7" strokeWidth="2" />
+        <text x="142" y="56" textAnchor="middle" fill="#1a5cae" fontSize="14" fontWeight="700">① 事件发生</text>
+        <text x="142" y="88" textAnchor="middle" fill="#0f172a" fontSize="20" fontWeight="800">硬件 / 话题</text>
+        <text x="142" y="114" textAnchor="middle" fill="#475569" fontSize="13">按键、来消息、定时到点</text>
+
+        <line x1="272" y1="81" x2="320" y2="81" stroke="#94a3b8" strokeWidth="2" markerEnd="url(#cb-arrow)" />
+
+        <rect x="326" y="26" width="252" height="110" rx="16" fill="#fff7ed" stroke="#fdba74" strokeWidth="2" />
+        <text x="452" y="56" textAnchor="middle" fill="#b45309" fontSize="14" fontWeight="700">② 框架调度</text>
+        <text x="452" y="88" textAnchor="middle" fill="#0f172a" fontSize="18" fontWeight="800">ROS 2 执行器</text>
+        <text x="452" y="114" textAnchor="middle" fill="#475569" fontSize="13">先收事件，再查你登记的函数</text>
+
+        <line x1="582" y1="81" x2="630" y2="81" stroke="#94a3b8" strokeWidth="2" markerEnd="url(#cb-arrow)" />
+
+        <rect x="636" y="26" width="248" height="110" rx="16" fill="#ecfdf5" stroke="#6ee7b7" strokeWidth="2" />
+        <text x="760" y="56" textAnchor="middle" fill="#047857" fontSize="14" fontWeight="700">③ 调用你的函数</text>
+        <text x="760" y="88" textAnchor="middle" fill="#0f172a" fontSize="16" fontWeight="800">订阅 / 定时器回调</text>
+        <text x="760" y="114" textAnchor="middle" fill="#475569" fontSize="13">函数你写，这一下由框架叫</text>
+
+        <text x="450" y="170" textAnchor="middle" fill="#64748b" fontSize="14">
+          函数是你写的；什么时候被叫，由框架决定——这就是回调。
+        </text>
+      </svg>
+    </div>
+  );
+}
+
+const CallbackBridge = () => (
+  <Frame
+    kicker="教学主线"
+    floor="08"
+    title="回调函数：你写的函数，等别人来叫"
+    lead="零基础先记住这一句；完整版（轮询对比、两种现场、常见坑）在《编程零基础起步：从函数到回调》。"
+    wide
+  >
+    <div className="space-y-4">
+      <CallbackFlow />
+      <Grid cols={3}>
+        <Card title="回调是什么" icon={Activity} tone="brand">
+          你先写好一个函数交给框架；按键、消息到达或定时到点时，框架回头调用它——这就叫回调（callback）。
+        </Card>
+        <Card title="和轮询差在哪" icon={RotateCcw} tone="warn">
+          轮询是「我一直问好了没」，回调是「好了它会叫我」；后者不空转 CPU，响应也更及时。
+        </Card>
+        <Card title="ROS 2 里的两个常见回调" icon={Network} tone="good">
+          订阅回调（subscriber callback）收到话题消息时执行；定时器回调（timer callback）按周期执行。
+        </Card>
+      </Grid>
+      <div className="surface flex flex-col gap-2 border-brand-300 bg-brand-50/70 px-4 py-3 md:flex-row md:items-center md:gap-4">
+        <BookOpen size={18} className="flex-none text-brand-700" />
+        <p className="text-[0.9rem] leading-relaxed text-slateink">
+          去先修册看完整版：《编程零基础起步：从函数到回调》·{" "}
+          <a className="font-bold text-brand-700 underline decoration-brand-300 underline-offset-4" href="../编程零基础起步/index.html#/7">
+            打开回调时序一页
+          </a>
+          <span className="text-muted">（同级目录：教学webppt/编程零基础起步/）</span>
+        </p>
+      </div>
+    </div>
+  </Frame>
+);
+
 const Protocol = () => (
-  <Frame kicker="教学主线" floor="08" title="行协议（line protocol）：一行一条消息，全是人话" wide>
+  <Frame kicker="教学主线" floor="09" title="行协议（line protocol）：一行一条消息，全是人话" wide>
     <div className="space-y-4">
       <DataTable
         head={["方向", "示例", "说明"]}
@@ -844,7 +921,7 @@ const Protocol = () => (
 );
 
 const StyleAndMix = () => (
-  <Frame kicker="教学主线" floor="09" title="两个设计问题，就是两节算法课" wide>
+  <Frame kicker="教学主线" floor="10" title="两个设计问题，就是两节算法课" wide>
     <Grid cols={2}>
       <Card title="保存与应用分离" icon={Palette}>
         <ul className="mt-1 list-disc space-y-1.5 pl-5">
@@ -870,7 +947,7 @@ mix   = min(255, Σ 亮着的样式 RGB)   # 合成：OR 取亮灭，RGB 相加�
 );
 
 const RosBridge = () => (
-  <Frame kicker="教学主线" floor="10" title="ROS 2 侧：三个节点（node）各司其职" wide>
+  <Frame kicker="教学主线" floor="11" title="ROS 2 侧：三个节点（node）各司其职" wide>
     <div className="space-y-4">
       <Grid cols={3}>
         <Card title="wifi_server" icon={Server}>
@@ -907,7 +984,7 @@ ros2 topic echo /board/green/rx        # 心跳 DATA GREEN … 与 STYLE-OK / ST
 const RosPackagePage = () => (
   <Frame
     kicker="教学主线"
-    floor="11"
+    floor="12"
     title="一个 ROS 2 包长什么样：工作空间 → 包 → 节点"
     lead="看到陌生工程先认三层：工作空间装包、包装代码、代码里跑节点；目录认对了，构建和排错就不会找错地方。"
     wide
@@ -951,7 +1028,7 @@ const RosPackagePage = () => (
 );
 
 const Method = () => (
-  <Frame kicker="教学方法" floor="12" title="怎么教：现象先行 + 故障驱动">
+  <Frame kicker="教学方法" floor="13" title="怎么教：现象先行 + 故障驱动">
     <Grid cols={2}>
       <Card title="现象先行" icon={Lightbulb}>
         每节课的第一次演示一定是「能看 / 能玩」的结果，原理放在现象之后；单次连续讲授不超过 15 分钟。
@@ -985,7 +1062,7 @@ const Method = () => (
 );
 
 const Labs = () => (
-  <Frame kicker="教学方法" floor="13" title="11 个实验，全部当堂验收" wide>
+  <Frame kicker="教学方法" floor="14" title="11 个实验，全部当堂验收" wide>
     <DataTable
       head={["实验", "周次", "核心能力"]}
       widths={["44%", "14%", "42%"]}
@@ -1007,7 +1084,7 @@ const Labs = () => (
 );
 
 const TeacherPrep = () => (
-  <Frame kicker="开课准备" floor="14" title="开课前：清单化准备，一项都不能漏">
+  <Frame kicker="开课准备" floor="15" title="开课前：清单化准备，一项都不能漏">
     <Grid cols={2}>
       <Card title="环境镜像（提前一周）" icon={Wrench}>
         Windows 10/11 + Python 3.10+（<code>esptool</code> / <code>mpremote</code>）、
@@ -1030,7 +1107,7 @@ const TeacherPrep = () => (
 );
 
 const FirstLab = () => (
-  <Frame kicker="开课准备" floor="15" title="实验一：从探测到 REPL，一条命令都不能错" wide>
+  <Frame kicker="开课准备" floor="16" title="实验一：从探测到 REPL，一条命令都不能错" wide>
     <div className="space-y-4">
       <Pre>{`python -m pip install esptool mpremote            # 每台电脑一次
 
@@ -1098,7 +1175,7 @@ const TROUBLE_STEPS = [
 const Troubleshoot = () => (
   <Frame
     kicker="开课准备"
-    floor="16"
+    floor="17"
     title="先错哪一步：编译 / 烧录报错按顺序查"
     lead="报错不是随机事件——从上到下逐层排除，先定位再动手；一次只改一个变量。"
     wide
@@ -1118,7 +1195,7 @@ const Troubleshoot = () => (
 );
 
 const Assessment = () => (
-  <Frame kicker="开课准备" floor="17" title="考核：能力本位，不设期末闭卷" wide>
+  <Frame kicker="开课准备" floor="18" title="考核：能力本位，不设期末闭卷" wide>
     <div className="space-y-4">
       <DataTable
         head={["考核项目", "比例", "说明"]}
@@ -1146,7 +1223,7 @@ const Assessment = () => (
 const Decision = () => (
   <Frame
     kicker="对比决策"
-    floor="18"
+    floor="19"
     title="两套上法怎么选：系统学期版 vs 短平快版"
     lead="同一门课有两种上法：16 周系统课打底，或 1 天集中 + 3–4 天自学速通。先看清取舍，再定上法。"
     wide
@@ -1175,7 +1252,7 @@ const Decision = () => (
 const Intensive = () => (
   <Frame
     kicker="短课模式"
-    floor="19"
+    floor="20"
     title="短平快版：1 天集中教学 + 3–4 天自学，约 30 学时"
     lead="把 48 学时改造成「最小闭环走通 + AI 监督下改算法」：教师用 06-短平快课程方案，学生用 07-学生学习手册（标记图例、知识讲解、验收清单与记录表都在手册里）。"
     wide
@@ -1200,7 +1277,7 @@ const Intensive = () => (
 );
 
 const DayOne = () => (
-  <Frame kicker="短课模式" floor="20" title="第 1 天：8 学时把全链路集中走一遍" wide>
+  <Frame kicker="短课模式" floor="21" title="第 1 天：8 学时把全链路集中走一遍" wide>
     <DataTable
       head={["时段（示例）", "环节", "内容", "验收点"]}
       widths={["15%", "17%", "42%", "26%"]}
@@ -1244,7 +1321,7 @@ const DayOne = () => (
 );
 
 const SelfStudy = () => (
-  <Frame kicker="短课模式" floor="21" title="自学 3–4 天：每天一个任务，抽查证据" wide>
+  <Frame kicker="短课模式" floor="22" title="自学 3–4 天：每天一个任务，抽查证据" wide>
     <DataTable
       head={["时间", "主题", "学生完成", "教师抽查"]}
       widths={["14%", "24%", "42%", "20%"]}
@@ -1282,7 +1359,7 @@ const SelfStudy = () => (
 );
 
 const AiWorkflow = () => (
-  <Frame kicker="短课模式" floor="22" title="AI 监督开发：读 → 讲 → 改 → 验，红线不能碰" wide>
+  <Frame kicker="短课模式" floor="23" title="AI 监督开发：读 → 讲 → 改 → 验，红线不能碰" wide>
     <div className="space-y-4">
       <Grid cols={2}>
         <Card title="读 → 讲 → 改 → 验" icon={Bot}>
@@ -1326,7 +1403,7 @@ const AiWorkflow = () => (
 );
 
 const TaskCards = () => (
-  <Frame kicker="短课模式" floor="23" title="四个算法任务：难度递进，改的是真算法" wide>
+  <Frame kicker="短课模式" floor="24" title="四个算法任务：难度递进，改的是真算法" wide>
     <DataTable
       head={["任务", "难度", "内容", "验收（摘要）"]}
       widths={["24%", "10%", "38%", "28%"]}
@@ -1358,7 +1435,7 @@ const TaskCards = () => (
 );
 
 const Actions = () => (
-  <Frame kicker="收尾" floor="24" title="行动清单：按周推进，一步步验收" wide>
+  <Frame kicker="收尾" floor="25" title="行动清单：按周推进，一步步验收" wide>
     <DataTable
       head={["优先", "动作", "入口 / 预算"]}
       widths={["10%", "48%", "42%"]}
@@ -1397,7 +1474,7 @@ const Actions = () => (
 );
 
 const Closing = () => (
-  <Frame kicker="收尾" floor="25" title="下载与延伸：材料齐全，按实验指导即可复现" wide>
+  <Frame kicker="收尾" floor="26" title="下载与延伸：材料齐全，按实验指导即可复现" wide>
     <div className="space-y-5">
       <Quote>
         板子会编程、消息会跑通、系统会搭起来——这门课把「嵌入式设备接入机器人框架」完整走了一遍。
@@ -1458,6 +1535,7 @@ export const slides = [
   { nav: "链路全景", group: "概览", el: <Architecture /> },
   { nav: "三层教学", group: "教学主线", el: <ThreeLayers /> },
   { nav: "开发闭环", group: "教学主线", el: <DevLoopPage /> },
+  { nav: "回调函数", group: "教学主线", el: <CallbackBridge /> },
   { nav: "通信协议", group: "教学主线", el: <Protocol /> },
   { nav: "样式与混合", group: "教学主线", el: <StyleAndMix /> },
   { nav: "ROS 2 桥接", group: "教学主线", el: <RosBridge /> },

@@ -94,6 +94,30 @@ flowchart LR
 
 五步不断链：任何一步跳过，后面看到的都不是真实结果。
 
+### 回调函数：你写的函数，等别人来叫
+
+零基础学生直接翻到通信 / ROS 2 部分，最先卡住的是「回调」这个词。deck「回调函数」页与本节同源，
+只讲一页速览；完整版（轮询对比、板子侧中断 / 电脑侧订阅、常见坑）见先修册
+《编程零基础起步：从函数到回调》。
+
+- **是什么**：你先写好一个函数交给框架；按键、消息到达或定时到点时，框架回头调用它，
+  这就是回调（callback）。函数仍然是你写的，只是调用时机由框架决定。
+- **和轮询的区别**：轮询是「我一直问好了没」，回调是「好了它会叫我」；后者不空转 CPU，
+  响应也更及时。
+- **在 ROS 2 里**：订阅回调（subscriber callback）在收到话题消息时执行；定时器回调
+  （timer callback）按周期执行。ESP32 侧的 Arduino 中断回调是同一骨架。
+
+```mermaid
+flowchart LR
+  E["事件发生<br/>按键 / 消息 / 定时到点"]:::event --> F["框架调度<br/>ROS 2 执行器"]:::framework
+  F --> U["调用你的函数<br/>订阅回调 / 定时器回调"]:::user
+  classDef event fill:#eff8ff,stroke:#60b0f7,color:#1a5cae
+  classDef framework fill:#fff7ed,stroke:#fdba74,color:#b45309
+  classDef user fill:#ecfdf5,stroke:#6ee7b7,color:#047857
+```
+
+先修册入口：`教学webppt/编程零基础起步/`（与本册同级，离线可播）。
+
 ## 二、硬件与烧录
 
 | 板 | 固件 | 烧录偏移 | 串口 |
