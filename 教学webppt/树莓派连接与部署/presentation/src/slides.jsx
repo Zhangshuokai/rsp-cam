@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Activity,
   AlertTriangle,
@@ -10,6 +10,8 @@ import {
   KeyRound,
   ListChecks,
   Network,
+  Play,
+  RotateCcw,
   Search,
   Server,
   ShieldCheck,
@@ -169,6 +171,357 @@ const Decision = () => (
   </div>
 );
 
+/* ============================================================
+   守则第七节 · 点式动画（全册 ≤3 处）
+   纯前端实现：React state + setTimeout + CSS transition，无任何外链资源。
+   默认全亮（静态兜底：停帧 / 无 JS / 打印时完整可读）；播放时逐点 idle → active → done。
+   颜色编码全册统一：蓝＝设备 / 硬件，橙＝配置 / 命令，绿＝验证通过。
+   ============================================================ */
+function useSequence(count, initial = "on", { step = 950, hold = 850 } = {}) {
+  const [statuses, setStatuses] = useState(() => Array(count).fill(initial));
+  const timers = useRef([]);
+  const clearTimers = useCallback(() => {
+    timers.current.forEach(clearTimeout);
+    timers.current = [];
+  }, []);
+  useEffect(() => clearTimers, [clearTimers]);
+  const reset = useCallback(() => {
+    clearTimers();
+    setStatuses(Array(count).fill(initial));
+  }, [clearTimers, count, initial]);
+  const play = useCallback(() => {
+    clearTimers();
+    setStatuses(Array(count).fill("idle"));
+    for (let i = 0; i < count; i += 1) {
+      timers.current.push(
+        setTimeout(() => {
+          setStatuses((prev) => {
+            const next = [...prev];
+            if (i > 0) next[i - 1] = "done";
+            next[i] = "active";
+            return next;
+          });
+        }, i * step)
+      );
+    }
+    timers.current.push(
+      setTimeout(() => setStatuses(Array(count).fill("done")), count * step + hold)
+    );
+  }, [clearTimers, count, step, hold]);
+  const jump = useCallback(
+    (idx) => {
+      clearTimers();
+      setStatuses(
+        Array.from({ length: count }, (_, j) => (j < idx ? "done" : j === idx ? "active" : "idle"))
+      );
+    },
+    [clearTimers, count]
+  );
+  return { statuses, play, reset, jump };
+}
+
+/* 颜色编码：同一含义固定同一颜色（全册一致） */
+const SEQ_TONE = {
+  device: {
+    on: "border-brand-400 bg-brand-50 text-brand-700",
+    active: "border-brand-600 bg-brand-600 text-white",
+  },
+  cmd: {
+    on: "border-amber-400 bg-amber-50 text-warn2",
+    active: "border-warn2 bg-warn2 text-white",
+  },
+  good: {
+    on: "border-good bg-emerald-50 text-good",
+    active: "border-good bg-good text-white",
+  },
+};
+const IDLE_TONE = "border-line bg-paper text-muted";
+const DONE_TONE = "border-good bg-good text-white";
+const PING_BG = { device: "bg-brand-400/50", cmd: "bg-amber-400/50", good: "bg-emerald-400/50" };
+const SEG_TONE = { device: "bg-brand-500", cmd: "bg-warn2", good: "bg-good" };
+const segClass = (side, st) =>
+  st === "done" ? "bg-good" : st === "idle" ? "bg-line" : SEG_TONE[side] || "bg-warn2";
+const nodeTone = (side, st) =>
+  st === "done" ? DONE_TONE : st === "idle" ? IDLE_TONE : (SEQ_TONE[side] || SEQ_TONE.cmd)[st];
+
+const PlayBtn = ({ onClick, children }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3.5 py-1.5 text-[0.82rem] font-semibold text-white transition hover:bg-brand-700"
+  >
+    <Play size={13} />
+    {children}
+  </button>
+);
+
+const ResetBtn = ({ onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="inline-flex items-center gap-1.5 rounded-lg border border-brand-300 bg-paper px-3.5 py-1.5 text-[0.82rem] font-semibold text-brand-700 transition hover:bg-brand-50"
+  >
+    <RotateCcw size={13} />
+    重置
+  </button>
+);
+
+/* 颜色编码图例（记忆锚之一，在多张图示里重复出现） */
+const ColorLegend = () => (
+  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[0.78rem] text-muted">
+    <span className="inline-flex items-center gap-1.5">
+      <span className="h-3 w-3 rounded bg-brand-600" />
+      蓝＝设备 / 硬件
+    </span>
+    <span className="inline-flex items-center gap-1.5">
+      <span className="h-3 w-3 rounded bg-warn2" />
+      橙＝配置 / 命令
+    </span>
+    <span className="inline-flex items-center gap-1.5">
+      <span className="h-3 w-3 rounded bg-good" />
+      绿＝验证通过
+    </span>
+  </div>
+);
+
+/* ---- 点式动画 ① 部署链路（横向）：通电 → 联网 → 同步 → 装依赖 → 跑通 ---- */
+function PointFlow({ steps, legend = true, hint }) {
+  const { statuses, play, reset, jump } = useSequence(steps.length);
+  return (
+    <div className="surface p-4 md:p-5">
+      <div className="flex flex-col md:flex-row md:items-stretch">
+        {steps.map((s, i) => {
+          const st = statuses[i];
+          return (
+            <React.Fragment key={i}>
+              <button
+                type="button"
+                onClick={() => jump(i)}
+                title={`跳到第 ${i + 1} 步`}
+                className={`flex flex-1 items-center gap-3 rounded-xl border-2 px-3 py-2.5 text-left transition-colors duration-500 md:flex-col md:gap-2 md:py-3.5 md:text-center ${nodeTone(
+                  s.side,
+                  st
+                )}`}
+              >
+                <span className="relative grid h-9 w-9 flex-none place-items-center rounded-full border-2 border-current text-[0.9rem] font-bold md:h-10 md:w-10">
+                  {st === "active" && (
+                    <span className={`absolute inset-0 animate-ping rounded-full ${PING_BG[s.side] || "bg-brand-400/50"}`} />
+                  )}
+                  <span className="relative">{s.no}</span>
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-[0.9rem] font-bold leading-tight md:text-[0.95rem]">{s.title}</span>
+                  <span className="block text-[0.76rem] leading-tight opacity-80 md:text-[0.8rem]">{s.sub}</span>
+                </span>
+              </button>
+              {i < steps.length - 1 && (
+                <span
+                  className={`ml-[1.15rem] h-3 w-0.5 flex-none self-start rounded-full transition-colors duration-500 md:ml-1 md:mr-1 md:h-0.5 md:w-6 md:self-center ${segClass(
+                    s.side,
+                    st
+                  )}`}
+                />
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+        <PlayBtn onClick={play}>播放点式动画</PlayBtn>
+        <ResetBtn onClick={reset} />
+        <span className="text-[0.78rem] text-muted">
+          {hint || "点节点可手动跳到该步；默认全亮＝静态兜底（关动画 / 打印照样完整）。"}
+        </span>
+      </div>
+      {legend && (
+        <div className="mt-2.5 border-t border-line pt-2.5">
+          <ColorLegend />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---- 点式动画 ② / ③ 纵向点式分步 ---- */
+function PointSteps({ steps, hint }) {
+  const { statuses, play, reset, jump } = useSequence(steps.length, "on", { step: 1050, hold: 900 });
+  return (
+    <div className="surface p-4 md:p-5">
+      <div className="space-y-2.5">
+        {steps.map((s, i) => {
+          const st = statuses[i];
+          const badge =
+            st === "done"
+              ? "bg-good text-white"
+              : st === "active"
+              ? "bg-warn2 text-white"
+              : st === "idle"
+              ? "bg-slate-200 text-muted"
+              : s.side === "device"
+              ? "bg-brand-600 text-white"
+              : s.side === "good"
+              ? "bg-good text-white"
+              : "bg-warn2 text-white";
+          return (
+            <button
+              key={i}
+              type="button"
+              onClick={() => jump(i)}
+              className={`flex w-full items-start gap-3 rounded-xl border-2 px-3.5 py-3 text-left transition-colors duration-500 ${
+                st === "done"
+                  ? "border-good bg-emerald-50"
+                  : st === "active"
+                  ? "border-warn2 bg-amber-50"
+                  : "border-line bg-paper"
+              }`}
+            >
+              <span className={`relative mt-0.5 grid h-7 w-7 flex-none place-items-center rounded-full text-[0.8rem] font-bold transition-colors duration-500 ${badge}`}>
+                {st === "active" && <span className="absolute inset-0 animate-ping rounded-full bg-amber-400/50" />}
+                <span className="relative">{i + 1}</span>
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[0.92rem] font-bold text-ink">{s.t}</span>
+                <span className="block text-[0.82rem] leading-relaxed text-muted">{s.s}</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <PlayBtn onClick={play}>逐步推进</PlayBtn>
+        <ResetBtn onClick={reset} />
+        {hint && <span className="text-[0.78rem] text-muted">{hint}</span>}
+      </div>
+    </div>
+  );
+}
+
+/* ---- 记忆锚三卡（口诀 / 生活化类比 / 颜色编码），并在图示里重复出现 ---- */
+const AnchorCards = () => (
+  <div className="grid gap-3 md:grid-cols-3">
+    <div className="surface border-t-4 border-t-brand-500 p-4 md:p-5">
+      <div className="mb-2 text-[0.72rem] font-extrabold tracking-[0.14em] text-brand-700">口 诀</div>
+      <p className="text-[1rem] font-extrabold leading-snug text-ink">先通电、再联网、后装环境</p>
+      <p className="mt-2 text-[0.84rem] leading-relaxed text-muted">
+        顺序颠倒必翻车：设备没上电、网没通，后面的同步与安装都无从谈起。
+      </p>
+    </div>
+    <div className="surface border-t-4 border-t-warn2 p-4 md:p-5">
+      <div className="mb-2 text-[0.72rem] font-extrabold tracking-[0.14em] text-warn2">生活化类比</div>
+      <p className="text-[1rem] font-extrabold leading-snug text-ink">树莓派＝家里的电脑</p>
+      <p className="mt-1.5 text-[1rem] font-extrabold leading-snug text-ink">SSH＝远程遥控器</p>
+      <p className="mt-2 text-[0.84rem] leading-relaxed text-muted">
+        <code>tools/pi.py</code> 就像一把万能遥控器：你人坐在本机前，却像坐到了那台 Pi 面前敲键盘。
+      </p>
+    </div>
+    <div className="surface border-t-4 border-t-good p-4 md:p-5">
+      <div className="mb-2 text-[0.72rem] font-extrabold tracking-[0.14em] text-good">颜色编码</div>
+      <div className="space-y-1.5 text-[0.9rem] font-semibold text-ink">
+        <p className="flex items-center gap-2">
+          <span className="h-3.5 w-3.5 rounded bg-brand-600" />
+          蓝＝设备 / 硬件
+        </p>
+        <p className="flex items-center gap-2">
+          <span className="h-3.5 w-3.5 rounded bg-warn2" />
+          橙＝配置 / 命令
+        </p>
+        <p className="flex items-center gap-2">
+          <span className="h-3.5 w-3.5 rounded bg-good" />
+          绿＝验证通过
+        </p>
+      </div>
+      <p className="mt-2 text-[0.84rem] leading-relaxed text-muted">
+        全册一致：看颜色就知道这一步在动硬件、敲命令，还是验证通过。
+      </p>
+    </div>
+  </div>
+);
+
+/* ---- 概览 · 部署链路（点式动画 ①）---- */
+const DEPLOY_CHAIN = [
+  { no: "1", side: "device", title: "开机上电", sub: "接网线 · 供电与下载口分清" },
+  { no: "2", side: "cmd", title: "联网", sub: "eth0 静态 172.26.188.116/24" },
+  { no: "3", side: "cmd", title: "同步代码", sub: "tools/pi.py --put / --file 上传" },
+  { no: "4", side: "cmd", title: "装依赖", sub: "apt / docker 拉环境（仅首次）" },
+  { no: "5", side: "good", title: "跑通验证", sub: "ping / --check 端到端确认" },
+];
+
+const DeployChain = () => (
+  <Frame
+    kicker="概览"
+    floor="03"
+    title="部署链路：先通电、再联网、后装环境"
+    lead="从板子到手到服务跑通，是五步一条链；顺序颠倒必翻车——设备没上电、网没通，后面的同步与安装都无从谈起。"
+    wide
+  >
+    <div className="space-y-4">
+      <PointFlow steps={DEPLOY_CHAIN} />
+      <Quote>
+        口诀：<strong>先通电、再联网、后装环境</strong>——灯走到哪，流程就记到哪。
+      </Quote>
+    </div>
+  </Frame>
+);
+
+/* ---- 工具 · 文件同步与执行（点式动画 ②）---- */
+const SYNC_FLOW = [
+  { side: "cmd", t: "本机写脚本", s: "含引号 / 括号 / 管道一律写成纯 ASCII 的 .sh，避开三层引号。" },
+  { side: "cmd", t: "pi.py 上传", s: "python tools/pi.py --file run.sh；文件走 --put 只上传不执行。" },
+  { side: "cmd", t: "落到 /tmp/kilo-run.sh", s: "脚本自动放到 Pi 的临时路径，SFTP 不做 ~ 展开，远端写绝对路径。" },
+  { side: "cmd", t: "Pi 上执行", s: "paramiko 带密码非交互登录，在 Pi 上跑脚本并回显 stdout / stderr。" },
+  { side: "good", t: "核对输出", s: "看退出码与输出；远端中文 / BOM 已按 UTF-8（errors=replace）回显。" },
+];
+
+const SyncFlow = () => (
+  <Frame
+    kicker="工具"
+    floor="09"
+    title="一次远程调用：本机写、脚本传、Pi 上跑、回显核对"
+    lead="pi.py 把「登录 → 传文件 → 执行 → 回显」收成一条链；复杂命令一律走后半段（--file / --put），不手敲 ssh。"
+    wide
+  >
+    <div className="space-y-4">
+      <PointSteps
+        hint="默认全亮＝静态兜底；播放时逐项点亮，灯走到哪核到哪。"
+        steps={SYNC_FLOW}
+      />
+      <Quote>
+        类比：SSH 像远程遥控器——你人坐在本机前，却像坐到了那台 Pi 面前敲键盘。
+      </Quote>
+    </div>
+  </Frame>
+);
+
+/* ---- 排障 · 连不上先按顺序查（点式动画 ③）---- */
+const TROUBLE_ORDER = [
+  { side: "device", t: "① 看链路", s: "本机 Get-NetAdapter 看 Status / LinkSpeed；0 bps / 收发长期为 0 = 物理层无信号，直接换线 / 重插。" },
+  { side: "cmd", t: "② 看地址", s: "Pi 端 ip -4 addr、本机 Get-NetAdapter，确认都在 172.26.188.0/24。" },
+  { side: "cmd", t: "③ 看是否卡 DHCP", s: "卡在 connecting (getting IP configuration)：eth0 是 DHCP 但直连线没有服务器，改成静态。" },
+  { side: "device", t: "④ IPv6 链路本地兜底", s: "IPv4 不通时用 fe80::2ecf:67ff:fece:9bce%<ifIndex> 直连（仅经网线可达）。" },
+  { side: "good", t: "⑤ 定位并处理", s: "对照故障表：Destination host unreachable = 网段不对；.114 是热点临时租约，别再用。" },
+];
+
+const TroubleOrder = () => (
+  <Frame
+    kicker="排障"
+    floor="13"
+    title="连不上先别慌：从物理层查到地址"
+    lead="按「物理层 → 地址 → DHCP → IPv6 兜底」的顺序走，多数连接问题一眼定位；0 bps 是物理层，别从软件找。"
+    wide
+  >
+    <div className="space-y-4">
+      <PointSteps
+        hint="点节点可跳到该步；默认全亮＝静态兜底。"
+        steps={TROUBLE_ORDER}
+      />
+      <div className="border-t border-line pt-3">
+        <ColorLegend />
+      </div>
+      <Quote>顺序不能跳：先看链路是不是 0 bps，再看地址是不是同网段，最后才用 IPv6 链路本地兜底。</Quote>
+    </div>
+  </Frame>
+);
+
 const Cover = () => (
   <div className="mx-auto flex w-full max-w-[80rem] flex-1 flex-col justify-center">
     <span className="mb-4 inline-flex w-fit items-center rounded-full border border-brand-300 bg-paper px-3 py-1 text-[0.72rem] font-semibold tracking-[0.12em] text-brand-700 md:mb-6 md:px-4 md:py-1.5 md:text-[0.82rem]">
@@ -256,7 +609,7 @@ python tools/pi.py "nmcli -g GENERAL.STATE,IP4.ADDRESS con show netplan-eth0"`}<
 const LocalSide = () => (
   <Frame
     kicker="网络"
-    floor="03"
+    floor="04"
     title="本机侧静态 .100，ifIndex 每次开机都要现查"
     lead="本机有线网卡叫「以太网」，改配置需管理员；脚本里一律用 ifIndex 现查，不要写死数字、也不要直接用中文网卡名。"
   >
@@ -300,7 +653,7 @@ Set-NetIPInterface -InterfaceIndex 22 -Dhcp Disabled
 const TopologyPage = () => (
   <Frame
     kicker="网络"
-    floor="04"
+    floor="05"
     title="一根网线直连两台 Pi，Wi-Fi 只作带外通道"
     lead="接哪台就控制哪台；网线两端都是静态地址、无网关，Windows 与 Pi 的无线同属 192.168.31.0/24，仅在改网络时当备用通道。"
     wide
@@ -315,7 +668,7 @@ const TopologyPage = () => (
 const DirectLink = () => (
   <Frame
     kicker="网络"
-    floor="05"
+    floor="06"
     title="直连线上没有 DHCP，Pi 侧 eth0 必须配静态地址"
     lead="eth0 用 ipv4.method manual 固定地址、不设网关、never-default yes；万一 IPv4 不通，还有 IPv6 链路本地可以救急。"
   >
@@ -357,7 +710,7 @@ python tools/pi.py --sudo "nmcli con mod netplan-eth0 ipv4.method auto ipv4.addr
 const Tool = () => (
   <Frame
     kicker="工具"
-    floor="06"
+    floor="07"
     title="tools/pi.py 一条命令替代交互式 SSH"
     lead="它用 paramiko 带密码非交互登录，把「登录 → 执行 → 回显」收成一条命令：复杂脚本走 --file，纯文件传输走 --put。"
     wide
@@ -415,7 +768,7 @@ python tools/pi.py --put heartbeat_listener.py /home/nanzhida/microros_ws/src/he
 const Usages = () => (
   <Frame
     kicker="工具"
-    floor="07"
+    floor="08"
     title="四类常见调用：执行、提权、传脚本、连旧机"
     lead="把要重复的动作直接对号入座；含引号、括号、管道的命令一律先写成纯 ASCII 的 .sh。"
   >
@@ -451,7 +804,7 @@ python tools/pi.py --file deploy_cam.sh`}</Pre>
 const DecisionBlock = () => (
   <Frame
     kicker="工具"
-    floor="08"
+    floor="10"
     title="手敲 ssh 易错，脚本化 pi.py 可复现"
     wide
   >
@@ -484,7 +837,7 @@ const DecisionBlock = () => (
 const Deploy = () => (
   <Frame
     kicker="部署"
-    floor="09"
+    floor="11"
     title="服务靠 nohup 常驻，Pi 重启后要重新上传启动"
     lead="把脚本写成纯 ASCII 的 .sh 上传执行，用 nohup 让服务脱离 SSH 会话常驻，再查端口与日志确认。"
     wide
@@ -543,7 +896,7 @@ python tools/pi.py "docker logs --tail 30 microros_agent"`}</Pre>
 const Troubleshoot = () => (
   <Frame
     kicker="排障"
-    floor="10"
+    floor="12"
     title="先看链路再看地址：0 bps 是物理层，不是软件问题"
     lead="按「物理层 → 地址 → 网关以外的临时租约」的顺序排查，多数连接问题一眼能定位。"
     wide
@@ -594,7 +947,7 @@ python tools/pi.py --host 192.168.31.29 "ip -4 addr show eth0"`}</Pre>
 const Gotchas = () => (
   <Frame
     kicker="排障"
-    floor="11"
+    floor="14"
     title="PowerShell 5.1 没有 &&，三层引号必须走 .sh"
   >
     <Grid cols={2}>
@@ -622,7 +975,7 @@ const Gotchas = () => (
 const Downloads = () => (
   <Frame
     kicker="收尾"
-    floor="12"
+    floor="15"
     title="工具与文字版全文，随 deck 下载"
     wide
   >
@@ -656,7 +1009,7 @@ const Downloads = () => (
 const Action = () => (
   <Frame
     kicker="收尾"
-    floor="13"
+    floor="16"
     title="照这份清单做：先连上、再部署、改动前想清楚会不会断网"
     wide
   >
@@ -673,6 +1026,10 @@ const Action = () => (
           一律走 <code>tools/pi.py</code>，不手敲 ssh；复杂命令写成 .sh 用 --file。
         </Card>
       </Grid>
+      <div className="border-t border-line pt-4">
+        <p className="mb-3 text-[0.82rem] font-bold tracking-wide text-muted">记忆锚：把这条链压成一句话</p>
+        <AnchorCards />
+      </div>
       <Steps title="展开：从连上到部署上机的完整步骤">
         <Pre>{`# 1) 确认链路与地址
 Get-NetAdapter                                       # 本机看 ifIndex / Status / LinkSpeed
@@ -706,14 +1063,17 @@ export const slides = [
   { nav: "封面", group: "概览", el: <Cover /> },
   { nav: "结论先行", group: "概览", el: <Conclusion /> },
   { nav: "两台树莓派", group: "概览", el: <PiDevices /> },
+  { nav: "部署链路", group: "概览", el: <DeployChain /> },
   { nav: "本机侧网络", group: "网络", el: <LocalSide /> },
   { nav: "连接拓扑", group: "网络", el: <TopologyPage /> },
   { nav: "直连要点", group: "网络", el: <DirectLink /> },
   { nav: "pi.py 用法", group: "工具", el: <Tool /> },
   { nav: "典型用法", group: "工具", el: <Usages /> },
+  { nav: "文件同步与执行", group: "工具", el: <SyncFlow /> },
   { nav: "对比决策", group: "工具", el: <DecisionBlock /> },
   { nav: "部署常驻服务", group: "部署", el: <Deploy /> },
   { nav: "故障与处理", group: "排障", el: <Troubleshoot /> },
+  { nav: "排查顺序", group: "排障", el: <TroubleOrder /> },
   { nav: "引号与 PowerShell 坑", group: "排障", el: <Gotchas /> },
   { nav: "下载与延伸", group: "收尾", el: <Downloads /> },
   { nav: "行动清单", group: "收尾", el: <Action /> },
