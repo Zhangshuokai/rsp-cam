@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Scale,
   Ruler,
@@ -28,6 +28,13 @@ import {
   TrendingUp,
   Percent,
   Siren,
+  Play,
+  RotateCcw,
+  CheckCircle2,
+  ListChecks,
+  Timer,
+  Route,
+  Footprints,
 } from "lucide-react";
 import { Frame, Card, DataTable, Grid, Quote, Focus, Steps, Pre, Stat, Figure } from "./components.jsx";
 
@@ -45,6 +52,394 @@ import realCad from "./assets/real-cad.jpg";
 import qrProvince from "./assets/qr-province.png";
 import daoliuPrinciple from "./assets/daoliu-principle.png";
 import daoliuLive from "./assets/daoliu-live.jpg";
+
+/* ============================================================
+   编写守则第七节 · 点式动画（全册 ≤3 处）
+   纯前端实现：React state + setTimeout + CSS transition，无外链资源。
+   默认全亮（静态兜底，停帧 / 打印都完整可读）；播放时逐点 idle → active → done。
+   ============================================================ */
+function useSequence(count, initial = "on", { step = 1000, hold = 900 } = {}) {
+  const [statuses, setStatuses] = useState(() => Array(count).fill(initial));
+  const timers = useRef([]);
+  const clearTimers = useCallback(() => {
+    timers.current.forEach(clearTimeout);
+    timers.current = [];
+  }, []);
+  useEffect(() => clearTimers, [clearTimers]);
+  const reset = useCallback(() => {
+    clearTimers();
+    setStatuses(Array(count).fill(initial));
+  }, [clearTimers, count, initial]);
+  const play = useCallback(() => {
+    clearTimers();
+    setStatuses(Array(count).fill("idle"));
+    for (let i = 0; i < count; i += 1) {
+      timers.current.push(
+        setTimeout(() => {
+          setStatuses((prev) => {
+            const next = [...prev];
+            if (i > 0) next[i - 1] = "done";
+            next[i] = "active";
+            return next;
+          });
+        }, i * step)
+      );
+    }
+    timers.current.push(
+      setTimeout(() => setStatuses(Array(count).fill("done")), count * step + hold)
+    );
+  }, [clearTimers, count, step, hold]);
+  const jump = useCallback(
+    (idx) => {
+      clearTimers();
+      setStatuses(Array.from({ length: count }, (_, j) => (j < idx ? "done" : j === idx ? "active" : "idle")));
+    },
+    [clearTimers, count]
+  );
+  return { statuses, play, reset, jump };
+}
+
+/* 颜色编码（全册统一）：蓝＝机械 / 底盘、橙＝控制 / 算法、绿＝验证通过 */
+const NODE_TONE = {
+  mech: {
+    idle: "border-line bg-paper text-muted",
+    on: "border-brand-400 bg-brand-50 text-brand-700",
+    active: "border-brand-600 bg-brand-600 text-white",
+    done: "border-good bg-good text-white",
+  },
+  ctrl: {
+    idle: "border-line bg-paper text-muted",
+    on: "border-amber-400 bg-amber-50 text-warn2",
+    active: "border-warn2 bg-warn2 text-white",
+    done: "border-good bg-good text-white",
+  },
+  verify: {
+    idle: "border-line bg-paper text-muted",
+    on: "border-emerald-400 bg-emerald-50 text-good",
+    active: "border-good bg-good text-white",
+    done: "border-good bg-good text-white",
+  },
+};
+
+const PlayBtn = ({ onClick, children }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3.5 py-1.5 text-[0.82rem] font-semibold text-white transition hover:bg-brand-700"
+  >
+    <Play size={13} />
+    {children}
+  </button>
+);
+
+const ResetBtn = ({ onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="inline-flex items-center gap-1.5 rounded-lg border border-brand-300 bg-paper px-3.5 py-1.5 text-[0.82rem] font-semibold text-brand-700 transition hover:bg-brand-50"
+  >
+    <RotateCcw size={13} />
+    重置
+  </button>
+);
+
+/* 点式动画 ① · 救援任务全流程：勘测 → 规划 → 推送/牵引 → 撤离 → 计分 */
+const MISSION = [
+  { no: "1", side: "mech", title: "勘测", sub: "进场 · 过减速带 · 定位" },
+  { no: "2", side: "ctrl", title: "规划", sub: "识别目标 · 选半区" },
+  { no: "3", side: "mech", title: "推送 / 牵引", sub: "框式拨具 · 通道导流" },
+  { no: "4", side: "mech", title: "撤离", sub: "避让危险目标 · 退回本区" },
+  { no: "5", side: "verify", title: "计分", sub: "物资 / 伤员分区投放" },
+];
+
+const segTone = (side, st) =>
+  st === "done" ? "bg-good" : st === "idle" ? "bg-line" : side === "ctrl" ? "bg-warn2" : "bg-brand-500";
+
+function MissionFlow() {
+  const { statuses, play, reset, jump } = useSequence(MISSION.length);
+  return (
+    <div className="surface p-4 md:p-5">
+      <div className="flex flex-col md:flex-row md:items-stretch">
+        {MISSION.map((s, i) => {
+          const st = statuses[i];
+          return (
+            <React.Fragment key={i}>
+              <button
+                type="button"
+                onClick={() => jump(i)}
+                title={`跳到第 ${i + 1} 步`}
+                className={`flex flex-1 items-center gap-3 rounded-xl border-2 px-3 py-2.5 text-left transition-colors duration-500 md:flex-col md:gap-2 md:py-3.5 md:text-center ${NODE_TONE[s.side][st]}`}
+              >
+                <span className="relative grid h-9 w-9 flex-none place-items-center rounded-full border-2 border-current text-[0.9rem] font-bold md:h-10 md:w-10">
+                  {st === "active" && (
+                    <span
+                      className={`absolute inset-0 animate-ping rounded-full ${
+                        s.side === "ctrl" ? "bg-amber-400/50" : s.side === "verify" ? "bg-emerald-400/50" : "bg-brand-400/50"
+                      }`}
+                    />
+                  )}
+                  <span className="relative">{s.no}</span>
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-[0.9rem] font-bold leading-tight md:text-[0.95rem]">{s.title}</span>
+                  <span className="block text-[0.76rem] leading-tight opacity-80 md:text-[0.8rem]">{s.sub}</span>
+                </span>
+              </button>
+              {i < MISSION.length - 1 && (
+                <span
+                  className={`ml-[1.15rem] h-3 w-0.5 flex-none self-start rounded-full transition-colors duration-500 md:ml-1 md:mr-1 md:h-0.5 md:w-6 md:self-center ${segTone(
+                    s.side,
+                    st
+                  )}`}
+                />
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+        <PlayBtn onClick={play}>播放点式动画</PlayBtn>
+        <ResetBtn onClick={reset} />
+        <span className="text-[0.78rem] text-muted">点节点可手动跳到该步；默认全亮＝静态兜底。</span>
+      </div>
+      <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-line pt-2.5 text-[0.78rem] text-muted">
+        <span className="font-bold text-ink">口诀：先看圈、再认物、后动手</span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-3 w-3 rounded bg-brand-600" />
+          蓝＝机械 / 底盘
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-3 w-3 rounded bg-warn2" />
+          橙＝控制 / 算法
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-3 w-3 rounded bg-good" />
+          绿＝验证通过
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/* 概览 · 理解型图示（流程点式动画）＋ 记忆锚：救援任务全流程 */
+const MissionAnchor = () => (
+  <Frame
+    kicker="概览"
+    floor="02"
+    title="救援任务全流程：先看圈、再认物、后动手"
+    lead="五个阶段连成一条链，顺序不能反——讲一个、亮一个，讲完自动转绿归档；记住「灯走到哪」，流程就记到哪。"
+    wide
+  >
+    <div className="space-y-4">
+      <MissionFlow />
+      <Grid cols={3}>
+        <Card title="口诀" icon={BookOpen} tone="brand">
+          「先看圈、再认物、后动手」——先循迹定位把场地看清，再识别目标与半区，最后才动机器。
+        </Card>
+        <Card title="生活化类比" icon={Siren} tone="warn">
+          救援车＝急诊医生：先到场（勘测）→ 再诊断（识别规划）→ 后处置（推送投放）；顺序一乱就出事故。
+        </Card>
+        <Card title="颜色编码" icon={Layers} tone="good">
+          <span className="mb-1 flex items-center gap-2">
+            <span className="h-3.5 w-3.5 rounded bg-brand-600" />
+            蓝＝机械 / 底盘动作
+          </span>
+          <span className="mb-1 flex items-center gap-2">
+            <span className="h-3.5 w-3.5 rounded bg-warn2" />
+            橙＝控制 / 算法动作
+          </span>
+          <span className="flex items-center gap-2">
+            <span className="h-3.5 w-3.5 rounded bg-good" />
+            绿＝验证通过（得分）
+          </span>
+        </Card>
+      </Grid>
+    </div>
+  </Frame>
+);
+
+/* 设计实现 · 理解型图示：三大子系统结构关系图（内联 SVG，禁 ASCII 字符画） */
+const SubsystemMap = () => (
+  <div className="surface p-3 md:p-4">
+    <svg
+      viewBox="0 0 900 372"
+      role="img"
+      aria-label="三大子系统结构关系：循迹与定位（蓝，机械/底盘）负责勘测与撤离，识别与避障（橙，控制/算法）负责规划与避让，转运与投放（蓝，机械/机构）负责推送与计分；三者共同支撑到绿色得分验证"
+      className="h-auto w-full"
+    >
+      <defs>
+        <marker id="ss-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="#94a3b8" />
+        </marker>
+      </defs>
+      <text x="16" y="22" fontSize="12.5" fontWeight="700" fill="#0f172a">
+        三大子系统结构关系：机械 / 底盘（蓝）＋ 控制 / 算法（橙）→ 得分验证（绿）
+      </text>
+      <text x="16" y="40" fontSize="10" fill="#64748b">
+        一辆车拆成「怎么跑、怎么看、怎么动」三块；每块各管一段任务，缺一段就得不了分。
+      </text>
+
+      <rect x="16" y="56" width="272" height="196" rx="12" fill="#eff8ff" stroke="#93cdfb" />
+      <text x="32" y="82" fontSize="11.5" fontWeight="700" fill="#1a5cae">① 循迹与定位（怎么跑）</text>
+      <text x="32" y="108" fontSize="10" fill="#0f172a" fontWeight="700">四轮差速 + Φ65mm 橡胶轮</text>
+      <text x="32" y="126" fontSize="9.5" fill="#475569">能过 3 根减速带；辅助轮走直不跑偏</text>
+      <text x="32" y="152" fontSize="10" fill="#0f172a" fontWeight="700">单轴陀螺仪 HWT101 锁 0°</text>
+      <text x="32" y="170" fontSize="9.5" fill="#475569">锁定出发点与安全区方位</text>
+      <text x="32" y="198" fontSize="9.5" fill="#64748b">负责阶段</text>
+      <text x="32" y="216" fontSize="10" fill="#1a5cae" fontWeight="700">勘测 · 撤离</text>
+      <text x="32" y="240" fontSize="9.5" fill="#b45309">证据：差速版实车已过减速带、推动物块</text>
+
+      <rect x="314" y="56" width="272" height="196" rx="12" fill="#fffbeb" stroke="#fbbf24" />
+      <text x="330" y="82" fontSize="11.5" fontWeight="700" fill="#b4690e">② 识别与避障（怎么看）</text>
+      <text x="330" y="108" fontSize="10" fill="#0f172a" fontWeight="700">单目相机 + 端侧 NPU</text>
+      <text x="330" y="126" fontSize="9.5" fill="#475569">YOLOv8-INT8；350→900 张图训出</text>
+      <text x="330" y="152" fontSize="10" fill="#0f172a" fontWeight="700">五类目标 + 安全区识别</text>
+      <text x="330" y="170" fontSize="9.5" fill="#475569">绿色召回 &gt;95%</text>
+      <text x="330" y="198" fontSize="9.5" fill="#64748b">负责阶段</text>
+      <text x="330" y="216" fontSize="10" fill="#b4690e" fontWeight="700">规划（识别 + 决策）· 避让</text>
+      <text x="330" y="240" fontSize="9.5" fill="#b45309">红线：危险目标（浅蓝）误判必须 = 0</text>
+
+      <rect x="612" y="56" width="272" height="196" rx="12" fill="#eff8ff" stroke="#93cdfb" />
+      <text x="628" y="82" fontSize="11.5" fontWeight="700" fill="#1a5cae">③ 转运与投放（怎么动）</text>
+      <text x="628" y="108" fontSize="10" fill="#0f172a" fontWeight="700">框式拨具：2×9g 舵机 + 3D 打印框</text>
+      <text x="628" y="126" fontSize="9.5" fill="#475569">可抬起 → 挑过 20mm 隔板</text>
+      <text x="628" y="152" fontSize="10" fill="#0f172a" fontWeight="700">进阶：贯穿式导流通道</text>
+      <text x="628" y="170" fontSize="9.5" fill="#475569">贴地滑行，不抓取、不载运（合规）</text>
+      <text x="628" y="198" fontSize="9.5" fill="#64748b">负责阶段</text>
+      <text x="628" y="216" fontSize="10" fill="#1a5cae" fontWeight="700">推送 / 牵引 · 计分</text>
+      <text x="628" y="240" fontSize="9.5" fill="#b45309">证据：省一实机验证得分动作稳定</text>
+
+      <line x1="152" y1="252" x2="152" y2="284" stroke="#94a3b8" strokeWidth="1.8" markerEnd="url(#ss-arrow)" />
+      <line x1="450" y1="252" x2="450" y2="284" stroke="#94a3b8" strokeWidth="1.8" markerEnd="url(#ss-arrow)" />
+      <line x1="748" y1="252" x2="748" y2="284" stroke="#94a3b8" strokeWidth="1.8" markerEnd="url(#ss-arrow)" />
+
+      <rect x="16" y="286" width="868" height="70" rx="12" fill="#e8f6ef" stroke="#a7e0c4" />
+      <text x="32" y="310" fontSize="11" fontWeight="700" fill="#0f8a5f">得分验证（绿＝验证通过）</text>
+      <text x="32" y="330" fontSize="10" fill="#334155">
+        物资进物资区、伤员进伤员区；单次物资 ≤3、伤员单独 1 个；放错半区 −10 分/个。
+      </text>
+      <text x="32" y="348" fontSize="10" fill="#334155">
+        顺序红线：必须先单独转运 1 个普通物资 → 之后才可转运核心 / 伤员。
+      </text>
+    </svg>
+  </div>
+);
+
+const Subsystems = () => (
+  <Frame
+    kicker="设计实现"
+    floor="21"
+    title="三大子系统：怎么跑、怎么看、怎么动"
+    lead="把整车拆成三块看：每块各配一类传感器或机构、各管一段任务；先对清「任务—模块」的对应，再谈选型。"
+    wide
+  >
+    <div className="space-y-4">
+      <SubsystemMap />
+      <DataTable
+        head={["任务阶段", "主责子系统", "关键模块 / 证据"]}
+        widths={["20%", "26%", "54%"]}
+        rows={[
+          ["勘测 · 进场", "循迹与定位（蓝）", "四轮差速 + Φ65mm 轮过减速带；陀螺仪定 0°"],
+          ["规划 · 识别", "识别与避障（橙）", "单目相机 + 端侧 NPU（YOLOv8-INT8），五类目标"],
+          ["推送 / 牵引", "转运与投放（蓝）", "框式拨具（2×9g 舵机）或贯穿式导流通道"],
+          ["撤离 · 避让", "识别与避障（橙）", "危险目标不降铲、直接绕行；退回本队区域"],
+          ["计分 · 分区投放", "得分验证（绿）", "物资进物资区、伤员进伤员区（错区 −10 分/个）"],
+        ]}
+      />
+      <Quote>
+        一张图记三块：蓝＝机械 / 底盘，橙＝控制 / 算法，绿＝验证通过——口诀「先看圈、再认物、后动手」就是这三块的先后。
+      </Quote>
+    </div>
+  </Frame>
+);
+
+/* 点式动画 ② · 比赛现场 15 分钟检查单（纵向逐步推进） */
+function ChecklistFlow({ steps, hint }) {
+  const { statuses, play, reset, jump } = useSequence(steps.length, "on", { step: 1000, hold: 900 });
+  return (
+    <div className="surface p-4 md:p-5">
+      <div className="space-y-2.5">
+        {steps.map((s, i) => {
+          const st = statuses[i];
+          const badge =
+            st === "done"
+              ? "bg-good text-white"
+              : st === "active"
+              ? "bg-warn2 text-white"
+              : st === "idle"
+              ? "bg-slate-200 text-muted"
+              : "bg-brand-600 text-white";
+          return (
+            <button
+              key={i}
+              type="button"
+              onClick={() => jump(i)}
+              className={`flex w-full items-start gap-3 rounded-xl border-2 px-3.5 py-3 text-left transition-colors duration-500 ${
+                st === "done"
+                  ? "border-good bg-emerald-50"
+                  : st === "active"
+                  ? "border-warn2 bg-amber-50"
+                  : "border-line bg-paper"
+              }`}
+            >
+              <span
+                className={`relative mt-0.5 grid h-7 w-7 flex-none place-items-center rounded-full text-[0.8rem] font-bold transition-colors duration-500 ${badge}`}
+              >
+                {st === "active" && <span className="absolute inset-0 animate-ping rounded-full bg-amber-400/50" />}
+                <span className="relative">{i + 1}</span>
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[0.92rem] font-bold text-ink">{s.t}</span>
+                <span className="block text-[0.82rem] leading-relaxed text-muted">{s.s}</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <PlayBtn onClick={play}>逐步推进</PlayBtn>
+        <ResetBtn onClick={reset} />
+        {hint && <span className="text-[0.78rem] text-muted">{hint}</span>}
+      </div>
+    </div>
+  );
+}
+
+const STAND_CHECK = [
+  { t: "称重", s: "整机上秤 ≤1500g（含备用件与杂项余量），记读数上墙。" },
+  { t: "尺寸", s: "铅垂投影 ≤300×300mm、高 ≤200mm，含所有软质线路。" },
+  { t: "电源与急停", s: "单块电源满电、固定牢；急停 / 通信超时 / 失控停车均有效。" },
+  { t: "启动自检", s: "断电重启 → 自动进运行态；一键启动只碰一次。" },
+  { t: "空跑全流程", s: "过减速带 → 首转 1 普通 → 批量 ≤3 → 伤员单独 1 → 分区投放。" },
+  { t: "现场复视觉", s: "五类目标现场复看；危险目标（浅蓝）误判 = 0。" },
+  { t: "红线彩排", s: "危险目标绕行、不越界对方安全区、不停走 15 秒。" },
+  { t: "复位上场", s: "复位到出发区、赛道清空，裁判示意后再启动。" },
+];
+
+const StandCheck = () => (
+  <Frame
+    kicker="落地路线"
+    floor="29"
+    title="上场前 15 分钟检查单：逐项过、过了才开赛"
+    lead="上场前按顺序把八项走一遍，任何一项没过就地修——现场不是调试代码的地方。"
+    wide
+  >
+    <div className="grid gap-4 lg:grid-cols-[1.35fr_1fr] lg:items-start">
+      <ChecklistFlow steps={STAND_CHECK} hint="当前步脉冲、完成转绿；默认全亮＝静态兜底。" />
+      <div className="space-y-3">
+        <Card title="为什么按这个顺序" icon={ListChecks} tone="brand">
+          先物理（称重 / 尺寸 / 电源）、再软件（启动 / 空跑）、最后对抗（复视觉 / 红线彩排 / 复位）。物理没过，后面白测。
+        </Card>
+        <Card title="时间盒" icon={Timer} tone="warn">
+          称重与尺寸 3 分钟、空跑 5 分钟、红线彩排 3 分钟，留 2 分钟复位——总时长卡在 15 分钟内。
+        </Card>
+        <Card title="过得标准" icon={CheckCircle2} tone="good">
+          八项全绿才开赛；任何一项红，先修再上，别赌临场手感。
+        </Card>
+      </div>
+    </div>
+  </Frame>
+);
 
 /* ------------------------------------------------------------ Cover */
 const Cover = () => (
@@ -100,7 +495,7 @@ const Tldr = () => (
 
 /* ------------------------------------------------------- 赛项 */
 const Event = () => (
-  <Frame kicker="赛项规则" floor="02" title="先认清赛制：三级赛、两队对抗、必须全自主" wide>
+  <Frame kicker="赛项规则" floor="03" title="先认清赛制：三级赛、两队对抗、必须全自主" wide>
     <DataTable
       head={["项", "内容"]}
       widths={["16%", "84%"]}
@@ -123,7 +518,7 @@ const Event = () => (
 
 /* ------------------------------------------------------- 红线 */
 const Limits = () => (
-  <Frame kicker="赛项规则" floor="03" title="八条硬约束：任意一条不过就出局" wide>
+  <Frame kicker="赛项规则" floor="04" title="八条硬约束：任意一条不过就出局" wide>
     <DataTable
       head={["项目", "要求"]}
       widths={["22%", "78%"]}
@@ -143,7 +538,7 @@ const Limits = () => (
 
 /* ------------------------------------------------------- 计分 */
 const Scoring = () => (
-  <Frame kicker="赛项规则" floor="04" title="计分靠转运，红线直接结束本轮" wide>
+  <Frame kicker="赛项规则" floor="05" title="计分靠转运，红线直接结束本轮" wide>
     <Grid cols={3}>
       <Stat value="5" unit="分/个" label="普通物资：绿色 40mm 正方体" />
       <Stat value="10" unit="分/个" label="核心物资：黑色 40mm 正四面体" tone="warn" />
@@ -175,7 +570,7 @@ const Scoring = () => (
 
 /* ------------------------------------------------------- 场地 */
 const Field = () => (
-  <Frame kicker="赛项规则" floor="05" title="场地几何决定机构：3000×3000，安全区 660×360" wide>
+  <Frame kicker="赛项规则" floor="06" title="场地几何决定机构：3000×3000，安全区 660×360" wide>
     <div className="grid items-start gap-5 md:gap-6 lg:grid-cols-[1.05fr_1fr] lg:gap-8">
       <div className="space-y-4">
         <Figure
@@ -209,7 +604,7 @@ const Field = () => (
 
 /* ------------------------------------------------------- 变化 */
 const Changes = () => (
-  <Frame kicker="赛项规则" floor="06" title="2027 三项新变化：照搬往届方案会失效" wide>
+  <Frame kicker="赛项规则" floor="07" title="2027 三项新变化：照搬往届方案会失效" wide>
     <DataTable
       head={["项", "2025 第九届", "2027 第十届（现版）"]}
       widths={["16%", "38%", "46%"]}
@@ -303,7 +698,7 @@ const PlanOverviewSvg = () => {
 const PlanOverview = () => (
   <Frame
     kicker="整车方案"
-    floor="07"
+    floor="08"
     title="整车方案总览：动力与结构占近一半，减重先动这两块"
     lead="限重下的顺序是先定电池、电机、算力，结构最后；现在就把均衡型的组成看清楚。"
     wide
@@ -369,7 +764,7 @@ const TierDecisionSvg = () => {
 const DecisionBlock = () => (
   <Frame
     kicker="整车方案"
-    floor="08"
+    floor="09"
     title="对比决策：先选档位，再谈具体选型"
     lead="同一台车有三条路：只求成车、均衡拿分、还是堆料冲高。先看清取舍，再逐件选型。"
     wide
@@ -402,7 +797,7 @@ const DecisionBlock = () => (
 
 /* ------------------------------------------------------- 重量预算 */
 const Budget = () => (
-  <Frame kicker="整车方案" floor="09" title="重量预算：先记账，再减重" wide>
+  <Frame kicker="整车方案" floor="10" title="重量预算：先记账，再减重" wide>
     <Grid cols={3}>
       <Card title="预算制" icon={ClipboardCheck} tone="brand">
         任何零件进方案前先写进预算表；每加 10g，都要回答「从哪减 10g」。
@@ -442,7 +837,7 @@ const Budget = () => (
 
 /* ------------------------------------------------------- 底盘 */
 const Chassis = () => (
-  <Frame kicker="整车方案" floor="10" title="底盘首推四轮差速：能过减速带、推动物块" wide>
+  <Frame kicker="整车方案" floor="11" title="底盘首推四轮差速：能过减速带、推动物块" wide>
     <DataTable
       head={["方案", "重量", "优势", "风险 / 实证"]}
       widths={["16%", "18%", "34%", "32%"]}
@@ -470,7 +865,7 @@ const Chassis = () => (
 
 /* ------------------------------------------------------- 算力 */
 const Compute = () => (
-  <Frame kicker="整车方案" floor="11" title="算力选端侧 NPU：最大的减重杠杆" wide>
+  <Frame kicker="整车方案" floor="12" title="算力选端侧 NPU：最大的减重杠杆" wide>
     <DataTable
       head={["级别", "型号", "算力", "重量", "功耗", "参考价"]}
       widths={["14%", "26%", "16%", "14%", "12%", "18%"]}
@@ -495,7 +890,7 @@ const Compute = () => (
 
 /* ------------------------------------------------------- 感知与电源 */
 const Sense = () => (
-  <Frame kicker="整车方案" floor="12" title="感知与电源：够用就好，一次做对" wide>
+  <Frame kicker="整车方案" floor="13" title="感知与电源：够用就好，一次做对" wide>
     <div className="grid gap-3 md:grid-cols-2 md:gap-4">
       <Card title="感知：够用即可" icon={Eye} tone="brand">
         <ul className="space-y-1.5">
@@ -522,7 +917,7 @@ const Sense = () => (
 
 /* ------------------------------------------------------- 转运机构 */
 const Mechanism = () => (
-  <Frame kicker="转运与导流" floor="13" title="转运机构：可抬起的框式拨具最轻合规" wide>
+  <Frame kicker="转运与导流" floor="14" title="转运机构：可抬起的框式拨具最轻合规" wide>
     <Grid cols={3}>
       <Card title="纯固定推板" icon={Boxes} tone="slate">
         最轻、0 执行器；但无法「抬起」，难以应对安全区 20mm 隔板与不规则几何体。
@@ -551,7 +946,7 @@ const Mechanism = () => (
 
 /* --------------------------------------------- 判读四问 */
 const Adjudication = () => (
-  <Frame kicker="转运与导流" floor="14" title="判读四问：条文没写 ≠ 可以做" wide>
+  <Frame kicker="转运与导流" floor="15" title="判读四问：条文没写 ≠ 可以做" wide>
     <Grid cols={2}>
       <DataTable
         head={["高频争议", "结论与依据"]}
@@ -580,7 +975,7 @@ const Adjudication = () => (
 
 /* --------------------------------------------------- 导流机构 */
 const FlowChannel = () => (
-  <Frame kicker="转运与导流" floor="15" title="导流机构：贯穿式通道，目标全程贴地" wide>
+  <Frame kicker="转运与导流" floor="16" title="导流机构：贯穿式通道，目标全程贴地" wide>
     <div className="grid gap-4 lg:grid-cols-[1.05fr_1fr] lg:gap-6">
       <div className="space-y-3 md:space-y-4">
         <DataTable
@@ -617,7 +1012,7 @@ const FlowChannel = () => (
 
 /* ------------------------------------------------------- 机械布局 */
 const Layout = () => (
-  <Frame kicker="设计实现" floor="16" title="机械布局：低重心、能越障、可维修" wide>
+  <Frame kicker="设计实现" floor="17" title="机械布局：低重心、能越障、可维修" wide>
     <Focus
       no="01"
       title="一张底板上的取舍"
@@ -648,7 +1043,7 @@ const Layout = () => (
 
 /* ------------------------------------------------------- 拨具设计 */
 const Gripper = () => (
-  <Frame kicker="设计实现" floor="17" title="框式拨具：两个舵机做四件事" wide>
+  <Frame kicker="设计实现" floor="18" title="框式拨具：两个舵机做四件事" wide>
     <div className="grid items-start gap-5 md:gap-6 lg:grid-cols-[1fr_1fr] lg:gap-8">
       <div className="grid gap-3 md:grid-cols-2">
         <Card title="张开 / 闭合" icon={Boxes} tone="brand">
@@ -684,7 +1079,7 @@ const Gripper = () => (
 
 /* ------------------------------------------------------- 电气 */
 const Electric = () => (
-  <Frame kicker="设计实现" floor="18" title="电气与安全：一次故障就是 0 分" wide>
+  <Frame kicker="设计实现" floor="19" title="电气与安全：一次故障就是 0 分" wide>
     <Grid cols={3}>
       <Card title="供电树" icon={Zap} tone="brand">
         单电池 → 分路：电机（大电流）、舵机、主控与传感器各自稳压；避免堵转拉低母线电压。
@@ -735,7 +1130,7 @@ const ArchSvg = () => (
 );
 
 const Software = () => (
-  <Frame kicker="设计实现" floor="19" title="软件架构：分层解耦，上位机只发意图" wide>
+  <Frame kicker="设计实现" floor="20" title="软件架构：分层解耦，上位机只发意图" wide>
     <div className="grid items-start gap-5 md:gap-6 lg:grid-cols-[1.05fr_1fr] lg:gap-8">
       <div className="surface p-3 md:p-4">
         <ArchSvg />
@@ -758,7 +1153,7 @@ const Software = () => (
 
 /* ------------------------------------------------------- 视觉 */
 const Vision = () => (
-  <Frame kicker="设计实现" floor="20" title="视觉流水线：350 张图就能起步" wide>
+  <Frame kicker="设计实现" floor="22" title="视觉流水线：350 张图就能起步" wide>
     <div className="grid gap-3 md:grid-cols-4">
       <Card title="采集与标注" icon={Eye} tone="slate">
         采集并标注约 350 张；按 300/50 划分训练 / 验证。
@@ -827,7 +1222,7 @@ const ScoreChainSvg = () => {
 };
 
 const Fsm = () => (
-  <Frame kicker="设计实现" floor="21" title="任务与得分链路：顺序不能错，红线不能碰" wide>
+  <Frame kicker="设计实现" floor="23" title="任务与得分链路：顺序不能错，红线不能碰" wide>
     <div className="surface p-3 md:p-4">
       <ScoreChainSvg />
     </div>
@@ -847,7 +1242,7 @@ const Fsm = () => (
 
 /* ------------------------------------------------------- 定位 */
 const Localize = () => (
-  <Frame kicker="设计实现" floor="22" title="定位与对位：精度、重量、成本三角" wide>
+  <Frame kicker="设计实现" floor="24" title="定位与对位：精度、重量、成本三角" wide>
     <DataTable
       head={["方案", "精度", "重量", "成本", "适用"]}
       widths={["30%", "16%", "16%", "18%", "20%"]}
@@ -870,7 +1265,7 @@ const Localize = () => (
 
 /* ------------------------------------------------------- 三阶段 */
 const Roadmap = () => (
-  <Frame kicker="落地路线" floor="23" title="三阶段路线：每阶段都能独立上场" wide>
+  <Frame kicker="落地路线" floor="25" title="三阶段路线：每阶段都能独立上场" wide>
     <DataTable
       head={["阶段", "目标", "配置要点", "预估重量"]}
       widths={["16%", "22%", "48%", "14%"]}
@@ -903,7 +1298,7 @@ const Roadmap = () => (
 
 /* ------------------------------------------------------- 自测 */
 const Test = () => (
-  <Frame kicker="落地路线" floor="24" title="自测按红线逐项回归" wide>
+  <Frame kicker="落地路线" floor="26" title="自测按红线逐项回归" wide>
     <Grid cols={2}>
       <Card title="通行" icon={Truck} tone="brand">
         减速带 ×3 连续通过率 ≥95%；不同路面的直行与转向偏差在容忍范围内。
@@ -933,7 +1328,7 @@ const Test = () => (
 
 /* ------------------------------------------------------- 现场坑 */
 const Pitfalls = () => (
-  <Frame kicker="落地路线" floor="25" title="现场工程坑：每一条都是失分点" wide>
+  <Frame kicker="落地路线" floor="27" title="现场工程坑：每一条都是失分点" wide>
     <Grid cols={2}>
       <Card title="开机自启准备不足" icon={AlertTriangle} tone="bad">
         现场曾因自启文件不完整，小车无法自动进入运行态。提前验证，赛前多次断电重启；带键鼠与备用启动方案。
@@ -956,7 +1351,7 @@ const Pitfalls = () => (
 
 /* ------------------------------------------------------- 检查表 */
 const Checklist = () => (
-  <Frame kicker="落地路线" floor="26" title="出图前检查表：重量与合规先过一遍" wide>
+  <Frame kicker="落地路线" floor="28" title="出图前检查表：重量与合规先过一遍" wide>
     <div className="grid gap-3 md:grid-cols-2 md:gap-4">
       <Card title="重量与尺寸" icon={Scale} tone="brand">
         <ul className="space-y-1.5">
@@ -990,7 +1385,7 @@ JGB37-520 ×4            576–800 g  顶格方案要慎重
 
 /* ------------------------------------------------------- 行动 */
 const Actions = () => (
-  <Frame kicker="收尾" floor="27" title="行动清单：先打三个电话" wide>
+  <Frame kicker="收尾" floor="30" title="行动清单：先打三个电话" wide>
     <DataTable
       head={["优先", "动作", "找谁 / 要点"]}
       widths={["10%", "30%", "60%"]}
@@ -1013,10 +1408,10 @@ const Actions = () => (
 
 /* ------------------------------------------------------- Closing */
 const Closing = () => (
-  <Frame kicker="收尾" floor="28" title="下载与延伸阅读">
+  <Frame kicker="收尾" floor="31" title="下载与延伸阅读">
     <div className="space-y-5">
       <Quote>
-        本 deck 由本仓库「工创赛智能救援-限重方案调研包 v1.0（2026-09-28）」整理而成；克重与直播数据为二手参考，正式 BOM 前请自测。v1.1（2026-09-29）新增「判读四问」与「导流机构」两页（来源：2026-09-29 材料整合包 01 件）。
+        本 deck 由本仓库「工创赛智能救援-限重方案调研包 v1.0（2026-09-28）」整理而成；克重与直播数据为二手参考，正式 BOM 前请自测。v1.1（2026-09-29）新增「判读四问」与「导流机构」两页（来源：2026-09-29 材料整合包 01 件）。v1.2（2026-10-17）按《编写守则》第七节升级：新增「任务全流程」（点式动画 + 记忆锚）「三大子系统」「上场检查单」三页。
       </Quote>
       <Grid cols={2}>
         <Card title="调研包核心文档 + 官方原件（zip）" icon={BookOpen} tone="brand">
@@ -1066,6 +1461,7 @@ const Closing = () => (
 export const slides = [
   { nav: "封面", group: "概览", el: <Cover /> },
   { nav: "结论先行", group: "概览", el: <Tldr /> },
+  { nav: "任务全流程", group: "概览", el: <MissionAnchor /> },
   { nav: "赛项与赛程", group: "赛项规则", el: <Event /> },
   { nav: "硬约束", group: "赛项规则", el: <Limits /> },
   { nav: "计分与红线", group: "赛项规则", el: <Scoring /> },
@@ -1084,6 +1480,7 @@ export const slides = [
   { nav: "框式拨具", group: "设计实现", el: <Gripper /> },
   { nav: "电气与安全", group: "设计实现", el: <Electric /> },
   { nav: "软件架构", group: "设计实现", el: <Software /> },
+  { nav: "三大子系统", group: "设计实现", el: <Subsystems /> },
   { nav: "视觉流水线", group: "设计实现", el: <Vision /> },
   { nav: "任务与得分链路", group: "设计实现", el: <Fsm /> },
   { nav: "定位与对位", group: "设计实现", el: <Localize /> },
@@ -1091,6 +1488,7 @@ export const slides = [
   { nav: "训练与自测", group: "落地路线", el: <Test /> },
   { nav: "现场工程坑", group: "落地路线", el: <Pitfalls /> },
   { nav: "出图前检查表", group: "落地路线", el: <Checklist /> },
+  { nav: "上场检查单", group: "落地路线", el: <StandCheck /> },
   { nav: "行动清单", group: "收尾", el: <Actions /> },
   { nav: "下载与延伸阅读", group: "收尾", el: <Closing /> },
 ];
